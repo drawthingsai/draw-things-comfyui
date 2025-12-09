@@ -1,5 +1,5 @@
 [project]
-name = "draw-things"
+name = "draw-things-comfyui"
 version = "1.8.3"
 description = "The official Draw Things extension for ComfyUI. Sends image-generation requests to Draw Things over gRPC. Supports Bridge Mode for DT+ cloud and local model execution."
 authors = [
