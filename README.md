@@ -18,7 +18,7 @@
 **Manual Installation**
 - Clone this repository into your `ComfyUI/custom_nodes` directory:
   ```sh
-  git clone https://github.com/yourusername/ComfyUI-DrawThings-gRPC.git
+  git clone https://github.com/drawthingsai/draw-things-comfyui.git
   ```
 
 **Restart ComfyUI**
@@ -30,11 +30,11 @@
 #### Draw Things App
 
 Ensure the following settings are enabled:
-- **API Server:** enabled
+- **API Server:** Enabled
 - **Protocol:** gRPC
-- **Transport Layer Security:** Enabled
-- **Enable Model Browser:** Enabled
-- **Response Compression:** Disabled
+- **Transport Layer Security:** Enabled (Recommended)
+- **Enable Model Browser:** Enabled (Required for local models)
+- **Bridge Mode:** Optional (Required for Bridge Mode - DT+ only)
 
 
 #### gRPCServerCLI

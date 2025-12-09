@@ -1,11 +1,8 @@
 {
-    "name": "comfyui-drawthings-grpc",
-    "version": "1.8.2",
-    "description": "Connect to any Draw Things [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community/tree/main?tab=readme-ov-file#self-host-grpcservercli-from-packaged-binaries) and let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself.",
-    "main": "index.js",
-    "directories": {
-        "test": "tests"
-    },
+    "name": "draw-things-comfyui",
+    "private": true,
+    "version": "1.8.3",
+    "description": "The official Draw Things extension for ComfyUI. Sends image-generation requests to Draw Things over gRPC. Supports Bridge Mode for DT+ cloud and local model execution.",
     "type": "module",
     "dependencies": {},
     "devDependencies": {

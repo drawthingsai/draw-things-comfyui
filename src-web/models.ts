@@ -396,6 +396,7 @@ const versionNames: Record<string, string> = {
     "wan_v2.1_14b": "Wan",
     hidream_i1: "HiD",
     qwen_image: "Qwen",
+    z_image: "Z Image",
 };
 
 function getVersionAbbrev(version: string) {

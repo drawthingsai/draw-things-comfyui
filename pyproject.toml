@@ -1,10 +1,10 @@
 [project]
-name = "drawthings-grpc"
-version = "1.8.2"
-description = "Connect to any Draw Things gRPCServer and let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself."
+name = "draw-things"
+version = "1.8.3"
+description = "The official Draw Things extension for ComfyUI. Sends image-generation requests to Draw Things over gRPC. Supports Bridge Mode for DT+ cloud and local model execution."
 authors = [
-  {name = "Jokimbe"},
   {name = "kcjerrell"},
+  {name = "Jokimbe"},
 ]
 readme = "README.md"
 license = {text = "GNU General Public License v3"}
@@ -22,13 +22,13 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/Jokimbe/ComfyUI-DrawThings-gRPC"
+Repository = "https://github.com/drawthingsai/draw-things-comfyui"
 #  Used by Comfy Registry https://registry.comfy.org
-bugs = "https://github.com/Jokimbe/ComfyUI-DrawThings-gRPC/issues"
+"Bug Tracker" = "https://github.com/drawthingsai/draw-things-comfyui/issues"
 
 [tool.comfy]
-PublisherId = "jokimbe"
-DisplayName = "ComfyUI-DrawThings-gRPC"
+PublisherId = "drawthingsai"
+DisplayName = "Draw Things for ComfyUI"
 Icon = ""
 includes = []
 

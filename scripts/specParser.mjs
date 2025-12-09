@@ -180,6 +180,9 @@ export function versionMap(version) {
             return "qwen_image"
         case "wan22_5b":
             return "wan_v2.2_5b"
+        case "z_image":
+        case "zImage":
+            return "z_image"
         default:
             return version
     }
