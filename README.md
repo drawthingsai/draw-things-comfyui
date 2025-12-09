@@ -13,7 +13,7 @@
 
 
 **Via ComfyUI-Manager (Recommended)**
-- Search for `ComfyUI-DrawThings-gRPC` in the ComfyUI-Manager and install.
+- Search for `Draw Things` in the ComfyUI-Manager and install.
 
 **Manual Installation**
 - Clone this repository into your `ComfyUI/custom_nodes` directory:
