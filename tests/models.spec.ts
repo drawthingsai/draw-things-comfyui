@@ -6,7 +6,7 @@ import { expect } from '@playwright/test';
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
-export const workflowFolder = "./e2e/workflows";
+export const workflowFolder = "./tests/workflows";
 
 test("models update with server", async ({ page, comfy }) => {
     // load workflow

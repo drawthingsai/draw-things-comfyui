@@ -1,16 +1,17 @@
 #!../../.venv python3
 
 import os
+import struct
 import sys
-import math
+
+import fpzip
 import numpy as np
-from PIL import Image
 import torch
 import torchvision
+from PIL import Image
 from torchvision.transforms import v2 as transforms
-import struct
+
 from .data_types import *
-import fpzip
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -78,11 +79,10 @@ def decode_preview(preview, version):
     if channels not in [3, 4, 16]:
         return None
 
-    offset = 68
     fp16 = get_image_data(preview)
 
     image = None
-    version = version.lower() if type(version) == str else version
+    version = version.lower() if type(version) is str else version
 
     if version in ["v1", "v2", "svdi2v"]:
         bytes_array = np.zeros((image_height, image_width, channels), dtype=np.uint8)
@@ -681,14 +681,21 @@ def convert_image_for_request(
     if width != orig_width or height != orig_height:
         image_tensor = resize_crop(image_tensor, width, height)
 
-    if control_type == 'pose':
+    if control_type == "pose":
         channels = 3
         # I think we want pose values to be from 0.5 to 1
         minimum = image_tensor.min()
         maximum = image_tensor.max()
         image_tensor = (image_tensor - minimum) / (maximum - minimum)
         image_tensor = image_tensor / 2 + 0.5
-        print('pose before', minimum, maximum, 'pose after', image_tensor.min(), image_tensor.max())
+        print(
+            "pose before",
+            minimum,
+            maximum,
+            "pose after",
+            image_tensor.min(),
+            image_tensor.max(),
+        )
 
     pil_image = torchvision.transforms.ToPILImage()(
         image_tensor[batch_index].permute(2, 0, 1)
@@ -726,7 +733,6 @@ def convert_image_for_request(
                 else:
                     v = pixel[c] / 255 * 2 - 1
                 struct.pack_into("<e", image_bytes, offset + c * 2, v)
-
 
     return bytes(image_bytes)
 

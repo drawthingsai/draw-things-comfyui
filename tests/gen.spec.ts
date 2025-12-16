@@ -13,7 +13,7 @@ import { vecs } from "./vector";
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
-const workflowFolder = "./e2e/workflows";
+const workflowFolder = "./tests/workflows";
 const comfyFolder = process.env.TEST_COMFYUI_DIR || "";
 if (!comfyFolder) throw new Error("TEST_COMFYUI_DIR is not set");
 

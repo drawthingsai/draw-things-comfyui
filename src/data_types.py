@@ -1,9 +1,9 @@
 import sys
 
 if sys.version_info < (3, 11):
-    from typing_extensions import TypedDict, NotRequired
+    from typing_extensions import TypedDict
 else:
-    from typing import TypedDict, NotRequired
+    from typing import TypedDict
 from torch import Tensor
 
 ModelInfo = TypedDict(
@@ -69,20 +69,16 @@ ControlStackItem = TypedDict(
         "global_average_pooling": bool,
         "down_sampling_rate": float,
         "target_blocks": str,
-        "hint_type": str | None
+        "hint_type": str | None,
     },
 )
 ControlStack = list[ControlStackItem]
 
 HintStackItem = TypedDict(
-    "HintStackItem",
-    {
-        "type": str,
-        "image": Tensor,
-        "weight": float
-    }
+    "HintStackItem", {"type": str, "image": Tensor, "weight": float}
 )
 HintStack = list[HintStackItem]
+
 
 # this should match kwargs in the sampler node method
 class Config(TypedDict, total=False):

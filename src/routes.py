@@ -1,16 +1,14 @@
 import json
+
 import grpc
-from aiohttp import web, ClientSession
+from aiohttp import ClientSession, web
 from aiohttp.web_request import Request
 from google.protobuf.json_format import MessageToJson
-
 from server import PromptServer  # type: ignore
 
-from .generated import imageService_pb2
-from .generated import imageService_pb2_grpc
 from .. import cancel_request, settings
 from .draw_things import get_files
-
+from .generated import imageService_pb2, imageService_pb2_grpc
 
 routes = PromptServer.instance.routes
 

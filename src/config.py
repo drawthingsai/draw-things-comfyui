@@ -106,9 +106,9 @@ class CNetType:
         ]
 
     def get_target_blocks(self, value: str) -> list[str]:
-        if self.cnet.get('version') == 'sdxl_base_v0.9':
+        if self.cnet.get("version") == "sdxl_base_v0.9":
             return self.sdxlTargetBlocks[value]
-        elif self.cnet.get('version') == 'v1':
+        elif self.cnet.get("version") == "v1":
             return self.v1TargetBlocks[value]
         return []
 
@@ -142,7 +142,7 @@ def apply_extra(config: Config, configT: GenerationConfigurationT):
                 and "file" in upscaler["upscaler_model"]["value"]
             ):
                 configT.upscaler = upscaler["upscaler_model"]["value"]["file"]
-            elif type(upscaler["upscaler_model"]) == str:
+            elif type(upscaler["upscaler_model"]) is str:
                 configT.upscaler = upscaler["upscaler_model"]
             configT.upscalerScaleFactor = upscaler.get("upscaler_scale_factor") or 0
 
@@ -173,7 +173,7 @@ def apply_control(config: Config, configT: GenerationConfigurationT):
         controlT = ControlT()
         controlT.file = control["model"]["file"]
 
-        cnet = CNetType(control['model'], control.get('input_type'))
+        cnet = CNetType(control["model"], control.get("input_type"))
 
         if "weight" in control:
             controlT.weight = control["weight"]
@@ -313,7 +313,7 @@ def apply_conditional(config: Config, configT: GenerationConfigurationT):
             configT.openClipGText = config["open_clip_g_text"]
 
     # speed_up_with_guidance_embed
-    if model.speed_up and config.get("speed_up_with_guidance_embed") == False:
+    if model.speed_up and not config.get("speed_up"):
         configT.speedUpWithGuidanceEmbed = False
         if "guidance_embed" in config:
             configT.guidanceEmbed = config["guidance_embed"]
@@ -333,11 +333,6 @@ def apply_conditional(config: Config, configT: GenerationConfigurationT):
             configT.teaCacheThreshold = config["tea_cache_threshold"]
         if "tea_cache_max_skip_steps" in config:
             configT.teaCacheMaxSkipSteps = config["tea_cache_max_skip_steps"]
-
-    if model.speed_up and config.get("speed_up_with_guidance_embed") == False:
-        configT.speedUpWithGuidanceEmbed = False
-        if "guidance_embed" in config:
-            configT.guidanceEmbed = config["guidance_embed"]
 
     if model.video and "num_frames" in config:
         configT.numFrames = config["num_frames"]

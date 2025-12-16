@@ -1,15 +1,15 @@
 #!../../.venv python3
 
-import asyncio
 import json
 import os
 import sys
+
 import grpc
 from torchvision.transforms import v2
 
 from .. import cancel_request
-from .draw_things import dt_sampler, get_files
 from .data_types import *
+from .draw_things import dt_sampler, get_files
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -131,7 +131,7 @@ class DrawThingsSampler:
     async def sample(self, **kwargs):
         try:
             await get_files(kwargs["server"], kwargs["port"], kwargs["use_tls"])
-        except:
+        except Exception:
             raise Exception(
                 "Couldn't connect to Draw Things gRPC server. Check your server and settings, and try again."
             )

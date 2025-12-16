@@ -1,30 +1,30 @@
 import base64
-from google.protobuf.json_format import MessageToJson
 import json
+
+import comfy.utils
+import flatbuffers
 import grpc
 import grpc.aio
+import numpy as np
 import torch
-import flatbuffers
+from comfy.cli_args import args
+from google.protobuf.json_format import MessageToJson
+from PIL import Image
 
-from .util import try_parse_int
 from .. import cancel_request, settings
 from .config import build_config
-import numpy as np
-from PIL import Image
 from .credentials import credentials
 from .data_types import DrawThingsLists, HintStack, ModelsInfo, UpscalerInfo
 from .generated import imageService_pb2, imageService_pb2_grpc
-import comfy.utils
-from comfy.cli_args import args
-
-MAX_PREVIEW_RESOLUTION = try_parse_int(args.preview_size) or 512
-
 from .image_handlers import (
     convert_image_for_request,
     convert_mask_for_request,
     convert_response_image,
     decode_preview,
 )
+from .util import try_parse_int
+
+MAX_PREVIEW_RESOLUTION = try_parse_int(args.preview_size) or 512
 
 
 async def get_files(server, port, use_tls) -> ModelsInfo:
@@ -157,7 +157,7 @@ async def dt_sampler(inputs: dict):
                     height=height,
                 )
                 taw = imageService_pb2.TensorAndWeight()
-                taw.weight = 1
+                taw.weight = hint_weight
                 taw.tensor = hint_tensor
                 taws.append(taw)
 

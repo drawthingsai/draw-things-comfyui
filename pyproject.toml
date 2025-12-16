@@ -16,7 +16,6 @@ dev = [
     "bump-my-version",
     "coverage",  # testing
     "mypy",  # linting
-    "pre-commit", # runs linting on commit
     "pytest",  # testing
     "ruff",  # linting,
 ]
@@ -31,10 +30,3 @@ PublisherId = "drawthingsai"
 DisplayName = "Draw Things for ComfyUI"
 Icon = ""
 includes = []
-
-
-[tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = [
-    "tests",
-]

@@ -6,7 +6,7 @@ import { expect } from "@playwright/test";
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
-export const workflowFolder = "./e2e/workflows";
+export const workflowFolder = "./tests/workflows";
 
 test("not connected error message when executing", async ({ page, comfy }) => {
     await comfy.openWorkflow(join(workflowFolder, "sd1_a.json"));

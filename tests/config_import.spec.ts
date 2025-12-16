@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "./fixtures";
 import configs from "./data/configs";
 
-export const workflowFolder = "./e2e/workflows";
+export const workflowFolder = "./tests/workflows";
 
 test.beforeAll(async ({ comfy }) => {
 	await comfy.goto();

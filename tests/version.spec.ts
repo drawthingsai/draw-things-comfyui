@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "./fixtures";
 import fse from "fs-extra";
 
-export const workflowFolder = "./e2e/workflows";
+export const workflowFolder = "./tests/workflows";
 
 test("load workflow from previous version", async ({ comfy }) => {
     // load workflow

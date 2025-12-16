@@ -8,10 +8,8 @@ from .src.util import CancelRequest, Settings
 cancel_request = CancelRequest()
 settings = Settings()
 
-from .src.nodes import NODE_CLASS_MAPPINGS
-from .src.nodes import NODE_DISPLAY_NAME_MAPPINGS
-
 from .src import routes
+from .src.nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
 WEB_DIRECTORY = "./web/dist"
 

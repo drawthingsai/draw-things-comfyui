@@ -6,7 +6,7 @@ import { join } from "path";
 
 if (!process.env.PLAYWRIGHT_TEST_URL)
 	throw new Error("PLAYWRIGHT_TEST_URL is not set");
-export const DEFAULT_WORKFLOW_FOLDER = "./e2e/workflows";
+export const DEFAULT_WORKFLOW_FOLDER = "./tests/workflows";
 
 export class ComfyPage {
 	readonly canvas: Locator;
