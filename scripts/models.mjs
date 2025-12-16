@@ -40,6 +40,7 @@ async function compileModelType(type, official) {
 
         if (official) {
             const officialModels = await compileOfficialModels(official)
+            officialModels.forEach(m => { m.official = true })
             models.push(...officialModels)
         }
 

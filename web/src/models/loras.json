@@ -222,21 +222,24 @@
     "file": "fooocus_inpaint_v2.6_lora_f16.ckpt",
     "prefix": "",
     "version": "sdxl_base_v0.9",
-    "modifier": "inpainting"
+    "modifier": "inpainting",
+    "official": true
   },
   {
     "name": "Fooocus Inpaint v2.6 (8-bit)",
     "file": "fooocus_inpaint_v2.6_lora_q8p.ckpt",
     "prefix": "",
     "version": "sdxl_base_v0.9",
-    "modifier": "inpainting"
+    "modifier": "inpainting",
+    "official": true
   },
   {
     "name": "Foreground to Blending",
     "file": "layer_xl_fg2ble_v1.0_lora_f16.ckpt",
     "prefix": "",
     "version": "sdxl_base_v0.9",
-    "modifier": "inpainting"
+    "modifier": "inpainting",
+    "official": true
   },
   {
     "name": "Ghibli Cartoon Art",
@@ -481,14 +484,16 @@
     "file": "lcm_sd_xl_base_1.0_lora_f16.ckpt",
     "prefix": "",
     "version": "sdxl_base_v0.9",
-    "isConsistencyModel": true
+    "isConsistencyModel": true,
+    "official": true
   },
   {
     "name": "LCM SDXL Refiner (1.0)",
     "file": "lcm_sd_xl_refiner_1.0_lora_f16.ckpt",
     "prefix": "",
     "version": "sdxl_refiner_v0.9",
-    "isConsistencyModel": true
+    "isConsistencyModel": true,
+    "official": true
   },
   {
     "version": "ssd_1b",
@@ -501,7 +506,8 @@
     "file": "lcm_sd_v1.5_lora_f16.ckpt",
     "prefix": "",
     "version": "v1",
-    "isConsistencyModel": true
+    "isConsistencyModel": true,
+    "official": true
   },
   {
     "name": "Long Hair Slider",
@@ -771,7 +777,8 @@
     "name": "SDXL Offset (1.0)",
     "file": "sdxl_offset_v1.0_lora_f16.ckpt",
     "prefix": "",
-    "version": "sdxl_base_v0.9"
+    "version": "sdxl_base_v0.9",
+    "official": true
   },
   {
     "version": "v1",
@@ -799,14 +806,16 @@
     "file": "tcd_sd_xl_base_1.0_lora_f16.ckpt",
     "prefix": "",
     "version": "sdxl_base_v0.9",
-    "isConsistencyModel": true
+    "isConsistencyModel": true,
+    "official": true
   },
   {
     "name": "TCD Stable Diffusion v1.5",
     "file": "tcd_sd_v1.5_lora_f16.ckpt",
     "prefix": "",
     "version": "v1",
-    "isConsistencyModel": true
+    "isConsistencyModel": true,
+    "official": true
   },
   {
     "version": "v1",
@@ -838,7 +847,8 @@
     "prefix": "",
     "version": "flux1",
     "alternativeDecoder": "flux_1_transparent_vae_decoder_f16.ckpt",
-    "alternativeDecoderVersion": "transparent"
+    "alternativeDecoderVersion": "transparent",
+    "official": true
   },
   {
     "name": "Transparent Image (Attention Injection)",
@@ -846,7 +856,8 @@
     "prefix": "",
     "version": "sdxl_base_v0.9",
     "alternativeDecoder": "transparent_vae_decoder_v1.0_f16.ckpt",
-    "alternativeDecoderVersion": "transparent"
+    "alternativeDecoderVersion": "transparent",
+    "official": true
   },
   {
     "name": "Transparent Image FLUX.1 [dev]",

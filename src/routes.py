@@ -1,10 +1,10 @@
 import json
 import grpc
-from aiohttp import web
+from aiohttp import web, ClientSession
 from aiohttp.web_request import Request
 from google.protobuf.json_format import MessageToJson
 
-from server import PromptServer # type: ignore
+from server import PromptServer  # type: ignore
 
 from .generated import imageService_pb2
 from .generated import imageService_pb2_grpc
@@ -48,20 +48,43 @@ async def handle_bridge_models_request(request):
     Returns a list of all files available on the Draw Things+ server.
     """
     try:
-        async with grpc.aio.secure_channel('compute.drawthings.ai:443', grpc.ssl_channel_credentials()) as channel:
+        async with grpc.aio.secure_channel(
+            "compute.drawthings.ai:443", grpc.ssl_channel_credentials()
+        ) as channel:
             stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
             response = await stub.Echo(imageService_pb2.EchoRequest(name="ComfyUI"))
             response_json = json.loads(MessageToJson(response))
-            file_list = response_json['files']
+            file_list = response_json["files"]
             return web.json_response(file_list)
     except Exception as e:
         print(e)
         return web.json_response(
-            {
-                "error": "Could not connect to Draw Things+ server."
-            },
+            {"error": "Could not connect to Draw Things+ server."},
             status=500,
         )
+
+
+@routes.get("/dt_grpc/combined_models")
+async def handle_combined_models_request(request):
+    """
+    Returns a the metadata for all official, community, and uncurated models
+    """
+    try:
+        async with ClientSession() as session:
+            async with session.get(
+                "https://kcjerrell.github.io/dt-models/combined_models.json"
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                return web.json_response(data)
+
+    except Exception as e:
+        print(e)
+        return web.json_response(
+            {"error": "Could not fetch models."},
+            status=500,
+        )
+
 
 @routes.get("/dt_grpc/files_exist")
 async def handle_files_exist_request(request):
@@ -69,20 +92,22 @@ async def handle_files_exist_request(request):
     Checks if provided filenames exist on server
     """
     try:
-        async with grpc.aio.secure_channel('compute.drawthings.ai:443', grpc.ssl_channel_credentials()) as channel:
+        async with grpc.aio.secure_channel(
+            "compute.drawthings.ai:443", grpc.ssl_channel_credentials()
+        ) as channel:
             stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
             post = await request.post()
             files = post.get("files")
-            response = await stub.FilesExist(imageService_pb2.FileListRequest(files=files))
+            response = await stub.FilesExist(
+                imageService_pb2.FileListRequest(files=files)
+            )
             response_json = json.loads(MessageToJson(response))
-            file_existence = response_json['files']
+            file_existence = response_json["files"]
             return web.json_response(file_existence)
     except Exception as e:
         print(e)
         return web.json_response(
-            {
-                "error": "Could not connect to Draw Things+ server."
-            },
+            {"error": "Could not connect to Draw Things+ server."},
             status=500,
         )
 

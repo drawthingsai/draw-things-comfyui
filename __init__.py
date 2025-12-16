@@ -13,7 +13,7 @@ from .src.nodes import NODE_DISPLAY_NAME_MAPPINGS
 
 from .src import routes
 
-WEB_DIRECTORY = "./web"
+WEB_DIRECTORY = "./web/dist"
 
 __all__ = [
     "NODE_CLASS_MAPPINGS",

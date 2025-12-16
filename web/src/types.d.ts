@@ -23,4 +23,4 @@ interface IDTSampler extends LGraphNode {
     updateDynamicWidgets: () => Promise<void>;
 }
 
-type DTSampler = Omit<IDTSampler, "constructor">
+type DTSampler = Omit<IDTSampler, "constructor">;

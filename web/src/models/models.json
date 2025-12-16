@@ -295,7 +295,8 @@
     "defaultScale": 16,
     "textEncoder": "pile_t5_xl_encoder_q8p.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
-    "deprecated": true
+    "deprecated": true,
+    "official": true
   },
   {
     "name": "AuraFlow v0.1 (8-bit)",
@@ -305,7 +306,8 @@
     "defaultScale": 16,
     "textEncoder": "pile_t5_xl_encoder_q8p.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
-    "deprecated": true
+    "deprecated": true,
+    "official": true
   },
   {
     "name": "AuraFlow v0.2",
@@ -314,7 +316,8 @@
     "version": "auraflow",
     "defaultScale": 16,
     "textEncoder": "pile_t5_xl_encoder_q8p.ckpt",
-    "autoencoder": "sdxl_vae_v1.0_f16.ckpt"
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "official": true
   },
   {
     "name": "AuraFlow v0.2 (8-bit)",
@@ -323,7 +326,8 @@
     "version": "auraflow",
     "defaultScale": 16,
     "textEncoder": "pile_t5_xl_encoder_q8p.ckpt",
-    "autoencoder": "sdxl_vae_v1.0_f16.ckpt"
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "official": true
   },
   {
     "name": "Balloon Art (v1)",
@@ -886,7 +890,8 @@
     "highPrecisionAutoencoder": true,
     "isConsistencyModel": true,
     "paddedTextEncodingLength": 256,
-    "hiresFixScale": 24
+    "hiresFixScale": 24,
+    "official": true
   },
   {
     "name": "FLUX.1 [schnell] (5-bit)",
@@ -900,7 +905,8 @@
     "highPrecisionAutoencoder": true,
     "isConsistencyModel": true,
     "paddedTextEncodingLength": 256,
-    "hiresFixScale": 24
+    "hiresFixScale": 24,
+    "official": true
   },
   {
     "name": "FLUX.1 Canny [dev]",
@@ -1175,7 +1181,8 @@
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
     "modifier": "inpainting",
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "name": "Fooocus Inpaint SDXL v2.6 (8-bit)",
@@ -1186,7 +1193,8 @@
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
     "modifier": "inpainting",
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "upcast_attention": false,
@@ -1232,7 +1240,8 @@
     "highPrecisionAutoencoder": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-E1 [full]](https://huggingface.co/HiDream-ai/HiDream-E1-Full) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained at 768×768 resolution using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps. For optimal results, ensure the width is set to 768 and use the following prompt format: Editing Instruction: {}. Target Image Description: {}."
+    "note": "[HiDream-E1 [full]](https://huggingface.co/HiDream-ai/HiDream-E1-Full) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained at 768×768 resolution using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps. For optimal results, ensure the width is set to 768 and use the following prompt format: Editing Instruction: {}. Target Image Description: {}.",
+    "official": true
   },
   {
     "name": "HiDream E1 [full] (5-bit)",
@@ -1251,7 +1260,8 @@
     "highPrecisionAutoencoder": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-E1 [full]](https://huggingface.co/HiDream-ai/HiDream-E1-Full) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained at 768×768 resolution using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps. For optimal results, ensure the width is set to 768 and use the following prompt format: Editing Instruction: {}. Target Image Description: {}."
+    "note": "[HiDream-E1 [full]](https://huggingface.co/HiDream-ai/HiDream-E1-Full) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained at 768×768 resolution using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps. For optimal results, ensure the width is set to 768 and use the following prompt format: Editing Instruction: {}. Target Image Description: {}.",
+    "official": true
   },
   {
     "name": "HiDream E1-1",
@@ -1270,7 +1280,8 @@
     "highPrecisionAutoencoder": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-E1-1](https://huggingface.co/HiDream-ai/HiDream-E1-1) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained with dynamic resolutions (around 1MP) using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps."
+    "note": "[HiDream-E1-1](https://huggingface.co/HiDream-ai/HiDream-E1-1) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained with dynamic resolutions (around 1MP) using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps.",
+    "official": true
   },
   {
     "name": "HiDream E1-1 (5-bit)",
@@ -1289,7 +1300,8 @@
     "highPrecisionAutoencoder": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-E1-1](https://huggingface.co/HiDream-ai/HiDream-E1-1) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained with dynamic resolutions (around 1MP) using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps."
+    "note": "[HiDream-E1-1](https://huggingface.co/HiDream-ai/HiDream-E1-1) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained with dynamic resolutions (around 1MP) using a Flow Matching objective, the model performs best with trailing samplers and 30–50 sampling steps.",
+    "official": true
   },
   {
     "name": "HiDream E1-1 (Exact)",
@@ -1333,7 +1345,8 @@
     "guidanceEmbed": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-I1 [dev]](https://huggingface.co/HiDream-ai/HiDream-I1-Dev) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 20–30 sampling steps recommended. Text guidance is not effective for this model."
+    "note": "[HiDream-I1 [dev]](https://huggingface.co/HiDream-ai/HiDream-I1-Dev) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 20–30 sampling steps recommended. Text guidance is not effective for this model.",
+    "official": true
   },
   {
     "name": "HiDream I1 [dev] (5-bit)",
@@ -1352,7 +1365,8 @@
     "guidanceEmbed": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-I1 [dev]](https://huggingface.co/HiDream-ai/HiDream-I1-Dev) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 20–30 sampling steps recommended. Text guidance is not effective for this model."
+    "note": "[HiDream-I1 [dev]](https://huggingface.co/HiDream-ai/HiDream-I1-Dev) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 20–30 sampling steps recommended. Text guidance is not effective for this model.",
+    "official": true
   },
   {
     "name": "HiDream I1 [dev] (Exact)",
@@ -1396,7 +1410,8 @@
     "isConsistencyModel": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-I1 [fast]](https://huggingface.co/HiDream-ai/HiDream-I1-Fast) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 10–20 sampling steps recommended. Text guidance is not effective for this model."
+    "note": "[HiDream-I1 [fast]](https://huggingface.co/HiDream-ai/HiDream-I1-Fast) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 10–20 sampling steps recommended. Text guidance is not effective for this model.",
+    "official": true
   },
   {
     "name": "HiDream I1 [fast] (5-bit)",
@@ -1415,7 +1430,8 @@
     "isConsistencyModel": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-I1 [fast]](https://huggingface.co/HiDream-ai/HiDream-I1-Fast) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 10–20 sampling steps recommended. Text guidance is not effective for this model."
+    "note": "[HiDream-I1 [fast]](https://huggingface.co/HiDream-ai/HiDream-I1-Fast) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 10–20 sampling steps recommended. Text guidance is not effective for this model.",
+    "official": true
   },
   {
     "name": "HiDream I1 [fast] (Exact)",
@@ -1458,7 +1474,8 @@
     "highPrecisionAutoencoder": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-I1 [full]](https://huggingface.co/HiDream-ai/HiDream-I1-Full) is a state-of-the-art open-source image generation model known for its exceptional prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended."
+    "note": "[HiDream-I1 [full]](https://huggingface.co/HiDream-ai/HiDream-I1-Full) is a state-of-the-art open-source image generation model known for its exceptional prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended.",
+    "official": true
   },
   {
     "name": "HiDream I1 [full] (5-bit)",
@@ -1476,7 +1493,8 @@
     "highPrecisionAutoencoder": true,
     "paddedTextEncodingLength": 128,
     "hiresFixScale": 24,
-    "note": "[HiDream-I1 [full]](https://huggingface.co/HiDream-ai/HiDream-I1-Full) is a state-of-the-art open-source image generation model known for its exceptional prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended."
+    "note": "[HiDream-I1 [full]](https://huggingface.co/HiDream-ai/HiDream-I1-Full) is a state-of-the-art open-source image generation model known for its exceptional prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended.",
+    "official": true
   },
   {
     "name": "HiDream I1 [full] (Exact)",
@@ -1623,7 +1641,8 @@
     "version": "v1",
     "defaultScale": 8,
     "modifier": "editing",
-    "deprecated": true
+    "deprecated": true,
+    "official": true
   },
   {
     "version": "v1",
@@ -1753,7 +1772,8 @@
     "deprecated": true,
     "imageEncoder": "image_vit_l14_f16.ckpt",
     "clipEncoder": "clip_vit_l14_f16.ckpt",
-    "diffusionMapping": "kandinsky_diffusion_mapping_f16.ckpt"
+    "diffusionMapping": "kandinsky_diffusion_mapping_f16.ckpt",
+    "official": true
   },
   {
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
@@ -1829,7 +1849,8 @@
     "prefix": "",
     "version": "v1",
     "defaultScale": 4,
-    "deprecated": true
+    "deprecated": true,
+    "official": true
   },
   {
     "prefix": "modern disney style ",
@@ -1896,7 +1917,8 @@
     "version": "pixart",
     "defaultScale": 16,
     "textEncoder": "t5_xxl_encoder_q6p.ckpt",
-    "autoencoder": "sdxl_vae_v1.0_f16.ckpt"
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "official": true
   },
   {
     "name": "PixArt Sigma XL 1K (8-bit)",
@@ -1905,7 +1927,8 @@
     "version": "pixart",
     "defaultScale": 16,
     "textEncoder": "t5_xxl_encoder_q6p.ckpt",
-    "autoencoder": "sdxl_vae_v1.0_f16.ckpt"
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "official": true
   },
   {
     "name": "PixArt Sigma XL 512",
@@ -1914,7 +1937,8 @@
     "version": "pixart",
     "defaultScale": 8,
     "textEncoder": "t5_xxl_encoder_q6p.ckpt",
-    "autoencoder": "sdxl_vae_v1.0_f16.ckpt"
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "official": true
   },
   {
     "name": "PixArt Sigma XL 512 (8-bit)",
@@ -1923,7 +1947,8 @@
     "version": "pixart",
     "defaultScale": 8,
     "textEncoder": "t5_xxl_encoder_q6p.ckpt",
-    "autoencoder": "sdxl_vae_v1.0_f16.ckpt"
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "official": true
   },
   {
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
@@ -2150,7 +2175,8 @@
     "autoencoder": "qwen_image_vae_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Qwen Image](https://huggingface.co/Qwen/Qwen-Image) is a state-of-the-art open-source image generation model known for its exceptional text layout and prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image 1.0 (6-bit)",
@@ -2162,7 +2188,8 @@
     "autoencoder": "qwen_image_vae_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Qwen Image](https://huggingface.co/Qwen/Qwen-Image) is a state-of-the-art open-source image generation model known for its exceptional text layout and prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image 1.0 (BF16, 6-bit)",
@@ -2175,7 +2202,8 @@
     "hiresFixScale": 24,
     "isBf16": true,
     "note": "[Qwen Image](https://huggingface.co/Qwen/Qwen-Image) is a state-of-the-art open-source image generation model known for its exceptional text layout and prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended. The BF16 version is only compatible with macOS 15, iOS 18 and above.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image 1.0 (BF16, Exact)",
@@ -2207,7 +2235,8 @@
     "hiresFixScale": 24,
     "isBf16": true,
     "note": "[Qwen Image](https://huggingface.co/Qwen/Qwen-Image) is a state-of-the-art open-source image generation model known for its exceptional text layout and prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended. The BF16 version is only compatible with macOS 15, iOS 18 and above.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image 1.0 (Exact)",
@@ -2239,7 +2268,8 @@
     "clipEncoder": "qwen_2.5_vl_7b_vit_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Qwen Image Edit](https://huggingface.co/Qwen/Qwen-Image-Edit) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image Edit 1.0 (6-bit)",
@@ -2253,7 +2283,8 @@
     "clipEncoder": "qwen_2.5_vl_7b_vit_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Qwen Image Edit](https://huggingface.co/Qwen/Qwen-Image-Edit) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image Edit 2509",
@@ -2267,7 +2298,8 @@
     "clipEncoder": "qwen_2.5_vl_7b_vit_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Qwen Image Edit 2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended. This is an update in Sep, 2025.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image Edit 2509 (6-bit)",
@@ -2281,7 +2313,8 @@
     "clipEncoder": "qwen_2.5_vl_7b_vit_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Qwen Image Edit 2509](https://huggingface.co/Qwen/Qwen-Image-2509) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended. This is an update in Sep, 2025.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image Edit 2509 (BF16, 6-bit)",
@@ -2296,7 +2329,8 @@
     "hiresFixScale": 24,
     "isBf16": true,
     "note": "[Qwen Image Edit 2509](https://huggingface.co/Qwen/Qwen-Image-2509) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended. This is an update in Sep, 2025. The BF16 version is only compatible with macOS 15, iOS 18 and above.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image Edit 2509 (BF16, Exact)",
@@ -2332,7 +2366,8 @@
     "hiresFixScale": 24,
     "isBf16": true,
     "note": "[Qwen Image Edit 2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30–50 sampling steps recommended. This is an update in Sep, 2025. The BF16 version is only compatible with macOS 15, iOS 18 and above.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Qwen Image Edit 2509 (Exact)",
@@ -2724,7 +2759,8 @@
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_f16.ckpt",
     "deprecated": true,
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "name": "SDXL Base (v1.0)",
@@ -2734,7 +2770,8 @@
     "defaultScale": 16,
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "name": "SDXL Base v1.0 (8-bit)",
@@ -2744,7 +2781,8 @@
     "defaultScale": 16,
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "name": "SDXL Refiner (v0.9)",
@@ -2755,7 +2793,8 @@
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_f16.ckpt",
     "deprecated": true,
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "name": "SDXL Refiner (v1.0)",
@@ -2765,7 +2804,8 @@
     "defaultScale": 16,
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "name": "SDXL Refiner v1.0 (8-bit)",
@@ -2775,7 +2815,8 @@
     "defaultScale": 16,
     "textEncoder": "open_clip_vit_bigg14_f16.ckpt",
     "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
-    "clipEncoder": "clip_vit_l14_f16.ckpt"
+    "clipEncoder": "clip_vit_l14_f16.ckpt",
+    "official": true
   },
   {
     "name": "SDXL Turbo",
@@ -3346,20 +3387,23 @@
     "file": "sd_v1.4_f16.ckpt",
     "prefix": "",
     "version": "v1",
-    "deprecated": true
+    "deprecated": true,
+    "official": true
   },
   {
     "name": "Stable Diffusion v1.5",
     "file": "sd_v1.5_f16.ckpt",
     "prefix": "",
-    "version": "v1"
+    "version": "v1",
+    "official": true
   },
   {
     "name": "Stable Diffusion v1.5 Inpainting",
     "file": "sd_v1.5_inpainting_f16.ckpt",
     "prefix": "",
     "version": "v1",
-    "modifier": "inpainting"
+    "modifier": "inpainting",
+    "official": true
   },
   {
     "name": "Stable Diffusion v2.0",
@@ -3367,7 +3411,8 @@
     "prefix": "",
     "version": "v2",
     "textEncoder": "open_clip_vit_h14_f16.ckpt",
-    "deprecated": true
+    "deprecated": true,
+    "official": true
   },
   {
     "name": "Stable Diffusion v2.0 768-v",
@@ -3376,7 +3421,8 @@
     "version": "v2",
     "defaultScale": 12,
     "textEncoder": "open_clip_vit_h14_f16.ckpt",
-    "deprecated": true
+    "deprecated": true,
+    "official": true
   },
   {
     "name": "Stable Diffusion v2.0 Depth",
@@ -3384,7 +3430,8 @@
     "prefix": "",
     "version": "v2",
     "textEncoder": "open_clip_vit_h14_f16.ckpt",
-    "modifier": "depth"
+    "modifier": "depth",
+    "official": true
   },
   {
     "name": "Stable Diffusion v2.0 Inpainting",
@@ -3392,14 +3439,16 @@
     "prefix": "",
     "version": "v2",
     "textEncoder": "open_clip_vit_h14_f16.ckpt",
-    "modifier": "inpainting"
+    "modifier": "inpainting",
+    "official": true
   },
   {
     "name": "Stable Diffusion v2.1",
     "file": "sd_v2.1_f16.ckpt",
     "prefix": "",
     "version": "v2",
-    "textEncoder": "open_clip_vit_h14_f16.ckpt"
+    "textEncoder": "open_clip_vit_h14_f16.ckpt",
+    "official": true
   },
   {
     "name": "Stable Diffusion v2.1 768-v",
@@ -3408,7 +3457,8 @@
     "version": "v2",
     "upcastAttention": true,
     "defaultScale": 12,
-    "textEncoder": "open_clip_vit_h14_f16.ckpt"
+    "textEncoder": "open_clip_vit_h14_f16.ckpt",
+    "official": true
   },
   {
     "file": "svd_i2v_1.0_f16.ckpt",
@@ -3466,7 +3516,8 @@
     "defaultScale": 8,
     "textEncoder": "open_clip_vit_h14_vision_model_f16.ckpt",
     "deprecated": true,
-    "clipEncoder": "svd_i2v_xt_1.0_q6p_q8p.ckpt"
+    "clipEncoder": "svd_i2v_xt_1.0_q6p_q8p.ckpt",
+    "official": true
   },
   {
     "name": "Stable Video Diffusion I2V XT v1.0",
@@ -3476,7 +3527,8 @@
     "defaultScale": 8,
     "textEncoder": "open_clip_vit_h14_vision_model_f16.ckpt",
     "deprecated": true,
-    "clipEncoder": "svd_i2v_xt_1.0_f16.ckpt"
+    "clipEncoder": "svd_i2v_xt_1.0_f16.ckpt",
+    "official": true
   },
   {
     "file": "svd_i2v_xt_1.1_f16.ckpt",
@@ -3918,7 +3970,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 I2V 14B 480P](https://huggingface.co/Wan-AI/Wan2.1-I2V-14B-480P) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 832×480. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 I2V 14B 480p (6-bit, SVDQuant)",
@@ -3941,7 +3994,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 I2V 14B 480P](https://huggingface.co/Wan-AI/Wan2.1-I2V-14B-480P) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 832×480. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 I2V 14B 720p",
@@ -3963,7 +4017,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 I2V 14B 720P](https://huggingface.co/Wan-AI/Wan2.1-I2V-14B-720P) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 I2V 14B 720p (6-bit, SVDQuant)",
@@ -3986,7 +4041,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 I2V 14B 720P](https://huggingface.co/Wan-AI/Wan2.1-I2V-14B-720P) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 T2V 1.3B",
@@ -4006,7 +4062,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 T2V 1.3B](https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 832×480. The model supports up to 81 frames, with a recommended shift value of 6.0. For best results, set Text Guidance above 5.0. Wan2.1 is trained with a Flow Matching objective, and trailing samplers will produce the best outputs.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 T2V 1.3B (8-bit)",
@@ -4026,7 +4083,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 T2V 1.3B](https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 832×480. The model supports up to 81 frames, with a recommended shift value of 6.0. For best results, set Text Guidance above 5.0. Wan2.1 is trained with a Flow Matching objective, and trailing samplers will produce the best outputs.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 T2V 14B",
@@ -4046,7 +4104,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 T2V 14B](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The recommended resolutions are 832×480. The model supports up to 81 frames, with a recommended shift value of 5.0. For best results, set Text Guidance above 5.0. Wan2.1 is trained with a Flow Matching objective, and trailing samplers will produce the best outputs.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 T2V 14B (5-bit, SVDQuant)",
@@ -4068,7 +4127,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 T2V 14B](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.1 T2V 14B (6-bit, SVDQuant)",
@@ -4089,7 +4149,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.1 T2V 14B](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 High Noise Expert I2V A14B",
@@ -4110,7 +4171,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 I2V A14B](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 High Noise Expert I2V A14B (6-bit, SVDQuant)",
@@ -4132,7 +4194,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 I2V A14B](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 High Noise Expert T2V A14B",
@@ -4152,7 +4215,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 T2V A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 High Noise Expert T2V A14B (6-bit, SVDQuant)",
@@ -4173,7 +4237,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 T2V A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 Low Noise Expert I2V A14B",
@@ -4194,7 +4259,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 I2V A14B](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 Low Noise Expert I2V A14B (6-bit, SVDQuant)",
@@ -4216,7 +4282,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 I2V A14B](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B) is a state-of-the-art image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length from a given start frame. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 Low Noise Expert T2V A14B",
@@ -4236,7 +4303,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 T2V A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 Low Noise Expert T2V A14B (6-bit, SVDQuant)",
@@ -4257,7 +4325,8 @@
     ],
     "framesPerSecond": 16,
     "note": "[Wan2.2 T2V A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) is a state-of-the-art text-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 81 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 TI2V 5B",
@@ -4271,7 +4340,8 @@
     "teaCacheCoefficients": null,
     "framesPerSecond": 24,
     "note": "[Wan2.2 TI2V 5B](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B) is a state-of-the-art text-image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 121 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan 2.2 TI2V 5B (8-bit)",
@@ -4285,7 +4355,8 @@
     "teaCacheCoefficients": null,
     "framesPerSecond": 24,
     "note": "[Wan2.2 TI2V 5B](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B) is a state-of-the-art text-image-to-video model developed by Alibaba. It can generate video clips of up to 4 seconds in length. The recommended resolutions are 1280×720. The model supports up to 121 frames, with a recommended shift value of 5.0.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Wan v2.2 High Noise Expert T2V A14B Lightning 250928",
@@ -4350,7 +4421,8 @@
     "autoencoder": "flux_1_vae_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Z Image Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) is is a powerful and highly efficient image generation model with 6B parameters. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 8 sampling steps recommended.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Z Image Turbo 1.0 (6-bit)",
@@ -4362,7 +4434,8 @@
     "autoencoder": "flux_1_vae_f16.ckpt",
     "hiresFixScale": 24,
     "note": "[Z Image Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) is is a powerful and highly efficient image generation model with 6B parameters. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 8 sampling steps recommended.",
-    "copyright": "© 2025 Alibaba"
+    "copyright": "© 2025 Alibaba",
+    "official": true
   },
   {
     "name": "Z Image Turbo 1.0 (Exact)",

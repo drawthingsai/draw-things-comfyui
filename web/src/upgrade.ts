@@ -3,7 +3,7 @@ import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 
-const dataPath = "./drawthings-grpc/data.json"
+const dataPath = "./draw-things-comfyui/data.json";
 
 export async function checkVersion() {
     // instead of doing it like this, we're going to...
