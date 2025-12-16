@@ -112,9 +112,9 @@ notes.md
 
 # Playwright
 /test-results/
-/playwright-report/
 /blob-report/
 /playwright/.cache/
 .env
 /comfyui-dt-grpc-test-data-*/
 fpzip_test.py
+playwright-report/
