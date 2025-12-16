@@ -2,12 +2,12 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
     
-    entry: ["src/extension.ts", "src/models/index.ts"],
+    entry: ["web/src/extension.ts"],
     splitting: false,
     sourcemap: true,
     minify: true,
     clean: true,
-    outDir: "dist",
+    outDir: "web/dist",
     format: "esm",
     platform: "browser",
     outExtension({ format }) {
@@ -17,8 +17,8 @@ export default defineConfig({
     },
     external: [
         "../../scripts/app.js",
-        "./models/index.esm.js", // Keep dynamic import external
+        // "./models/index.esm.js", // Keep dynamic import external
     ],
     treeshake: true,
-    publicDir: "src/public",
+    publicDir: "web/src/public",
 });

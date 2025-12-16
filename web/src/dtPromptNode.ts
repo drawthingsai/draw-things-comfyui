@@ -112,7 +112,7 @@ const extension: ComfyExtension = {
             type: "boolean",
             name: "Change prompt node colors when connections change",
             defaultValue: true,
-            category: ["DrawThings", "Nodes", "Change prompt"],
+            category: ["Draw Things", "Nodes", "Change prompt"],
             onChange: (newVal: boolean, oldVal: boolean) => {
                 if (oldVal === false && newVal === true) {
                     app.graph.nodes

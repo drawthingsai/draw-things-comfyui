@@ -7,8 +7,8 @@ import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
 import { checkVersion } from "./upgrade.js";
 import { setCallback, updateProto } from "./util.js";
+
 export const nodePackVersion = "1.8.3";
-let previewMethod: string | undefined = undefined;
 
 export default {
     name: "core",
@@ -44,26 +44,8 @@ export default {
     },
 
     async setup(app) {
-        // query the api for the preview setting
-        await updatePreviewSetting();
-
-        // listen to the manager ui to update preview setting if necessary
-        const closeHandler = async () => {
-            await updatePreviewSetting();
-        };
-        setTimeout(
-            () =>
-                document
-                    .querySelector('button[title="ComfyUI Manager"]')
-                    ?.addEventListener("click", async () => {
-                        document
-                            .getElementById("cm-close-button")
-                            ?.addEventListener("click", closeHandler, {
-                                once: true,
-                            });
-                    }),
-            3000
-        );
+        const showPreview = app.extensionManager.setting.get("drawthings.node.show_preview")
+        await updatePreviewSetting(showPreview);
 
         // if the prompt is cancelled, send a signal to the server to cancel the grpc request
         setCallback(app.api, "interrupt", async (_e) => {
@@ -74,6 +56,19 @@ export default {
             }
         });
     },
+
+    settings: [
+        {
+            id: "drawthings.node.show_preview",
+            type: "boolean",
+            name: "Show preview image while generating",
+            defaultValue: true,
+            category: ["Draw Things", "Nodes", "Preview"],
+            onChange: async (value) => {
+                await updatePreviewSetting(value);
+            },
+        },
+    ]
 } as ComfyExtension;
 
 export const samplerProto: Partial<DTSampler> = {
@@ -89,7 +84,7 @@ export const samplerProto: Partial<DTSampler> = {
                 inputPos.color_off =
                 inputNeg.color_on =
                 inputNeg.color_off =
-                    app.canvas.default_connection_color_byType["CONDITIONING"];
+                app.canvas.default_connection_color_byType["CONDITIONING"];
             app.canvas.default_connection_color_byType["DT_LORA"] =
                 app.canvas.default_connection_color_byType["MODEL"];
             app.canvas.default_connection_color_byType["DT_CNET"] =
@@ -200,6 +195,9 @@ export const samplerProto: Partial<DTSampler> = {
     },
 
     getExtraMenuOptions(this: LGraphNode, _canvas, options) {
+        const showPreview = app.extensionManager.setting.get(
+            "drawthings.node.show_preview"
+        );
         const keepNodeShrunk = app.extensionManager.setting.get(
             "drawthings.node.keep_shrunk"
         );
@@ -232,6 +230,18 @@ export const samplerProto: Partial<DTSampler> = {
                 navigator.clipboard.writeText(JSON.stringify(config));
             },
         });
+        options.push(null);
+        options.push({
+            content:
+                (showPreview ? "✓ " : "") +
+                "Show preview while generating",
+            callback: () => {
+                app.extensionManager.setting.set(
+                    "drawthings.node.show_preview",
+                    !showPreview
+                );
+            },
+        });
         options.push({
             content:
                 (keepNodeShrunk ? "✓ " : "") +
@@ -243,6 +253,7 @@ export const samplerProto: Partial<DTSampler> = {
                 );
             },
         });
+        options.push(null);
         options.push({
             content: (bridgeMode ? "✓ " : "") + "Use bridge mode",
             callback: () => {
@@ -280,19 +291,14 @@ export const samplerProto: Partial<DTSampler> = {
     },
 };
 
-async function updatePreviewSetting() {
+async function updatePreviewSetting(showPreview: boolean) {
     const api = window.comfyAPI.api.api;
 
-    const res = await api.fetchApi("/manager/preview_method");
-    previewMethod = await res.text();
-
     const body = new FormData();
-    body.append("preview", previewMethod);
+    body.append("preview", String(showPreview));
 
     await api.fetchApi(`/dt_grpc/preview`, {
         method: "POST",
         body,
     });
 }
-
-/** @import { LGraphCanvas, LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */

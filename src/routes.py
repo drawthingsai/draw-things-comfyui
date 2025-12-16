@@ -117,7 +117,7 @@ async def handle_preview_request(request):
     """
     try:
         post = await request.post()
-        settings.show_preview = False if post.get("preview") == "none" else True
+        settings.show_preview = True if post.get("preview") == "true" else False
         return web.json_response()
     except Exception as e:
         print(e)

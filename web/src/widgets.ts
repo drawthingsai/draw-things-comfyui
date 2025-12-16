@@ -256,7 +256,7 @@ const extension: ComfyExtension = {
             type: "boolean",
             name: "Keep node shrunk when widgets change",
             defaultValue: true,
-            category: ["DrawThings", "Nodes", "Keep node shrunk"],
+            category: ["Draw Things", "Nodes", "Keep node shrunk"],
             onChange: (newVal: any, oldVal: any) => {
                 if (oldVal === false && newVal === true) {
                     app.graph.nodes

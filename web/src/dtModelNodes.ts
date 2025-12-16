@@ -40,7 +40,7 @@ const extension: ComfyExtension = {
 			type: "boolean",
 			name: "Enable bridge mode",
 			defaultValue: true,
-			category: ["DrawThings", "Bridge mode", "Bridge mode"],
+			category: ["Draw Things", "Bridge mode", "Bridge mode"],
 			sortOrder: 2,
 			tooltip:
 				"With bridge mode enabled, your local models will be hidden and the official models available to DT+ will be listed. Be sure to enable Bridge Mode in your Draw Things API settings (DT+ only)",
@@ -53,10 +53,10 @@ const extension: ComfyExtension = {
 			type: "boolean",
 			name: "Show community models",
 			defaultValue: true,
-			category: ["DrawThings", "Bridge mode", "Community"],
+			category: ["Draw Things", "Bridge mode", "Community"],
 			sortOrder: 1,
 			tooltip: "When bridge mode is enabled, also list community models",
-			onChange: (value) => {
+			onChange: (value) => { 
 				modelService.updateNodes();
 			},
 		},
@@ -65,7 +65,7 @@ const extension: ComfyExtension = {
 			type: "boolean",
 			name: "Show uncurated models",
 			defaultValue: false,
-			category: ["DrawThings", "Bridge mode", "Uncurated"],
+			category: ["Draw Things", "Bridge mode", "Uncurated"],
 			sortOrder: 0,
 			tooltip: "When bridge mode is enabled, also list uncurated models",
 			onChange: (value) => {

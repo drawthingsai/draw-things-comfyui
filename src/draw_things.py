@@ -228,6 +228,9 @@ async def dt_sampler(inputs: dict):
                     print("DrawThings-gRPC had an error decoding the preview image:", e)
 
             if generated_images:
+                progress.update_absolute(
+                    estimated_steps, total=estimated_steps, preview=None
+                )
                 response_images.extend(generated_images)
 
         if len(response_images) == 0:
