@@ -8,7 +8,7 @@ import { DtModelTypeHandler } from "./models.js";
 import { checkVersion } from "./upgrade.js";
 import { setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.8.3";
+export const nodePackVersion = "1.9.0";
 
 export default {
     name: "core",
