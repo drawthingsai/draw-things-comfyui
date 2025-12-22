@@ -8,7 +8,7 @@
             "ES2020"
         ], // For browser + modern JS APIs
         "strict": true,
-        "outDir": "./dist", // Or wherever your ComfyUI extension JS goes
+        "outDir": "./web/dist", // Or wherever your ComfyUI extension JS goes
         "removeComments": false,
         "sourceMap": true,
         "esModuleInterop": true,
@@ -18,7 +18,7 @@
         "resolveJsonModule": true
     },
     "include": [
-        "./src/**/*",
-        "./src/types.d.ts"
+        "./web/src/**/*",
+        "./web/src/types.d.ts"
     ]
 }

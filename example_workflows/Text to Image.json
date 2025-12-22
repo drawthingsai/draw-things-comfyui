@@ -338,7 +338,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "Make sure your Draw Things app has the following settings:\n- API Server: enabled\n- Protocol: gRPC\n- Transport Layer Security: Enabled\n- Enable Model Browser: Enabled\n\nOr if you are using the gRPCServerCLI, use the following command:\n\n`gRPCServerCLI-macOS [path to models] --model-browser`\n\nYou can paste a Draw Things config into the sampler node through the context menu \n\nLora/ControlNet/Upscaler/Refiner can be set with the corresponding node\n\nIssues or questions? Is a setting missing or not working as expected?\n- [Discord](https://discord.com/channels/1038516303666876436/1357377020299837464)\n- [Github Issues](https://github.com/Jokimbe/ComfyUI-DrawThings-gRPC/issues)\n- [Github Discussions](https://github.com/Jokimbe/ComfyUI-DrawThings-gRPC/discussions)"
+        "Make sure your Draw Things app has the following settings:\n- API Server: enabled\n- Protocol: gRPC\n- Transport Layer Security: Enabled\n- Enable Model Browser: Enabled\n\nOr if you are using the gRPCServerCLI, use the following command:\n\n`gRPCServerCLI-macOS [path to models] --model-browser`\n\nYou can paste a Draw Things config into the sampler node through the context menu \n\nLora/ControlNet/Upscaler/Refiner can be set with the corresponding node\n\nIssues or questions? Is a setting missing or not working as expected?\n- [Discord](https://discord.com/channels/1038516303666876436/1357377020299837464)\n- [Github Issues](https://github.com/drawthingsai/draw-things-comfyui/issues)"
       ],
       "color": "#432",
       "bgcolor": "#653"

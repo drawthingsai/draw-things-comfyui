@@ -65,7 +65,7 @@ async def handle_bridge_models_request(request):
 @routes.get("/dt_grpc/combined_models")
 async def handle_combined_models_request(request):
     """
-    Returns a the metadata for all official, community, and uncurated models
+    Returns the metadata for all official, community, and uncurated models
     """
     try:
         async with ClientSession() as session:
