@@ -5,7 +5,7 @@ export default defineConfig({
     entry: ["web/src/extension.ts"],
     splitting: false,
     sourcemap: true,
-    minify: true,
+    minify: false,
     clean: true,
     outDir: "web/dist",
     format: "esm",

@@ -209,7 +209,8 @@ async function getBridgeModels() {
 		const combinedModelsRaw: CombinedModelsResponse =
 			await combinedModelsResponse.json();
 		combinedModelsJson = {} as CombinedModelsResponse;
-		for (const [key, value] of Object.entries(combinedModelsRaw)) {
+    for (const [key, value] of Object.entries(combinedModelsRaw)) {
+      if (!Array.isArray(value)) continue
 			combinedModelsJson[key as keyof CombinedModelsResponse] = value.filter(
 				(m) => files.includes(m.file),
 			) as CombinedModelsResponse[typeof key];
@@ -413,6 +414,7 @@ const versionNames: Record<string, string> = {
 	hidream_i1: "HiD",
 	qwen_image: "Qwen",
 	z_image: "Z Image",
+    flux2: "F2"
 };
 
 function getVersionAbbrev(version: string) {

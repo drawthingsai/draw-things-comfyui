@@ -49,8 +49,8 @@ const numFramesDefMap: Partial<Record<ModelVersion, number>> = { "wan_v2.1_1.3b"
 /** [ config.fbs name, comfy widget name, the node it belongs to, the property name in DT's json config] */
 // prettier-ignore
 export const propertyData: [fbs: string, comfy: string | null, nodeType: string | null, json?: string | null, type?: string, defaultValue?: any, ...rest: any[]][] = [
-    ['start_width', 'width', 'DrawThingsSampler', 'width', 'int', 512, 128, 2048, 64, 'roundTo64'],
-    ['start_height', 'height', 'DrawThingsSampler', 'height', 'int', 512, 128, 2048, 64, 'roundTo64'],
+    ['start_width', 'width', 'DrawThingsSampler', 'width', 'int', 512, 128, 8192, 64, 'roundTo64'],
+    ['start_height', 'height', 'DrawThingsSampler', 'height', 'int', 512, 128, 8192, 64, 'roundTo64'],
     ['seed', 'seed', 'DrawThingsSampler', 'seed', 'int', -1, -1, null, 1, 'modulo=4294967295'],
     ['steps', 'steps', 'DrawThingsSampler', 'steps', 'int', 16, 1, 150, 1],
     ['guidance_scale', 'cfg', 'DrawThingsSampler', 'guidanceScale', 'float', 5, 0, 50, 0.1],
