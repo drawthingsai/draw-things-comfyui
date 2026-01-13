@@ -282,7 +282,6 @@ def build_override(inputs):
             if "model" in lora and "official" not in lora["model"]:
                 loras.append(lora["model"])
     loras_json = json.dumps(loras) if loras is not None and len(loras) > 0 else None
-    print(loras_json)
     loras_buf = loras_json.encode("utf-8") if loras_json is not None else None
 
     override = imageService_pb2.MetadataOverride(

@@ -338,8 +338,8 @@ function calcShift(h, w) {
 }
 var numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14 };
 var propertyData = [
-  ["start_width", "width", "DrawThingsSampler", "width", "int", 512, 128, 2048, 64, "roundTo64"],
-  ["start_height", "height", "DrawThingsSampler", "height", "int", 512, 128, 2048, 64, "roundTo64"],
+  ["start_width", "width", "DrawThingsSampler", "width", "int", 512, 128, 8192, 64, "roundTo64"],
+  ["start_height", "height", "DrawThingsSampler", "height", "int", 512, 128, 8192, 64, "roundTo64"],
   ["seed", "seed", "DrawThingsSampler", "seed", "int", -1, -1, null, 1, "modulo=4294967295"],
   ["steps", "steps", "DrawThingsSampler", "steps", "int", 16, 1, 150, 1],
   ["guidance_scale", "cfg", "DrawThingsSampler", "guidanceScale", "float", 5, 0, 50, 0.1],

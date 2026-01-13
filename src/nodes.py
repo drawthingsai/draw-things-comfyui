@@ -149,7 +149,10 @@ class DrawThingsSampler:
         kwargs["model_info"] = model
 
         try:
-            return await dt_sampler(kwargs)
+            result = await dt_sampler(kwargs)
+            if result is None:
+                raise Exception("Failed to generate image")
+            return result
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 raise Exception(
@@ -159,19 +162,16 @@ class DrawThingsSampler:
         except Exception as e:
             if cancel_request.should_cancel:
                 DrawThingsSampler.last_gen_canceled = True
-                return []
             raise e
 
     @classmethod
-    def IS_CHANGED(cls, **kwargs):
-        return float("NaN")
-        if cls.last_gen_canceled:
-            return float("NaN")
-        items = json.dumps(kwargs, sort_keys=True)
-        return hash(items)
-
-    @classmethod
-    async def VALIDATE_INPUTS(cls):
+    async def VALIDATE_INPUTS(cls, width, height, tiled_diffusion):
+        if tiled_diffusion:
+            if width > 8192 or height > 8192:
+                return "Width and height must be less than or equal to 8192 for tiled diffusion."
+        else:
+            if width > 2048 or height > 2048:
+                return "Width and height must be less than or equal to 2048 unless tiled diffusion is enabled."
         return True
 
 
