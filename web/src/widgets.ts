@@ -114,10 +114,10 @@ export function showWidget(node: LGraphNode, widgetName: string, show = false, s
 
     // widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
     widget.computeSize = show ? origProps[widget.name].origComputeSize : () => [0, -4]
-    ;(widget as any).computedHeight = show ? origProps[widget.name].origComputedHeight : 0
-    ;(widget as any).hidden = !show
+        ; (widget as any).computedHeight = show ? origProps[widget.name].origComputedHeight : 0
+        ; (widget as any).hidden = !show
 
-    ;(widget as any).linkedWidgets?.forEach((w: any) => showWidget(node, w, show, ":" + widget.name))
+        ; (widget as any).linkedWidgets?.forEach((w: any) => showWidget(node, w, show, ":" + widget.name))
 
     const minHeight = node.computeSize()[1]
     if (minHeight > node.size[1]) node.setSize([node.size[0], minHeight])
@@ -156,8 +156,8 @@ function updateSamplerWidgets(node: any) {
         const isTcd = findWidgetByName(node, "sampler_name")?.value === "TCD"
         showWidget(node, "stochastic_sampling_gamma", isTcd)
 
-        // res_dpt_shift (flux, sd3, hidream, qwen_image)
-        const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image"].includes(version)
+        // res_dpt_shift (flux, sd3, hidream, qwen_image, flux2, z_image)
+        const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(version)
         showWidget(node, "res_dpt_shift", resDPTShiftAvailable)
         const shiftDisabled = resDPTShiftAvailable && findWidgetByName(node, "res_dpt_shift")?.value
         const shiftWidget = findWidgetByName(node, "shift")
@@ -167,8 +167,8 @@ function updateSamplerWidgets(node: any) {
         const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v"].includes(version)
         showWidget(node, "num_frames", isVideo)
 
-        // zero cfg (flux, hidream, wan, sd3, hunyuan, qwen_image)
-        const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image"].includes(
+        // zero cfg (flux, hidream, wan, sd3, hunyuan, qwen_image, flux2, z_image)
+        const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(
             version
         )
         const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value
