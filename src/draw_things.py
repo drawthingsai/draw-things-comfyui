@@ -89,7 +89,9 @@ async def dt_sampler(inputs: dict):
     config_fbs = bytes(builder.Output())
 
     # try:
+    #     print("inputs")
     #     print(json.dumps(inputs, indent=4))
+    #     print("config")
     #     print(json.dumps(config, indent=4))
     # except Exception as e:
     #     pass

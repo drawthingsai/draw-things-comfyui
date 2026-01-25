@@ -29,7 +29,16 @@ class ModelVersion:
 
     @property
     def res_dpt_shift(self):
-        return self.version in ["flux1", "sd3", "hidream_i1"]
+        return self.version in [
+            "flux1",
+            "sd3",
+            "hidream_i1",
+            "qwen_image",
+            "z_image",
+            "flux2",
+            "flux2_4b",
+            "flux2_9b",
+        ]
 
     @property
     def video(self):
@@ -52,7 +61,15 @@ class ModelVersion:
 
     @property
     def speed_up(self):
-        return self.version in ["flux1", "hidream_i1", "hunyuan_video"]
+        return self.version in [
+            "flux1",
+            "hidream_i1",
+            "hunyuan_video",
+            "qwen_image",
+            "flux2",
+            "flux2_4b",
+            "flux2_9b",
+        ]
 
     @property
     def clip_l(self):
@@ -263,6 +280,9 @@ def apply_common(config: Config, configT: GenerationConfigurationT):
 
 def apply_conditional(config: Config, configT: GenerationConfigurationT):
     model = ModelVersion(config.get("version"))
+    if config.get("cfg_zero_star"):
+        configT.cfgZeroStar = True
+        configT.cfgZeroInitSteps = config.get("cfg_zero_star_init_steps")
 
     if config.get("sampler_name") == "TCD":
         if "stochastic_sampling_gamma" in config:
@@ -297,6 +317,8 @@ def apply_conditional(config: Config, configT: GenerationConfigurationT):
 
     if model.res_dpt_shift and config.get("res_dpt_shift"):
         configT.resolutionDependentShift = True
+    else:
+        configT.resolutionDependentShift = False
 
     # separate_clip_l
     # clip_l_text
