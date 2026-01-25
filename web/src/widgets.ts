@@ -295,7 +295,7 @@ const samplerWidgetsProto = {
         this.updateDynamicWidgets()
 
         if (name === "res_dpt_shift") {
-            const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1"].includes(this.getModelVersion())
+            const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(this.getModelVersion())
             const resDptShiftEnabled = resDPTShiftAvailable && findWidgetByName(this, "res_dpt_shift")?.value
 
             if (resDptShiftEnabled) {
