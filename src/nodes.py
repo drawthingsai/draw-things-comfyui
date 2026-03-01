@@ -164,15 +164,19 @@ class DrawThingsSampler:
                 DrawThingsSampler.last_gen_canceled = True
             raise e
 
-    @classmethod
-    async def VALIDATE_INPUTS(cls, width, height, tiled_diffusion):
-        if tiled_diffusion:
-            if width > 8192 or height > 8192:
-                return "Width and height must be less than or equal to 8192 for tiled diffusion."
-        else:
-            if width > 2048 or height > 2048:
-                return "Width and height must be less than or equal to 2048 unless tiled diffusion is enabled."
-        return True
+    # @classmethod
+    # async def VALIDATE_INPUTS(cls, width, height, tiled_diffusion):
+    #     if tiled_diffusion:
+    #         if (width is not None and width > 8192) or (
+    #             height is not None and height > 8192
+    #         ):
+    #             return "Width and height must be less than or equal to 8192 for tiled diffusion."
+    #     else:
+    #         if (width is not None and width > 2048) or (
+    #             height is not None and height > 2048
+    #         ):
+    #             return "Width and height must be less than or equal to 2048 unless tiled diffusion is enabled."
+    #     return True
 
 
 class DrawThingsRefiner:

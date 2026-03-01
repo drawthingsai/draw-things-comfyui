@@ -84,6 +84,17 @@ async def dt_sampler(inputs: dict):
     width = config.startWidth * 64
     height = config.startHeight * 64
 
+    if config.tiledDiffusion:
+        if width > 8192 or height > 8192:
+            raise Exception(
+                "Width and height must be less than or equal to 8192 for tiled diffusion."
+            )
+    else:
+        if width > 2048 or height > 2048:
+            raise Exception(
+                "Width and height must be less than or equal to 2048 unless tiled diffusion is enabled."
+            )
+
     builder = flatbuffers.Builder(0)
     builder.Finish(config.Pack(builder))
     config_fbs = bytes(builder.Output())
