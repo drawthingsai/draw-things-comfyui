@@ -2196,35 +2196,39 @@ app$1.registerExtension({
         console.error(`Error in ${module.name} beforeConfigureGraph:`, e);
       }
     }
-    injectCss("extensions/drawthings-grpc/drawThings.css");
+    injectStyle();
   },
   settings: modules.flatMap((m) => m.settings ?? []),
   aboutPageBadges: [
     {
       label: `DrawThings-gRPC v${nodePackVersion}`,
-      url: "https://github.com/Jokimbe/ComfyUI-DrawThings-gRPC",
+      url: "https://github.com/drawthingsai/draw-things-comfyui",
       icon: "dt-grpc-about-badge-logo"
     }
   ]
 });
-function injectCss(href) {
-  if (document.querySelector(`link[href^="${href}"]`)) {
-    return Promise.resolve();
+var rule = `.dt-grpc-about-badge-logo {
+    width: 20px;
+    height: 20px;
+    background-size: 100% 100%;
+    background-color: currentcolor;
+    -webkit-mask-image: url(/dt_grpc/logo.svg);
+    mask-image: url(/dt_grpc/logo.svg);
+}`;
+var ruleId = "dt-grpc-css-injected";
+function injectStyle() {
+  const existing = document.getElementById(ruleId);
+  if (existing) {
+    return;
   }
-  return new Promise((resolve) => {
-    const link = document.createElement("link");
-    link.setAttribute("rel", "stylesheet");
-    link.setAttribute("type", "text/css");
-    const timeout = setTimeout(resolve, 1e3);
-    link.addEventListener("load", (e) => {
-      clearInterval(timeout);
-      resolve();
-    });
-    link.href = href;
-    document.head.appendChild(link);
+  const style = document.createElement("style");
+  style.id = ruleId;
+  style.addEventListener("load", (e) => {
+    style.sheet.insertRule(rule, style.sheet.cssRules.length);
   });
+  document.head.appendChild(style);
 }
 
-export { injectCss };
+export { injectStyle };
 //# sourceMappingURL=extension.esm.js.map
 //# sourceMappingURL=extension.esm.js.map
