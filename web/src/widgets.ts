@@ -153,7 +153,7 @@ function updateSamplerWidgets(node: any) {
      */
 
     if (isBasic) {
-        const isTcd = findWidgetByName(node, "sampler_name")?.value === "TCD"
+        const isTcd = findWidgetByName(node, "sampler_name")?.value?.toString().startsWith("TCD")
         showWidget(node, "stochastic_sampling_gamma", isTcd)
 
         // res_dpt_shift (flux, sd3, hidream, qwen_image, flux2, z_image)
