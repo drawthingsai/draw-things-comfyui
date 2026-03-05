@@ -20,7 +20,8 @@ async function updateConfig() {
     await fse.ensureDir("resources")
     await fse.writeFile("resources/config.fbs", fbs)
 
-    cp.exec('flatc --python --gen-object-api --gen-onefile --python-typing --grpc -o ./src/generated ./resources/config.fbs', { stdio: "inherit" })
+    console.log("running flatc")
+    cp.execSync('flatc --python --gen-object-api --gen-onefile --python-typing --grpc -o ./src/generated ./resources/config.fbs', { stdio: "inherit" })
 }
 
 async function updateClient() {
@@ -55,7 +56,7 @@ async function updateAll() {
     await updateConfig()
     await updateClient()
     await fixImports()
-    await updateModels()
+    // await updateModels()
 }
 
 async function fixImports() {

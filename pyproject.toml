@@ -1,6 +1,6 @@
 [project]
 name = "draw-things-comfyui"
-version = "1.9.4"
+version = "1.9.5"
 description = "The official Draw Things extension for ComfyUI. Sends image-generation requests to Draw Things over gRPC. Supports Bridge Mode for DT+ cloud and local model execution."
 authors = [{ name = "kcjerrell" }, { name = "Jokimbe" }]
 readme = "README.md"
@@ -14,17 +14,18 @@ dependencies = [
     "grpcio>=1.71.0",
     "flatbuffers>=25.2.10",
     "protobuf>=5.29.0",
-    "typing_extensions=>4.12.2",
+    "typing_extensions>=4.12.2",
     "fpzip",
 ]
 
 [project.optional-dependencies]
 dev = [
     "bump-my-version",
-    "coverage",        # testing
-    "mypy",            # linting
-    "pytest",          # testing
-    "ruff",            # linting,
+    "coverage",             # testing
+    "mypy",                 # linting
+    "pytest",               # testing
+    "ruff",                 # linting
+    "grpcio-tools==1.71.0",
 ]
 
 [project.urls]

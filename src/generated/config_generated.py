@@ -28,6 +28,7 @@ class SamplerType(object):
     DDIMTrailing = 16
     UniPCTrailing = 17
     UniPCAYS = 18
+    TCDTrailing = 19
 
 
 class SeedMode(object):
@@ -69,6 +70,13 @@ class LoRAMode(object):
     All = 0
     Base = 1
     Refiner = 2
+
+
+class CompressionMethod(object):
+    Disabled = 0
+    H264 = 1
+    H265 = 2
+    Jpeg = 3
 
 
 class Control(object):
@@ -1041,8 +1049,22 @@ class GenerationConfiguration(object):
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
         return 0
 
+    # GenerationConfiguration
+    def CompressionArtifacts(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(172))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int8Flags, o + self._tab.Pos)
+        return 0
+
+    # GenerationConfiguration
+    def CompressionArtifactsQuality(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(174))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 43.1
+
 def GenerationConfigurationStart(builder: flatbuffers.Builder):
-    builder.StartObject(84)
+    builder.StartObject(86)
 
 def GenerationConfigurationAddId(builder: flatbuffers.Builder, id: int):
     builder.PrependInt64Slot(0, id, 0)
@@ -1296,6 +1318,12 @@ def GenerationConfigurationAddCfgZeroStar(builder: flatbuffers.Builder, cfgZeroS
 def GenerationConfigurationAddCfgZeroInitSteps(builder: flatbuffers.Builder, cfgZeroInitSteps: int):
     builder.PrependInt32Slot(83, cfgZeroInitSteps, 0)
 
+def GenerationConfigurationAddCompressionArtifacts(builder: flatbuffers.Builder, compressionArtifacts: int):
+    builder.PrependInt8Slot(84, compressionArtifacts, 0)
+
+def GenerationConfigurationAddCompressionArtifactsQuality(builder: flatbuffers.Builder, compressionArtifactsQuality: float):
+    builder.PrependFloat32Slot(85, compressionArtifactsQuality, 43.1)
+
 def GenerationConfigurationEnd(builder: flatbuffers.Builder) -> int:
     return builder.EndObject()
 
@@ -1392,6 +1420,8 @@ class GenerationConfigurationT(object):
         causalInferencePad = 0,
         cfgZeroStar = False,
         cfgZeroInitSteps = 0,
+        compressionArtifacts = 0,
+        compressionArtifactsQuality = 43.1,
     ):
         self.id = id  # type: int
         self.startWidth = startWidth  # type: int
@@ -1475,6 +1505,8 @@ class GenerationConfigurationT(object):
         self.causalInferencePad = causalInferencePad  # type: int
         self.cfgZeroStar = cfgZeroStar  # type: bool
         self.cfgZeroInitSteps = cfgZeroInitSteps  # type: int
+        self.compressionArtifacts = compressionArtifacts  # type: int
+        self.compressionArtifactsQuality = compressionArtifactsQuality  # type: float
 
     @classmethod
     def InitFromBuf(cls, buf, pos):
@@ -1593,6 +1625,8 @@ class GenerationConfigurationT(object):
         self.causalInferencePad = generationConfiguration.CausalInferencePad()
         self.cfgZeroStar = generationConfiguration.CfgZeroStar()
         self.cfgZeroInitSteps = generationConfiguration.CfgZeroInitSteps()
+        self.compressionArtifacts = generationConfiguration.CompressionArtifacts()
+        self.compressionArtifactsQuality = generationConfiguration.CompressionArtifactsQuality()
 
     # GenerationConfigurationT
     def Pack(self, builder):
@@ -1721,6 +1755,8 @@ class GenerationConfigurationT(object):
         GenerationConfigurationAddCausalInferencePad(builder, self.causalInferencePad)
         GenerationConfigurationAddCfgZeroStar(builder, self.cfgZeroStar)
         GenerationConfigurationAddCfgZeroInitSteps(builder, self.cfgZeroInitSteps)
+        GenerationConfigurationAddCompressionArtifacts(builder, self.compressionArtifacts)
+        GenerationConfigurationAddCompressionArtifactsQuality(builder, self.compressionArtifactsQuality)
         generationConfiguration = GenerationConfigurationEnd(builder)
         return generationConfiguration
 

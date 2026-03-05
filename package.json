@@ -1,7 +1,7 @@
 {
     "name": "draw-things-comfyui",
     "private": true,
-    "version": "1.9.4",
+    "version": "1.9.5",
     "description": "The official Draw Things extension for ComfyUI. Sends image-generation requests to Draw Things over gRPC. Supports Bridge Mode for DT+ cloud and local model execution.",
     "type": "module",
     "devDependencies": {
@@ -21,7 +21,8 @@
         "typescript-eslint": "^8.50.0"
     },
     "scripts": {
-        "build": "tsup"
+        "build": "tsup",
+        "gencode": "uv run --extra dev node ./scripts/genCode.mjs"
     },
     "keywords": [],
     "author": "Kelly Jerrell",

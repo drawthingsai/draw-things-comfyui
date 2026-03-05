@@ -21,6 +21,7 @@ export const samplers = [
     "DDIM Trailing",
     "UniPC Trailing",
     "UniPC AYS",
+    "TCD Trailing",
 ]
 
 export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"]

@@ -55,7 +55,7 @@ app.registerExtension({
             }
         }
 
-        injectCss("extensions/drawthings-grpc/drawThings.css")
+        injectStyle()
     },
 
     settings: modules.flatMap(m => m.settings ?? []),
@@ -63,31 +63,33 @@ app.registerExtension({
     aboutPageBadges: [
         {
             label: `DrawThings-gRPC v${nodePackVersion}`,
-            url: 'https://github.com/Jokimbe/ComfyUI-DrawThings-gRPC',
-            icon: 'dt-grpc-about-badge-logo'
+            url: "https://github.com/drawthingsai/draw-things-comfyui",
+            icon: "dt-grpc-about-badge-logo"
         }
     ],
 })
 
-/**
- * Injects CSS into the page with a promise when complete.
- * This was copied from rgthree
- *
- */
-export function injectCss(href: string) {
-    if (document.querySelector(`link[href^="${href}"]`)) {
-        return Promise.resolve()
+const rule = `.dt-grpc-about-badge-logo {
+    width: 20px;
+    height: 20px;
+    background-size: 100% 100%;
+    background-color: currentcolor;
+    -webkit-mask-image: url(/dt_grpc/logo.svg);
+    mask-image: url(/dt_grpc/logo.svg);
+}`
+const ruleId = "dt-grpc-css-injected"
+
+// this is a hack to get a custom logo on the about page
+// idea stolen from rgthree
+export function injectStyle() {
+    const existing = document.getElementById(ruleId)
+    if (existing) {
+        return
     }
-    return new Promise<void>((resolve) => {
-        const link = document.createElement("link")
-        link.setAttribute("rel", "stylesheet")
-        link.setAttribute("type", "text/css")
-        const timeout = setTimeout(resolve, 1000)
-        link.addEventListener("load", (e) => {
-            clearInterval(timeout)
-            resolve()
-        })
-        link.href = href
-        document.head.appendChild(link)
+    const style = document.createElement("style");
+    style.id = ruleId
+    style.addEventListener("load", (e) => {
+        style.sheet.insertRule(rule, style.sheet.cssRules.length);
     })
+    document.head.appendChild(style);
 }
