@@ -206,7 +206,7 @@ class RemoteDownloadResponse(_message.Message):
     def __init__(self, bytesReceived: _Optional[int] = ..., bytesExpected: _Optional[int] = ..., item: _Optional[int] = ..., itemsExpected: _Optional[int] = ..., tag: _Optional[str] = ...) -> None: ...
 
 class ImageGenerationResponse(_message.Message):
-    __slots__ = ("generatedImages", "currentSignpost", "signposts", "previewImage", "scaleFactor", "tags", "downloadSize", "chunkState", "remoteDownload")
+    __slots__ = ("generatedImages", "currentSignpost", "signposts", "previewImage", "scaleFactor", "tags", "downloadSize", "chunkState", "remoteDownload", "generatedAudio")
     GENERATEDIMAGES_FIELD_NUMBER: _ClassVar[int]
     CURRENTSIGNPOST_FIELD_NUMBER: _ClassVar[int]
     SIGNPOSTS_FIELD_NUMBER: _ClassVar[int]
@@ -216,6 +216,7 @@ class ImageGenerationResponse(_message.Message):
     DOWNLOADSIZE_FIELD_NUMBER: _ClassVar[int]
     CHUNKSTATE_FIELD_NUMBER: _ClassVar[int]
     REMOTEDOWNLOAD_FIELD_NUMBER: _ClassVar[int]
+    GENERATEDAUDIO_FIELD_NUMBER: _ClassVar[int]
     generatedImages: _containers.RepeatedScalarFieldContainer[bytes]
     currentSignpost: ImageGenerationSignpostProto
     signposts: _containers.RepeatedCompositeFieldContainer[ImageGenerationSignpostProto]
@@ -225,7 +226,8 @@ class ImageGenerationResponse(_message.Message):
     downloadSize: int
     chunkState: ChunkState
     remoteDownload: RemoteDownloadResponse
-    def __init__(self, generatedImages: _Optional[_Iterable[bytes]] = ..., currentSignpost: _Optional[_Union[ImageGenerationSignpostProto, _Mapping]] = ..., signposts: _Optional[_Iterable[_Union[ImageGenerationSignpostProto, _Mapping]]] = ..., previewImage: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., tags: _Optional[_Iterable[str]] = ..., downloadSize: _Optional[int] = ..., chunkState: _Optional[_Union[ChunkState, str]] = ..., remoteDownload: _Optional[_Union[RemoteDownloadResponse, _Mapping]] = ...) -> None: ...
+    generatedAudio: _containers.RepeatedScalarFieldContainer[bytes]
+    def __init__(self, generatedImages: _Optional[_Iterable[bytes]] = ..., currentSignpost: _Optional[_Union[ImageGenerationSignpostProto, _Mapping]] = ..., signposts: _Optional[_Iterable[_Union[ImageGenerationSignpostProto, _Mapping]]] = ..., previewImage: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., tags: _Optional[_Iterable[str]] = ..., downloadSize: _Optional[int] = ..., chunkState: _Optional[_Union[ChunkState, str]] = ..., remoteDownload: _Optional[_Union[RemoteDownloadResponse, _Mapping]] = ..., generatedAudio: _Optional[_Iterable[bytes]] = ...) -> None: ...
 
 class FileChunk(_message.Message):
     __slots__ = ("content", "filename", "offset")

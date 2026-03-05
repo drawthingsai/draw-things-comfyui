@@ -207,6 +207,7 @@ class DrawThingsLists:
         "DDIM Trailing",
         "UniPC Trailing",
         "UniPC AYS",
+        "TCD Trailing",
     ]
 
     seed_mode = [

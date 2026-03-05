@@ -325,7 +325,8 @@ var samplers = [
   "DPM++ 2M Trailing",
   "DDIM Trailing",
   "UniPC Trailing",
-  "UniPC AYS"
+  "UniPC AYS",
+  "TCD Trailing"
 ];
 var seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
 function calcShift(h, w) {
@@ -1433,7 +1434,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.9.4";
+var nodePackVersion = "1.9.5";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {
