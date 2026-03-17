@@ -118,3 +118,5 @@ notes.md
 /comfyui-dt-grpc-test-data-*/
 fpzip_test.py
 playwright-report/
+
+uv.lock

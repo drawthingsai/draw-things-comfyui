@@ -149,7 +149,7 @@ function updateSamplerWidgets(node: any) {
      * "v1", "v2", "kandinsky2.1", "sdxl_base_v0.9", "sdxl_refiner_v0.9", "ssd_1b", "svd_i2v",
      * "wurstchen_v3.0_stage_c", "wurstchen_v3.0_stage_b", "sd3", "pixart", "auraflow", "flux1",
      * "sd3_large", "hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "hidream_i1"
-     * "qwen_image"
+     * "qwen_image", "ltx2", "ltx2.3", "ltx2_3"
      */
 
     if (isBasic) {
@@ -164,11 +164,11 @@ function updateSamplerWidgets(node: any) {
         if (shiftWidget) (shiftWidget as any).disabled = shiftDisabled
 
         // num_frames (wan, hunyuan, svd)
-        const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v"].includes(version)
+        const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v", "ltx2", "ltx2.3", "ltx2_3"].includes(version)
         showWidget(node, "num_frames", isVideo)
 
         // zero cfg (flux, hidream, wan, sd3, hunyuan, qwen_image, flux2, z_image)
-        const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(
+        const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "ltx2", "ltx2.3", "ltx2_3"].includes(
             version
         )
         const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value

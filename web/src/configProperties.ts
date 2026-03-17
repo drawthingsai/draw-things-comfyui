@@ -38,14 +38,14 @@ export function calcShift(h: number, w: number) {
 
 type _Models_A = "v1" | "v2" | "kandinsky2.1" | "sdxl_base_v0.9" | "sdxl_refiner_v0.9" | "ssd_1b" | "svd_i2v";
 type _Models_B = "wurstchen_v3.0_stage_c" | "wurstchen_v3.0_stage_b" | "sd3" | "pixart" | "auraflow" | "flux1";
-type _Models_C = "sd3_large" | "hunyuan_video" | "wan_v2.1_1.3b" | "wan_v2.1_14b" | "hidream_i1" | "qwen_image";
+type _Models_C = "sd3_large" | "hunyuan_video" | "wan_v2.1_1.3b" | "wan_v2.1_14b" | "hidream_i1" | "qwen_image" | "ltx2" | "ltx2.3" | "ltx2_3";
 
 export type ModelVersion = _Models_A | _Models_B | _Models_C | "Other";
 
 export type ModelMap = Record<ModelVersion, any>;
 
-const numFramesMaxMap: Partial<Record<ModelVersion, number>> = { "wan_v2.1_1.3b": 129, "wan_v2.1_14b": 129, hunyuan_video: 201, svd_i2v: 25 }
-const numFramesDefMap: Partial<Record<ModelVersion, number>> = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14 }
+const numFramesMaxMap: Partial<Record<ModelVersion, number>> = { "wan_v2.1_1.3b": 129, "wan_v2.1_14b": 129, hunyuan_video: 201, svd_i2v: 25, ltx2: 249, "ltx2.3": 249, "ltx2_3": 249 }
+const numFramesDefMap: Partial<Record<ModelVersion, number>> = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14, ltx2: 121, "ltx2.3": 121, "ltx2_3": 121 }
 
 /** [ config.fbs name, comfy widget name, the node it belongs to, the property name in DT's json config] */
 // prettier-ignore

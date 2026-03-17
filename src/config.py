@@ -47,6 +47,9 @@ class ModelVersion:
             "wan_v2.1_1.3b",
             "wan_v2.1_14b",
             "svd_i2v",
+            "ltx2",
+            "ltx2_3",
+            "ltx2.3",
         ]
 
     @property

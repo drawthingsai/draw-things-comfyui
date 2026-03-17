@@ -9,6 +9,9 @@ var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot
 var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), member.set(obj, value), value);
 var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "access private method"), method);
 
+// web/src/modelsTypes.ts
+var combinedModelsResponseKeys = ["officialModels", "officialCnets", "officialLoras", "communityModels", "communityCnets", "communityLoras", "communityEmbeddings", "uncuratedModels"];
+
 // web/src/models.ts
 var app2 = window.comfyAPI.app.app;
 var _updateNodesPromise, _ModelService_instances, updateNodes_fn;
@@ -140,7 +143,8 @@ async function getBridgeModels() {
     );
     const combinedModelsRaw = await combinedModelsResponse.json();
     combinedModelsJson = {};
-    for (const [key, value] of Object.entries(combinedModelsRaw)) {
+    for (const key of combinedModelsResponseKeys) {
+      const value = combinedModelsRaw[key];
       if (!Array.isArray(value)) continue;
       combinedModelsJson[key] = value.filter(
         (m) => files.includes(m.file)
@@ -280,7 +284,10 @@ var versionNames = {
   hidream_i1: "HiD",
   qwen_image: "Qwen",
   z_image: "Z Image",
-  flux2: "F2"
+  flux2: "F2",
+  ltx2: "LTX2",
+  "ltx2.3": "LTX2.3",
+  "ltx2_3": "LTX2.3"
 };
 function getVersionAbbrev(version) {
   return versionNames[version] ?? version;
@@ -337,7 +344,7 @@ function calcShift(h, w) {
   const result = Math.exp(step4);
   return Math.round(result * 100) / 100;
 }
-var numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14 };
+var numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14, ltx2: 121, "ltx2.3": 121, "ltx2_3": 121 };
 var propertyData = [
   ["start_width", "width", "DrawThingsSampler", "width", "int", 512, 128, 8192, 64, "roundTo64"],
   ["start_height", "height", "DrawThingsSampler", "height", "int", 512, 128, 8192, 64, "roundTo64"],
@@ -1051,9 +1058,9 @@ function updateSamplerWidgets(node) {
     const shiftDisabled = resDPTShiftAvailable && findWidgetByName(node, "res_dpt_shift")?.value;
     const shiftWidget = findWidgetByName(node, "shift");
     if (shiftWidget) shiftWidget.disabled = shiftDisabled;
-    const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v"].includes(version);
+    const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v", "ltx2", "ltx2.3", "ltx2_3"].includes(version);
     showWidget(node, "num_frames", isVideo);
-    const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(
+    const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "ltx2", "ltx2.3", "ltx2_3"].includes(
       version
     );
     const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
@@ -1434,7 +1441,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.9.6";
+var nodePackVersion = "1.9.7";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {
