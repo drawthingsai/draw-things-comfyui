@@ -344,6 +344,7 @@ function calcShift(h, w) {
   const result = Math.exp(step4);
   return Math.round(result * 100) / 100;
 }
+var numFramesMaxMap = { "wan_v2.1_1.3b": 129, "wan_v2.1_14b": 129, hunyuan_video: 201, svd_i2v: 25, ltx2: 249, "ltx2.3": 249, "ltx2_3": 249 };
 var numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14, ltx2: 121, "ltx2.3": 121, "ltx2_3": 121 };
 var propertyData = [
   ["start_width", "width", "DrawThingsSampler", "width", "int", 512, 128, 8192, 64, "roundTo64"],
@@ -388,7 +389,7 @@ var propertyData = [
   ["motion_bucket_id", "motion_scale", "DrawThingsSampler", "motionScale", "int", 127, 0, 255, 1],
   ["cond_aug", "guiding_frame_noise", "DrawThingsSampler", "guidingFrameNoise", "float", 0.02, 0, 1, 0.01],
   ["start_frame_cfg", "start_frame_guidance", "DrawThingsSampler", "startFrameGuidance", "float", 1, 0, 15, 0.1],
-  ["num_frames", "num_frames", "DrawThingsSampler", "numFrames", "int", 25, 1, numFramesDefMap, 1],
+  ["num_frames", "num_frames", "DrawThingsSampler", "numFrames", "int", numFramesDefMap, 1, numFramesMaxMap, 1],
   ["mask_blur_outset", "mask_blur_outset", "DrawThingsSampler", "maskBlurOutset", "float", 0, -100, 100, 0.1],
   ["sharpness", "sharpness", "DrawThingsSampler", "sharpness", "float", 0, 0, 30, 0.1],
   ["shift", "shift", "DrawThingsSampler", "shift", "float", 1, 0, 16, 0.01],
@@ -1441,7 +1442,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.9.7";
+var nodePackVersion = "1.9.8";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {

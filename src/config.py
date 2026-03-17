@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from .generated.config_generated import ControlT, LoRAT, GenerationConfigurationT
@@ -51,6 +53,14 @@ class ModelVersion:
             "ltx2_3",
             "ltx2.3",
         ]
+
+    @property
+    def num_frames_step(self):
+        if self.version in ["svd_i2v"]:
+            return 1
+        if self.version in ["ltx2", "ltx2_3", "ltx2.3"]:
+            return 8
+        return 4
 
     @property
     def tea_cache(self):
@@ -360,7 +370,8 @@ def apply_conditional(config: Config, configT: GenerationConfigurationT):
             configT.teaCacheMaxSkipSteps = config["tea_cache_max_skip_steps"]
 
     if model.video and "num_frames" in config:
-        configT.numFrames = config["num_frames"]
+        step = model.num_frames_step
+        configT.numFrames = math.ceil((config["num_frames"] - 1) / step) * step + 1
 
     if model.svd:
         if "fps" in config:

@@ -97,7 +97,7 @@ export const propertyData: [fbs: string, comfy: string | null, nodeType: string 
     ['cond_aug', 'guiding_frame_noise', 'DrawThingsSampler', 'guidingFrameNoise', 'float', 0.02, 0, 1, 0.01],
     ['start_frame_cfg', 'start_frame_guidance', 'DrawThingsSampler', 'startFrameGuidance', 'float', 1, 0, 15, 0.1],
 
-    ['num_frames', 'num_frames', 'DrawThingsSampler', 'numFrames', 'int', 25, 1, numFramesDefMap, 1],
+    ['num_frames', 'num_frames', 'DrawThingsSampler', 'numFrames', 'int', numFramesDefMap, 1, numFramesMaxMap, 1],
 
     ['mask_blur_outset', 'mask_blur_outset', 'DrawThingsSampler', 'maskBlurOutset', 'float', 0, -100, 100, 0.1],
     ['sharpness', 'sharpness', 'DrawThingsSampler', 'sharpness', 'float', 0, 0, 30, 0.1],

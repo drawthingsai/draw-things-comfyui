@@ -37,7 +37,7 @@ class DrawThingsSampler:
                 "height": ("INT", { "default": 512, "min": 128, "max": 8192, "step": 64},),
                 # upscaler
                 "steps": ("INT", { "default": 20, "min": 1, "max": 150, "tooltip": "The number of steps used in the denoising process." },),
-                "num_frames": ("INT", { "default": 14, "min": 1, "max": 201, "step": 1}),
+                "num_frames": ("INT", { "default": 14, "min": 1, "max": 257, "step": 1, "tooltip": "The total number of frames to be generated. This value will be rounded up to the next valid value for the selected model."}), 
                 "cfg": ("FLOAT", { "default": 4.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality." },),
                 "cfg_zero_star": ("BOOLEAN", { "default": False }),
                 "cfg_zero_star_init_steps": ("INT", { "default": 0, "min": 0, "max": 50, "step": 1}),
