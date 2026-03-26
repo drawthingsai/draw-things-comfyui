@@ -1442,7 +1442,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.9.8";
+var nodePackVersion = "1.10.0";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {

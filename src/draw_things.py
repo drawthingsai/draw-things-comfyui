@@ -22,6 +22,7 @@ from .image_handlers import (
     convert_response_image,
     decode_preview,
 )
+from .audio_handler import convert_response_audio
 from .util import try_parse_int
 
 MAX_PREVIEW_RESOLUTION = try_parse_int(args.preview_size) or 512
@@ -202,6 +203,7 @@ async def dt_sampler(inputs: dict):
 
         cancel_request.reset()
         response_images = []
+        response_audio = None
         estimated_steps = (
             config.steps * (1 + config.hiresFixStrength)
             if config.hiresFix
@@ -245,6 +247,8 @@ async def dt_sampler(inputs: dict):
                     estimated_steps, total=estimated_steps, preview=None
                 )
                 response_images.extend(generated_images)
+            if response.generatedAudio:
+                response_audio = response.generatedAudio
 
         if len(response_images) == 0:
             raise Exception("The Draw Things gRPC server returned no images")
@@ -266,7 +270,11 @@ async def dt_sampler(inputs: dict):
         if len(images) == 0:
             raise Exception("There was an error converting the response image")
 
-        return (torch.stack(images),)
+        audio = None
+        if response_audio:
+            audio = convert_response_audio(response_audio, version)
+
+        return (torch.stack(images), audio)
 
 
 def build_override(inputs):

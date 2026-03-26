@@ -122,8 +122,8 @@ class DrawThingsSampler:
         }
         # fmt: on
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("IMAGE",)
+    RETURN_TYPES = ("IMAGE", "AUDIO")
+    RETURN_NAMES = ("IMAGE", "AUDIO")
     DESCRIPTION = ""
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
