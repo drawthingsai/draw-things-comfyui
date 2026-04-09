@@ -73,16 +73,19 @@ def convert_response_image(response_image: bytes):
 
 
 def decode_preview(preview, version):
+    if type(version) is not str:
+        return None
+
     int_buffer = np.frombuffer(preview, dtype=np.uint32, count=17)
     image_height, image_width, channels = int_buffer[6:9]
 
-    if channels not in [3, 4, 16]:
+    if channels not in [3, 4, 16, 32]:
         return None
 
     fp16 = get_image_data(preview)
 
     image = None
-    version = version.lower() if type(version) is str else version
+    version = version.lower()
 
     if version in ["v1", "v2", "svdi2v"]:
         bytes_array = np.zeros((image_height, image_width, channels), dtype=np.uint8)
@@ -640,6 +643,128 @@ def decode_preview(preview, version):
                 bytes_array[i * 4 + 2] = clamp(b)
                 bytes_array[i * 4 + 3] = 255
         image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
+
+    if version[:5] == "flux2":
+        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
+        for i in range(image_height * image_width):
+            v = fp16[i * 32 : i * 32 + 32]
+            r = (
+                0.0058 * v[0]
+                + 0.0495 * v[1]
+                - 0.0099 * v[2]
+                + 0.2144 * v[3]
+                + 0.0166 * v[4]
+                + 0.0157 * v[5]
+                - 0.0398 * v[6]
+                - 0.0052 * v[7]
+                - 0.3527 * v[8]
+                - 0.0301 * v[9]
+                - 0.0107 * v[10]
+                + 0.0746 * v[11]
+                + 0.0156 * v[12]
+                - 0.0034 * v[13]
+                + 0.0032 * v[14]
+                - 0.0939 * v[15]
+                + 0.0018 * v[16]
+                + 0.0284 * v[17]
+                - 0.0024 * v[18]
+                + 0.1207 * v[19]
+                + 0.0128 * v[20]
+                + 0.0137 * v[21]
+                + 0.0095 * v[22]
+                + 0.0000 * v[23]
+                - 0.0465 * v[24]
+                + 0.0095 * v[25]
+                + 0.0290 * v[26]
+                + 0.0220 * v[27]
+                - 0.0332 * v[28]
+                - 0.0085 * v[29]
+                - 0.0076 * v[30]
+                - 0.0111 * v[31]
+                - 0.0329
+            ) * 127.5 + 127.5
+
+            g = (
+                0.0113 * v[0]
+                + 0.0443 * v[1]
+                + 0.0096 * v[2]
+                + 0.3009 * v[3]
+                - 0.0039 * v[4]
+                + 0.0103 * v[5]
+                + 0.0902 * v[6]
+                + 0.0095 * v[7]
+                - 0.2712 * v[8]
+                - 0.0356 * v[9]
+                + 0.0078 * v[10]
+                + 0.0090 * v[11]
+                + 0.0169 * v[12]
+                - 0.0040 * v[13]
+                + 0.0181 * v[14]
+                - 0.0008 * v[15]
+                + 0.0043 * v[16]
+                + 0.0056 * v[17]
+                - 0.0022 * v[18]
+                - 0.0026 * v[19]
+                + 0.0101 * v[20]
+                - 0.0072 * v[21]
+                + 0.0092 * v[22]
+                - 0.0077 * v[23]
+                - 0.0204 * v[24]
+                + 0.0012 * v[25]
+                - 0.0034 * v[26]
+                + 0.0169 * v[27]
+                - 0.0457 * v[28]
+                + 0.0389 * v[29]
+                + 0.0003 * v[30]
+                - 0.0460 * v[31]
+                - 0.0718
+            ) * 127.5 + 127.5
+
+            b = (
+                0.0073 * v[0]
+                + 0.0836 * v[1]
+                + 0.0644 * v[2]
+                + 0.3652 * v[3]
+                - 0.0054 * v[4]
+                - 0.0160 * v[5]
+                - 0.0235 * v[6]
+                + 0.0109 * v[7]
+                - 0.1666 * v[8]
+                - 0.0180 * v[9]
+                + 0.0013 * v[10]
+                - 0.0941 * v[11]
+                + 0.0070 * v[12]
+                - 0.0114 * v[13]
+                + 0.0080 * v[14]
+                + 0.0186 * v[15]
+                + 0.0104 * v[16]
+                - 0.0127 * v[17]
+                - 0.0030 * v[18]
+                + 0.0065 * v[19]
+                + 0.0142 * v[20]
+                - 0.0007 * v[21]
+                - 0.0059 * v[22]
+                - 0.0049 * v[23]
+                - 0.0312 * v[24]
+                - 0.0066 * v[25]
+                + 0.0025 * v[26]
+                - 0.0048 * v[27]
+                - 0.0468 * v[28]
+                + 0.0609 * v[29]
+                - 0.0043 * v[30]
+                - 0.0614 * v[31]
+                - 0.0851
+            ) * 127.5 + 127.5
+
+            bytes_array[i * 4] = clamp(r)
+            bytes_array[i * 4 + 1] = clamp(g)
+            bytes_array[i * 4 + 2] = clamp(b)
+            bytes_array[i * 4 + 3] = 255
+
+        image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
+
+    if version.startswith("ltx2"):
+        pass
 
     return image
 
