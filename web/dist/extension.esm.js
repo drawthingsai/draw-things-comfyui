@@ -287,7 +287,9 @@ var versionNames = {
   flux2: "F2",
   ltx2: "LTX2",
   "ltx2.3": "LTX2.3",
-  "ltx2_3": "LTX2.3"
+  "ltx2_3": "LTX2.3",
+  "cosmos2.5_2b": "Cosmos2.5",
+  "ernie_image": "Ernie"
 };
 function getVersionAbbrev(version) {
   return versionNames[version] ?? version;
@@ -1054,14 +1056,14 @@ function updateSamplerWidgets(node) {
   if (isBasic) {
     const isTcd = findWidgetByName(node, "sampler_name")?.value?.toString().startsWith("TCD");
     showWidget(node, "stochastic_sampling_gamma", isTcd);
-    const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(version);
+    const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "cosmos2.5_2b"].includes(version);
     showWidget(node, "res_dpt_shift", resDPTShiftAvailable);
     const shiftDisabled = resDPTShiftAvailable && findWidgetByName(node, "res_dpt_shift")?.value;
     const shiftWidget = findWidgetByName(node, "shift");
     if (shiftWidget) shiftWidget.disabled = shiftDisabled;
     const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v", "ltx2", "ltx2.3", "ltx2_3"].includes(version);
     showWidget(node, "num_frames", isVideo);
-    const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "ltx2", "ltx2.3", "ltx2_3"].includes(
+    const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "ltx2", "ltx2.3", "ltx2_3", "cosmos2.5_2b", "ernie_image"].includes(
       version
     );
     const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
@@ -1442,7 +1444,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.10.1";
+var nodePackVersion = "1.10.2";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {

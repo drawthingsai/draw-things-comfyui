@@ -211,44 +211,51 @@ async def dt_sampler(inputs: dict):
         )
         current_step = 0
 
-        while True:
-            response = await generate_stream.read()
-            if response == grpc.aio.EOF:
-                break
+        try:
+            while True:
+                response = await generate_stream.read()
+                if response == grpc.aio.EOF:
+                    break
 
-            if cancel_request.should_cancel:
-                await channel.close()
-                raise Exception("canceled")
+                if cancel_request.should_cancel:
+                    await channel.close()
+                    raise Exception("canceled")
 
-            signpost = response.currentSignpost
-            if "sampling" in signpost:
-                current_step = signpost.sampling.step
-            elif "secondPassSampling" in signpost:
-                current_step = signpost.secondPassSampling.step + config.steps
+                signpost = response.currentSignpost
+                if "sampling" in signpost:
+                    current_step = signpost.sampling.step
+                elif "secondPassSampling" in signpost:
+                    current_step = signpost.secondPassSampling.step + config.steps
 
-            preview_image = response.previewImage
-            generated_images = response.generatedImages
+                preview_image = response.previewImage
+                generated_images = response.generatedImages
 
-            if current_step:
-                try:
-                    preview = None
-                    if preview_image and version and settings.show_preview:
-                        decoded_preview = decode_preview(preview_image, version)
-                        if decoded_preview is not None:
-                            preview = ("PNG", decoded_preview, MAX_PREVIEW_RESOLUTION)
+                if current_step:
+                    try:
+                        preview = None
+                        if preview_image and version and settings.show_preview:
+                            decoded_preview = decode_preview(preview_image, version)
+                            if decoded_preview is not None:
+                                preview = ("PNG", decoded_preview, MAX_PREVIEW_RESOLUTION)
+                        progress.update_absolute(
+                            current_step, total=estimated_steps, preview=preview
+                        )
+                    except Exception as e:
+                        print("DrawThings-gRPC had an error decoding the preview image:", e)
+
+                if generated_images:
                     progress.update_absolute(
-                        current_step, total=estimated_steps, preview=preview
+                        estimated_steps, total=estimated_steps, preview=None
                     )
-                except Exception as e:
-                    print("DrawThings-gRPC had an error decoding the preview image:", e)
-
-            if generated_images:
-                progress.update_absolute(
-                    estimated_steps, total=estimated_steps, preview=None
-                )
-                response_images.extend(generated_images)
-            if response.generatedAudio:
-                response_audio = response.generatedAudio
+                    response_images.extend(generated_images)
+                if response.generatedAudio:
+                    response_audio = response.generatedAudio
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.INTERNAL:
+                raise Exception(
+                    f"Draw Things gRPC server internal error: {e.details()}. This can sometimes be intermittent; please try again."
+                ) from e
+            raise e
 
         if len(response_images) == 0:
             raise Exception("The Draw Things gRPC server returned no images")

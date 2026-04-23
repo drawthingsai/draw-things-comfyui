@@ -418,7 +418,9 @@ const versionNames: Record<string, string> = {
     flux2: "F2",
     ltx2: "LTX2",
     "ltx2.3": "LTX2.3",
-    "ltx2_3": "LTX2.3"
+    "ltx2_3": "LTX2.3",
+    "cosmos2.5_2b": "Cosmos2.5",
+    "ernie_image": "Ernie"
 };
 
 function getVersionAbbrev(version: string) {

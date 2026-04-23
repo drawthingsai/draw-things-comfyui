@@ -39,8 +39,9 @@ export function calcShift(h: number, w: number) {
 type _Models_A = "v1" | "v2" | "kandinsky2.1" | "sdxl_base_v0.9" | "sdxl_refiner_v0.9" | "ssd_1b" | "svd_i2v";
 type _Models_B = "wurstchen_v3.0_stage_c" | "wurstchen_v3.0_stage_b" | "sd3" | "pixart" | "auraflow" | "flux1";
 type _Models_C = "sd3_large" | "hunyuan_video" | "wan_v2.1_1.3b" | "wan_v2.1_14b" | "hidream_i1" | "qwen_image" | "ltx2" | "ltx2.3" | "ltx2_3";
+type _Models_D = "cosmos2.5_2b" | "ernie_image";
 
-export type ModelVersion = _Models_A | _Models_B | _Models_C | "Other";
+export type ModelVersion = _Models_A | _Models_B | _Models_C | _Models_D | "Other";
 
 export type ModelMap = Record<ModelVersion, any>;
 

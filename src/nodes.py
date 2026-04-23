@@ -131,6 +131,8 @@ class DrawThingsSampler:
     async def sample(self, **kwargs):
         try:
             await get_files(kwargs["server"], kwargs["port"], kwargs["use_tls"])
+        except grpc.aio.AioRpcError as e:
+            raise Exception(f"Failed to communicate with Draw Things server: {e.details()}")
         except Exception:
             raise Exception(
                 "Couldn't connect to Draw Things gRPC server. Check your server and settings, and try again."
@@ -154,11 +156,15 @@ class DrawThingsSampler:
                 raise Exception("Failed to generate image")
             return result
         except grpc.aio.AioRpcError as e:
+            details = e.details()
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 raise Exception(
                     "Could not connect to Draw Things gRPC server. Please check the server address and port."
                 )
-            raise e
+            elif e.code() == grpc.StatusCode.INTERNAL:
+                raise Exception(f"Draw Things gRPC server internal error: {details}")
+            else:
+                raise Exception(f"Draw Things gRPC error ({e.code()}): {details}")
         except Exception as e:
             if cancel_request.should_cancel:
                 DrawThingsSampler.last_gen_canceled = True
