@@ -1444,7 +1444,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.10.2";
+var nodePackVersion = "1.11.0";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {
@@ -1469,8 +1469,7 @@ var ComfyUI_DrawThings_gRPC_default = {
     }
   },
   async setup(app6) {
-    const showPreview = app6.extensionManager.setting.get("drawthings.node.show_preview");
-    await updatePreviewSetting(showPreview);
+    await syncSettings();
     setCallback(app6.api, "interrupt", async (_e) => {
       if (app6.rootGraph?.nodes.some((n) => n.type === "DrawThingsSampler")) {
         await app6.api.fetchApi(`/dt_grpc/interrupt`, {
@@ -1487,7 +1486,18 @@ var ComfyUI_DrawThings_gRPC_default = {
       defaultValue: true,
       category: ["Draw Things", "Nodes", "Preview"],
       onChange: async (value) => {
-        await updatePreviewSetting(value);
+        await syncSettings({ show_preview: value });
+      }
+    },
+    {
+      id: "drawthings.node.blank_on_error",
+      type: "boolean",
+      name: "Return a blank image if the request fails",
+      defaultValue: false,
+      category: ["Draw Things", "Nodes", "Z Error handling"],
+      tooltip: "This is a workaround to allow batch execution to continue even if a request fails.\nNot recommended for most uses cases, since errors will be silently ignored an caching will be disabled.",
+      onChange: async (value) => {
+        await syncSettings({ blank_on_error: value });
       }
     }
   ]
@@ -1665,11 +1675,14 @@ var samplerProto = {
     return options;
   }
 };
-async function updatePreviewSetting(showPreview) {
+async function syncSettings(patch) {
   const api = window.comfyAPI.api.api;
+  const showPreview = patch?.show_preview ?? app.extensionManager.setting.get("drawthings.node.show_preview");
+  const blankOnError = patch?.blank_on_error ?? app.extensionManager.setting.get("drawthings.node.blank_on_error");
   const body = new FormData();
-  body.append("preview", String(showPreview));
-  await api.fetchApi(`/dt_grpc/preview`, {
+  body.append("show_preview", String(showPreview));
+  body.append("blank_on_error", String(blankOnError));
+  await api.fetchApi(`/dt_grpc/sync_settings`, {
     method: "POST",
     body
   });

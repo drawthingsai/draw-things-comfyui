@@ -8,7 +8,7 @@ import { DtModelTypeHandler } from "./models.js";
 import { checkVersion } from "./upgrade.js";
 import { setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.10.2";
+export const nodePackVersion = "1.11.0";
 
 export default {
     name: "core",
@@ -44,8 +44,7 @@ export default {
     },
 
     async setup(app) {
-        const showPreview = app.extensionManager.setting.get("drawthings.node.show_preview")
-        await updatePreviewSetting(showPreview);
+        await syncSettings();
 
         // if the prompt is cancelled, send a signal to the server to cancel the grpc request
         setCallback(app.api, "interrupt", async (_e) => {
@@ -65,9 +64,21 @@ export default {
             defaultValue: true,
             category: ["Draw Things", "Nodes", "Preview"],
             onChange: async (value) => {
-                await updatePreviewSetting(value);
+                await syncSettings({ show_preview: value as boolean });
             },
         },
+        {
+            id: "drawthings.node.blank_on_error",
+            type: "boolean",
+            name: "Return a blank image if the request fails",
+            defaultValue: false,
+            category: ["Draw Things", "Nodes", "Z Error handling"],
+            tooltip: "This is a workaround to allow batch execution to continue even if a request fails." +
+                "\nNot recommended for most uses cases, since errors will be silently ignored an caching will be disabled.",
+            onChange: async (value) => {
+                await syncSettings({ blank_on_error: value as boolean });
+            }
+        }
     ]
 } as ComfyExtension;
 
@@ -291,13 +302,17 @@ export const samplerProto: Partial<DTSampler> = {
     },
 };
 
-async function updatePreviewSetting(showPreview: boolean) {
+async function syncSettings(patch?: { show_preview?: boolean; blank_on_error?: boolean }) {
     const api = window.comfyAPI.api.api;
 
-    const body = new FormData();
-    body.append("preview", String(showPreview));
+    const showPreview = patch?.show_preview ?? app.extensionManager.setting.get("drawthings.node.show_preview");
+    const blankOnError = patch?.blank_on_error ?? app.extensionManager.setting.get("drawthings.node.blank_on_error");
 
-    await api.fetchApi(`/dt_grpc/preview`, {
+    const body = new FormData();
+    body.append("show_preview", String(showPreview));
+    body.append("blank_on_error", String(blankOnError));
+
+    await api.fetchApi(`/dt_grpc/sync_settings`, {
         method: "POST",
         body,
     });

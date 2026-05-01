@@ -1,5 +1,6 @@
 #!../../.venv python3
 
+import asyncio
 import json
 import os
 import sys
@@ -7,7 +8,7 @@ import sys
 import grpc
 from torchvision.transforms import v2
 
-from .. import cancel_request
+from .. import cancel_request, settings
 from .data_types import *
 from .draw_things import dt_sampler, get_files
 
@@ -15,10 +16,39 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "co
 
 
 class DrawThingsSampler:
-    last_gen_canceled = False
-
     def __init__(self):
         pass
+
+    @staticmethod
+    def _raise_interrupt():
+        """
+        Raise ComfyUI's interrupt exception when available so user-initiated
+        cancels are treated as cancellation, not node failure.
+        """
+        try:
+            import comfy.model_management as model_management
+
+            raise model_management.InterruptProcessingException()
+        except ImportError:
+            raise asyncio.CancelledError("Generation canceled by user.")
+
+    @staticmethod
+    def _fingerprint_value(value):
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, dict):
+            return tuple(
+                sorted(
+                    (k, DrawThingsSampler._fingerprint_value(v))
+                    for k, v in value.items()
+                )
+            )
+        if isinstance(value, (list, tuple)):
+            return tuple(DrawThingsSampler._fingerprint_value(v) for v in value)
+        # Handle tensors without embedding full contents in cache key.
+        if hasattr(value, "shape") and hasattr(value, "dtype"):
+            return ("tensor", tuple(value.shape), str(value.dtype))
+        return repr(value)
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -128,9 +158,49 @@ class DrawThingsSampler:
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
 
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        # When blank-on-error is enabled, force re-execution so a fallback image
+        # from a previous failed run is never reused from cache.
+        if hasattr(settings, "blank_on_error") and settings.blank_on_error:
+            return float("nan")
+        # Otherwise, cache based on current input fingerprint.
+        return cls._fingerprint_value(kwargs)
+
     async def sample(self, **kwargs):
         try:
+            return await self._sample_impl(**kwargs)
+        except Exception as e:
+            if cancel_request.should_cancel or type(e).__name__ == "InterruptProcessingException":
+                raise
+
+            if hasattr(settings, "blank_on_error") and settings.blank_on_error:
+                import textwrap
+
+                import numpy as np
+                import torch
+                from PIL import Image, ImageDraw
+
+                width = kwargs.get("width", 512)
+                height = kwargs.get("height", 512)
+                img = Image.new("RGB", (width, height), "white")
+                draw = ImageDraw.Draw(img)
+
+                error_text = f"Error: {str(e)}"
+                wrapped_text = "\n".join(textwrap.wrap(error_text, width=max(20, width // 7)))
+                draw.text((10, 10), wrapped_text, fill="red")
+
+                image_np = np.array(img).astype(np.float32) / 255.0
+                tensor_image = torch.from_numpy(image_np).unsqueeze(0)
+                return (tensor_image, None)
+
+            raise
+
+    async def _sample_impl(self, **kwargs):
+        try:
             await get_files(kwargs["server"], kwargs["port"], kwargs["use_tls"])
+        except asyncio.CancelledError:
+            self._raise_interrupt()
         except grpc.aio.AioRpcError as e:
             raise Exception(f"Failed to communicate with Draw Things server: {e.details()}")
         except Exception:
@@ -138,7 +208,6 @@ class DrawThingsSampler:
                 "Couldn't connect to Draw Things gRPC server. Check your server and settings, and try again."
             )
 
-        DrawThingsSampler.last_gen_canceled = False
         model_input = kwargs.get("model")
         if type(model_input) is not dict:
             raise Exception("Please select a model")
@@ -155,6 +224,8 @@ class DrawThingsSampler:
             if result is None:
                 raise Exception("Failed to generate image")
             return result
+        except asyncio.CancelledError:
+            self._raise_interrupt()
         except grpc.aio.AioRpcError as e:
             details = e.details()
             if e.code() == grpc.StatusCode.UNAVAILABLE:
@@ -165,10 +236,10 @@ class DrawThingsSampler:
                 raise Exception(f"Draw Things gRPC server internal error: {details}")
             else:
                 raise Exception(f"Draw Things gRPC error ({e.code()}): {details}")
-        except Exception as e:
+        except Exception:
             if cancel_request.should_cancel:
-                DrawThingsSampler.last_gen_canceled = True
-            raise e
+                self._raise_interrupt()
+            raise
 
     # @classmethod
     # async def VALIDATE_INPUTS(cls, width, height, tiled_diffusion):

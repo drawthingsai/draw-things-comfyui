@@ -110,14 +110,15 @@ async def handle_files_exist_request(request):
         )
 
 
-@routes.post("/dt_grpc/preview")
-async def handle_preview_request(request):
+@routes.post("/dt_grpc/sync_settings")
+async def handle_sync_settings_request(request):
     """
-    Toggles the preview mode on or off.
+    Syncs settings from the frontend to the backend.
     """
     try:
         post = await request.post()
-        settings.show_preview = True if post.get("preview") == "true" else False
+        settings.show_preview = True if post.get("show_preview") == "true" else False
+        settings.blank_on_error = True if post.get("blank_on_error") == "true" else False
         return web.json_response()
     except Exception as e:
         print(e)

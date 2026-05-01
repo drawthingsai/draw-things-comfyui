@@ -1,4 +1,5 @@
 import base64
+import asyncio
 import json
 
 import comfy.utils
@@ -185,20 +186,18 @@ async def dt_sampler(inputs: dict):
 
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
-        generate_stream = stub.GenerateImage(
-            imageService_pb2.ImageGenerationRequest(
-                image=img2img,
-                scaleFactor=1,
-                mask=maskimg,
-                hints=req_hints,
-                prompt=str(positive),
-                negativePrompt=str(negative),
-                configuration=config_fbs,
-                override=override,
-                user="ComfyUI",
-                device="LAPTOP",
-                contents=contents,
-            )
+        request = imageService_pb2.ImageGenerationRequest(
+            image=img2img,
+            scaleFactor=1,
+            mask=maskimg,
+            hints=req_hints,
+            prompt=str(positive),
+            negativePrompt=str(negative),
+            configuration=config_fbs,
+            override=override,
+            user="ComfyUI",
+            device="LAPTOP",
+            contents=contents,
         )
 
         cancel_request.reset()
@@ -209,53 +208,79 @@ async def dt_sampler(inputs: dict):
             if config.hiresFix
             else config.steps
         )
-        current_step = 0
+        max_retry_attempts = 1
+        retryable_statuses = {grpc.StatusCode.INTERNAL, grpc.StatusCode.UNAVAILABLE}
 
-        try:
-            while True:
-                response = await generate_stream.read()
-                if response == grpc.aio.EOF:
-                    break
+        for attempt in range(max_retry_attempts + 1):
+            generate_stream = stub.GenerateImage(request)
+            try:
+                while True:
+                    if cancel_request.should_cancel:
+                        generate_stream.cancel()
+                        raise asyncio.CancelledError("Generation canceled by user.")
 
-                if cancel_request.should_cancel:
-                    await channel.close()
-                    raise Exception("canceled")
+                    response = await generate_stream.read()
+                    if response == grpc.aio.EOF:
+                        break
 
-                signpost = response.currentSignpost
-                if "sampling" in signpost:
-                    current_step = signpost.sampling.step
-                elif "secondPassSampling" in signpost:
-                    current_step = signpost.secondPassSampling.step + config.steps
+                    signpost = response.currentSignpost
+                    current_step = None
+                    if signpost.HasField("sampling"):
+                        current_step = signpost.sampling.step
+                    elif signpost.HasField("secondPassSampling"):
+                        current_step = signpost.secondPassSampling.step + config.steps
 
-                preview_image = response.previewImage
-                generated_images = response.generatedImages
+                    preview_image = response.previewImage
+                    generated_images = response.generatedImages
 
-                if current_step:
-                    try:
-                        preview = None
-                        if preview_image and version and settings.show_preview:
-                            decoded_preview = decode_preview(preview_image, version)
-                            if decoded_preview is not None:
-                                preview = ("PNG", decoded_preview, MAX_PREVIEW_RESOLUTION)
+                    if current_step is not None:
+                        try:
+                            preview = None
+                            if preview_image and version and settings.show_preview:
+                                decoded_preview = decode_preview(preview_image, version)
+                                if decoded_preview is not None:
+                                    preview = ("PNG", decoded_preview, MAX_PREVIEW_RESOLUTION)
+                            progress.update_absolute(
+                                current_step, total=estimated_steps, preview=preview
+                            )
+                        except Exception as e:
+                            print(
+                                "DrawThings-gRPC had an error decoding the preview image:",
+                                e,
+                            )
+
+                    if generated_images:
                         progress.update_absolute(
-                            current_step, total=estimated_steps, preview=preview
+                            estimated_steps, total=estimated_steps, preview=None
                         )
-                    except Exception as e:
-                        print("DrawThings-gRPC had an error decoding the preview image:", e)
+                        response_images.extend(generated_images)
+                    if response.generatedAudio:
+                        response_audio = response.generatedAudio
+                break
+            except asyncio.CancelledError:
+                raise
+            except grpc.aio.AioRpcError as e:
+                status = e.code()
+                if status == grpc.StatusCode.CANCELLED:
+                    raise asyncio.CancelledError("Generation canceled.") from e
 
-                if generated_images:
-                    progress.update_absolute(
-                        estimated_steps, total=estimated_steps, preview=None
-                    )
-                    response_images.extend(generated_images)
-                if response.generatedAudio:
-                    response_audio = response.generatedAudio
-        except grpc.aio.AioRpcError as e:
-            if e.code() == grpc.StatusCode.INTERNAL:
+                if status in retryable_statuses:
+                    can_retry = attempt < max_retry_attempts and len(response_images) == 0
+                    if can_retry:
+                        await asyncio.sleep(0.5 * (2**attempt))
+                        continue
+                    if len(response_images) > 0:
+                        print(
+                            f"DrawThings-gRPC stream ended with {status.name}; returning partial results."
+                        )
+                        break
+                    raise Exception(
+                        f"Draw Things gRPC transient error ({status.name}): {e.details()}. Please try again."
+                    ) from e
+
                 raise Exception(
-                    f"Draw Things gRPC server internal error: {e.details()}. This can sometimes be intermittent; please try again."
+                    f"Draw Things gRPC error ({status.name}): {e.details()}"
                 ) from e
-            raise e
 
         if len(response_images) == 0:
             raise Exception("The Draw Things gRPC server returned no images")
