@@ -1,7 +1,7 @@
 """Top-level package for ComfyUI-DrawThings-gRPC."""
 
 __author__ = """kcjerrell"""
-__version__ = "1.11.0"
+__version__ = "1.11.1"
 
 from .src.util import CancelRequest, Settings
 

@@ -62,7 +62,7 @@ def convert_response_image(response_image: bytes):
     if np.isnan(data[0]):
         print("NaN detected in data")
         return None
-    data = np.clip((data + 1) * 127, 0, 255).astype(np.uint8)
+    data = np.clip((data + 1) * 127.5, 0, 255).astype(np.uint8)
 
     return {
         "data": data,
