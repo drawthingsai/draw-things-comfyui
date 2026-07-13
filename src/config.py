@@ -287,8 +287,10 @@ def apply_common(config: Config, configT: GenerationConfigurationT):
         configT.shift = config["shift"]
     if "preserve_original" in config:
         configT.preserveOriginalAfterInpaint = bool(config["preserve_original"])
-    # if "image_guidance_scale" in config:
-    #     configT.imageGuidanceScale = config["image_guidance_scale"]
+    if "color_calibration" in config:
+        cc = config.get("color_calibration")
+        if cc in DrawThingsLists.color_calibration:
+            configT.colorCalibration = DrawThingsLists.color_calibration.index(cc)
 
 
 def apply_conditional(config: Config, configT: GenerationConfigurationT):

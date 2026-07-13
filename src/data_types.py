@@ -154,6 +154,8 @@ class Config(TypedDict, total=False):
     tea_cache: bool
     tea_cache_max_skip_steps: int
 
+    color_calibration: str
+
     # face_restoration: str
     # decode_with_attention: bool
     # hires_fix_decode_with_attention: int
@@ -215,6 +217,11 @@ class DrawThingsLists:
         "TorchCpuCompatible",
         "ScaleAlike",
         "NvidiaGpuCompatible",
+    ]
+
+    color_calibration = [
+        "Disabled",
+        "Lab"
     ]
 
     control_mode = [
@@ -296,3 +303,4 @@ class DrawThingsLists:
         "Shuffle (Moodboard)": "shuffle",
         "Custom": "custom",
     }
+    

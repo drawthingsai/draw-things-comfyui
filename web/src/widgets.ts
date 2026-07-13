@@ -64,6 +64,7 @@ const advancedWidgets = [
     "tea_cache_end",
     "tea_cache_threshold",
     "tea_cache_max_skip_steps",
+    "color_calibration",
 ]
 
 let origProps: Record<string, any> = {}

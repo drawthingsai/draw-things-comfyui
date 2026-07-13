@@ -67,6 +67,9 @@ class CompressionMethod(object):
   H264 = cast(int, ...)
   H265 = cast(int, ...)
   Jpeg = cast(int, ...)
+class ColorCalibration(object):
+  Disabled = cast(int, ...)
+  Lab = cast(int, ...)
 class Control(object):
   @classmethod
   def GetRootAs(cls, buf: bytes, offset: int) -> Control: ...
@@ -256,6 +259,7 @@ class GenerationConfiguration(object):
   def CfgZeroInitSteps(self) -> int: ...
   def CompressionArtifacts(self) -> typing.Literal[CompressionMethod.Disabled, CompressionMethod.H264, CompressionMethod.H265, CompressionMethod.Jpeg]: ...
   def CompressionArtifactsQuality(self) -> float: ...
+  def ColorCalibration(self) -> typing.Literal[ColorCalibration.Disabled, ColorCalibration.Lab]: ...
 class GenerationConfigurationT(object):
   id: int
   startWidth: int
@@ -341,6 +345,7 @@ class GenerationConfigurationT(object):
   cfgZeroInitSteps: int
   compressionArtifacts: typing.Literal[CompressionMethod.Disabled, CompressionMethod.H264, CompressionMethod.H265, CompressionMethod.Jpeg]
   compressionArtifactsQuality: float
+  colorCalibration: typing.Literal[ColorCalibration.Disabled, ColorCalibration.Lab]
   def __init__(
     self,
     id: int = ...,
@@ -427,6 +432,7 @@ class GenerationConfigurationT(object):
     cfgZeroInitSteps: int = ...,
     compressionArtifacts: typing.Literal[CompressionMethod.Disabled, CompressionMethod.H264, CompressionMethod.H265, CompressionMethod.Jpeg] = ...,
     compressionArtifactsQuality: float = ...,
+    colorCalibration: typing.Literal[ColorCalibration.Disabled, ColorCalibration.Lab] = ...,
   ) -> None: ...
   @classmethod
   def InitFromBuf(cls, buf: bytes, pos: int) -> GenerationConfigurationT: ...
@@ -523,5 +529,6 @@ def GenerationConfigurationAddCfgZeroStar(builder: flatbuffers.Builder, cfgZeroS
 def GenerationConfigurationAddCfgZeroInitSteps(builder: flatbuffers.Builder, cfgZeroInitSteps: int) -> None: ...
 def GenerationConfigurationAddCompressionArtifacts(builder: flatbuffers.Builder, compressionArtifacts: typing.Literal[CompressionMethod.Disabled, CompressionMethod.H264, CompressionMethod.H265, CompressionMethod.Jpeg]) -> None: ...
 def GenerationConfigurationAddCompressionArtifactsQuality(builder: flatbuffers.Builder, compressionArtifactsQuality: float) -> None: ...
+def GenerationConfigurationAddColorCalibration(builder: flatbuffers.Builder, colorCalibration: typing.Literal[ColorCalibration.Disabled, ColorCalibration.Lab]) -> None: ...
 def GenerationConfigurationEnd(builder: flatbuffers.Builder) -> uoffset: ...
 

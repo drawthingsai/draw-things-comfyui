@@ -289,7 +289,9 @@ var versionNames = {
   "ltx2.3": "LTX2.3",
   "ltx2_3": "LTX2.3",
   "cosmos2.5_2b": "Cosmos2.5",
-  "ernie_image": "Ernie"
+  "ernie_image": "Ernie",
+  "seedvr2_3b": "SeedVR2 3b",
+  "seedvr2_7b": "SeedVR2 7b"
 };
 function getVersionAbbrev(version) {
   return versionNames[version] ?? version;
@@ -998,7 +1000,8 @@ var advancedWidgets = [
   "tea_cache_start",
   "tea_cache_end",
   "tea_cache_threshold",
-  "tea_cache_max_skip_steps"
+  "tea_cache_max_skip_steps",
+  "color_calibration"
 ];
 var origProps = {};
 function updateInput(input, node) {

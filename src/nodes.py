@@ -114,6 +114,7 @@ class DrawThingsSampler:
                 "clip_l_text": ("STRING", { "forceInput": False}),
                 "separate_open_clip_g": ("BOOLEAN", { "default": False}),
                 "open_clip_g_text": ("STRING", { "forceInput": False}),
+                "color_calibration": (DrawThingsLists.color_calibration, {"default": "Disabled"})
                 # ti embed
                 # image_guidance_scale
                 # decode_with_attention
