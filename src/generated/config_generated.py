@@ -79,6 +79,11 @@ class CompressionMethod(object):
     Jpeg = 3
 
 
+class ColorCalibration(object):
+    Disabled = 0
+    Lab = 1
+
+
 class Control(object):
     __slots__ = ['_tab']
 
@@ -1063,8 +1068,15 @@ class GenerationConfiguration(object):
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 43.1
 
+    # GenerationConfiguration
+    def ColorCalibration(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(176))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int8Flags, o + self._tab.Pos)
+        return 0
+
 def GenerationConfigurationStart(builder: flatbuffers.Builder):
-    builder.StartObject(86)
+    builder.StartObject(87)
 
 def GenerationConfigurationAddId(builder: flatbuffers.Builder, id: int):
     builder.PrependInt64Slot(0, id, 0)
@@ -1324,6 +1336,9 @@ def GenerationConfigurationAddCompressionArtifacts(builder: flatbuffers.Builder,
 def GenerationConfigurationAddCompressionArtifactsQuality(builder: flatbuffers.Builder, compressionArtifactsQuality: float):
     builder.PrependFloat32Slot(85, compressionArtifactsQuality, 43.1)
 
+def GenerationConfigurationAddColorCalibration(builder: flatbuffers.Builder, colorCalibration: int):
+    builder.PrependInt8Slot(86, colorCalibration, 0)
+
 def GenerationConfigurationEnd(builder: flatbuffers.Builder) -> int:
     return builder.EndObject()
 
@@ -1422,6 +1437,7 @@ class GenerationConfigurationT(object):
         cfgZeroInitSteps = 0,
         compressionArtifacts = 0,
         compressionArtifactsQuality = 43.1,
+        colorCalibration = 0,
     ):
         self.id = id  # type: int
         self.startWidth = startWidth  # type: int
@@ -1507,6 +1523,7 @@ class GenerationConfigurationT(object):
         self.cfgZeroInitSteps = cfgZeroInitSteps  # type: int
         self.compressionArtifacts = compressionArtifacts  # type: int
         self.compressionArtifactsQuality = compressionArtifactsQuality  # type: float
+        self.colorCalibration = colorCalibration  # type: int
 
     @classmethod
     def InitFromBuf(cls, buf, pos):
@@ -1627,6 +1644,7 @@ class GenerationConfigurationT(object):
         self.cfgZeroInitSteps = generationConfiguration.CfgZeroInitSteps()
         self.compressionArtifacts = generationConfiguration.CompressionArtifacts()
         self.compressionArtifactsQuality = generationConfiguration.CompressionArtifactsQuality()
+        self.colorCalibration = generationConfiguration.ColorCalibration()
 
     # GenerationConfigurationT
     def Pack(self, builder):
@@ -1757,6 +1775,7 @@ class GenerationConfigurationT(object):
         GenerationConfigurationAddCfgZeroInitSteps(builder, self.cfgZeroInitSteps)
         GenerationConfigurationAddCompressionArtifacts(builder, self.compressionArtifacts)
         GenerationConfigurationAddCompressionArtifactsQuality(builder, self.compressionArtifactsQuality)
+        GenerationConfigurationAddColorCalibration(builder, self.colorCalibration)
         generationConfiguration = GenerationConfigurationEnd(builder)
         return generationConfiguration
 
