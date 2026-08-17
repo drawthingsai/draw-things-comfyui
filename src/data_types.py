@@ -107,6 +107,7 @@ class Config(TypedDict, total=False):
 
     model: str
     version: str
+    model_info: ModelInfo
     control_net: ControlStack
     lora: LoraStack
     upscaler: dict

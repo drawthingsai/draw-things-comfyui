@@ -26,8 +26,9 @@ def all_in(list, *args):
 
 
 class ModelVersion:
-    def __init__(self, version):
+    def __init__(self, version, model_info=None):
         self.version = version
+        self.model_info = model_info or {}
 
     @property
     def res_dpt_shift(self):
@@ -44,15 +45,25 @@ class ModelVersion:
 
     @property
     def video(self):
-        return self.version in [
+        if self.version in [
             "hunyuan_video",
             "wan_v2.1_1.3b",
             "wan_v2.1_14b",
+            "wan_v2.2_5b",
+            "wan_v2.2_14b",
             "svd_i2v",
             "ltx2",
             "ltx2_3",
             "ltx2.3",
-        ]
+        ]:
+            return True
+        # Fallback for versions this list hasn't caught up with (Wan 2.2
+        # was the first to slip through — see issue #7): the model-browser
+        # row the server itself serves carries frame-rate metadata exactly
+        # when the model generates video, so trust the server's own
+        # description of an unknown version rather than silently dropping
+        # num_frames from the request.
+        return "frames_per_second" in self.model_info
 
     @property
     def num_frames_step(self):
@@ -294,7 +305,7 @@ def apply_common(config: Config, configT: GenerationConfigurationT):
 
 
 def apply_conditional(config: Config, configT: GenerationConfigurationT):
-    model = ModelVersion(config.get("version"))
+    model = ModelVersion(config.get("version"), config.get("model_info"))
     if config.get("cfg_zero_star"):
         configT.cfgZeroStar = True
         configT.cfgZeroInitSteps = config.get("cfg_zero_star_init_steps")
