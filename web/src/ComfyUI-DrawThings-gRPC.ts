@@ -6,7 +6,7 @@ import { findPropertyPython } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
 import { checkVersion } from "./upgrade.js";
-import { getApp, setCallback, updateProto } from "./util.js";
+import { getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
 export const nodePackVersion = "1.11.1";
 
@@ -109,9 +109,7 @@ export const samplerProto: Partial<DTSampler> = {
     onSerialize(serialised: unknown) {
         const ser = serialised as Record<string, unknown>;
         ser.nodePackVersion = nodePackVersion;
-
-        const widgetValuesKeyed = this.widgets?.map((w) => [w.name, w.value]);
-        ser.widget_values_keyed = Object.fromEntries(widgetValuesKeyed ?? []);
+        ser.widget_values_keyed = plainWidgetValues(this);
     },
 
     onConfigure(this: DTSampler & LGraphNode, serialised) {

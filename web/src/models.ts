@@ -5,6 +5,7 @@ import {
     type LGraphNode
 } from "@comfyorg/litegraph";
 import { CombinedModelsResponse, combinedModelsResponseKeys } from "./modelsTypes";
+import { getApp } from "./util";
 
 // @ts-ignore
 const app = window.comfyAPI.app.app;
@@ -198,7 +199,18 @@ async function getBridgeModels() {
     if (!combinedModelsJson) {
         const api = window.comfyAPI.api.api;
         const filesResponse = await api.fetchApi("/dt_grpc/bridge_models");
-        const files = (await filesResponse.json()) as string[];
+        if (!filesResponse.ok) {
+            getApp().extensionManager.toast.add({
+                summary: "DT+ Error",
+                severity: "warn",
+                detail: "Couldn't retrieve the list of available DT+ models for bridge mode. DT+ may be down.",
+            }
+
+            );
+        }
+        const files: string[] = filesResponse.ok
+            ? (await filesResponse.json())
+            : [];
 
         const combinedModelsResponse = await api.fetchApi(
             "/dt_grpc/combined_models",

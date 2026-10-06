@@ -1,5 +1,5 @@
 import { nodePackVersion } from './ComfyUI-DrawThings-gRPC.js'
-import { findWidgetByName, updateProto } from "./util.js"
+import { findWidgetByName, plainWidgetValues, updateProto } from "./util.js"
 import { showWidget } from './widgets.js'
 import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
 import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
@@ -60,7 +60,7 @@ const controlNetProto: any = {
     onSerialize(this: ControlNetNode, serialised: any) {
         serialised.nodePackVersion = nodePackVersion
         if (this.widgets) {
-            serialised.widget_values_keyed = Object.fromEntries(this.widgets.map(w => ([w.name, w.value]))) as Record<string, any>
+            serialised.widget_values_keyed = plainWidgetValues(this)
         }
     },
     onConfigure(this: ControlNetNode, data: any) {
