@@ -126,3 +126,32 @@ export function getApp(): ComfyApp {
     // @ts-ignore
     return window.comfyAPI.app.app
 };
+
+
+/**
+ * Plain, JSON-safe copies of a node's widget values, keyed by widget name.
+ *
+ * Widget values must never be stored into the serialised workflow by
+ * reference. ComfyUI's frontend makes widget values reactive, so a value such
+ * as the model combo's selection is a Vue proxy; the frontend later runs
+ * `structuredClone()` over the whole workflow when it activates it, and
+ * structuredClone throws DataCloneError on a proxy. That aborts loading the
+ * workflow — including the one embedded in a saved PNG — leaving the graph
+ * unconnected. Round-tripping through JSON drops the proxy (and any function
+ * or undefined), which is all these values ever need to be.
+ *
+ * contributed by discordinated
+ * https://github.com/drawthingsai/draw-things-comfyui/issues/9
+ */
+export function plainWidgetValues(node: LGraphNode): Record<string, any> {
+    const keyed: Record<string, any> = {};
+    for (const w of node.widgets ?? []) {
+        if (w.value === undefined) continue;
+        try {
+            keyed[w.name] = JSON.parse(JSON.stringify(w.value));
+        } catch {
+            // a value JSON cannot represent is simply not persisted
+        }
+    }
+    return keyed;
+}

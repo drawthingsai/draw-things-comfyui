@@ -1,5 +1,5 @@
 import { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js"
-import { updateProto } from "./util.js"
+import { plainWidgetValues, updateProto } from "./util.js"
 import { showWidget } from "./widgets.js"
 import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
 import type { ComfyExtension, ComfyApp } from "@comfyorg/comfyui-frontend-types";
@@ -138,7 +138,7 @@ const loraProto: any = {
         serialised.showMode = this._showMode;
         serialised.nodePackVersion = nodePackVersion;
         if (this.widgets) {
-            serialised.widget_values_keyed = Object.fromEntries(this.widgets.map((w) => [w.name, w.value]));
+            serialised.widget_values_keyed = plainWidgetValues(this)
         }
     },
 

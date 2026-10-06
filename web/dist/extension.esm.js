@@ -12,6 +12,66 @@ var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "acce
 // web/src/modelsTypes.ts
 var combinedModelsResponseKeys = ["officialModels", "officialCnets", "officialLoras", "communityModels", "communityCnets", "communityLoras", "communityEmbeddings", "uncuratedModels"];
 
+// web/src/util.ts
+function setCallback(target, callbackName, callback) {
+  const original = target[callbackName];
+  target[callbackName] = function(...args) {
+    const r = original?.apply(this, args);
+    callback?.apply(this, args);
+    return r;
+  };
+}
+function updateProto(base, update) {
+  const proto = base.prototype;
+  for (const key in update) {
+    const val = update[key];
+    if (typeof val === "function" && typeof proto[key] === "function") {
+      const original = proto[key];
+      const added = val;
+      proto[key] = function(...args) {
+        const r = original.apply(this, args);
+        try {
+          added.apply(this, args);
+        } finally {
+          return r;
+        }
+      };
+    } else if (isPropertyDescriptor(val)) {
+      Object.defineProperty(proto, key, val);
+    } else {
+      proto[key] = val;
+    }
+  }
+}
+function isPropertyDescriptor(v) {
+  if (v == null) return false;
+  const hasDescKeys = "value" in v || "get" in v || "set" in v || "writable" in v || "enumerable" in v || "configurable" in v;
+  return typeof v === "object" && hasDescKeys;
+}
+var propertyMap = {
+  preserveOriginalAfterInpaint: "preserve_original",
+  hiresFix: "high_res_fix",
+  sampler: "sampler_name"
+};
+Object.fromEntries(Object.entries(propertyMap).map(([k, v]) => [v, k]));
+function findWidgetByName(node, name) {
+  return node.widgets?.find((w) => w.name === name);
+}
+function getApp() {
+  return window.comfyAPI.app.app;
+}
+function plainWidgetValues(node) {
+  const keyed = {};
+  for (const w of node.widgets ?? []) {
+    if (w.value === void 0) continue;
+    try {
+      keyed[w.name] = JSON.parse(JSON.stringify(w.value));
+    } catch {
+    }
+  }
+  return keyed;
+}
+
 // web/src/models.ts
 var app = window.comfyAPI.app.app;
 var _updateNodesPromise, _ModelService_instances, updateNodes_fn;
@@ -137,7 +197,16 @@ async function getBridgeModels() {
   if (!combinedModelsJson) {
     const api = window.comfyAPI.api.api;
     const filesResponse = await api.fetchApi("/dt_grpc/bridge_models");
-    const files = await filesResponse.json();
+    if (!filesResponse.ok) {
+      getApp().extensionManager.toast.add(
+        {
+          summary: "DT+ Error",
+          severity: "warn",
+          detail: "Couldn't retrieve the list of available DT+ models for bridge mode. DT+ may be down."
+        }
+      );
+    }
+    const files = filesResponse.ok ? await filesResponse.json() : [];
     const combinedModelsResponse = await api.fetchApi(
       "/dt_grpc/combined_models"
     );
@@ -686,55 +755,6 @@ function patchProp(jsonName, funcName, func) {
     prop[funcName] = func;
 }
 
-// web/src/util.ts
-function setCallback(target, callbackName, callback) {
-  const original = target[callbackName];
-  target[callbackName] = function(...args) {
-    const r = original?.apply(this, args);
-    callback?.apply(this, args);
-    return r;
-  };
-}
-function updateProto(base, update) {
-  const proto = base.prototype;
-  for (const key in update) {
-    const val = update[key];
-    if (typeof val === "function" && typeof proto[key] === "function") {
-      const original = proto[key];
-      const added = val;
-      proto[key] = function(...args) {
-        const r = original.apply(this, args);
-        try {
-          added.apply(this, args);
-        } finally {
-          return r;
-        }
-      };
-    } else if (isPropertyDescriptor(val)) {
-      Object.defineProperty(proto, key, val);
-    } else {
-      proto[key] = val;
-    }
-  }
-}
-function isPropertyDescriptor(v) {
-  if (v == null) return false;
-  const hasDescKeys = "value" in v || "get" in v || "set" in v || "writable" in v || "enumerable" in v || "configurable" in v;
-  return typeof v === "object" && hasDescKeys;
-}
-var propertyMap = {
-  preserveOriginalAfterInpaint: "preserve_original",
-  hiresFix: "high_res_fix",
-  sampler: "sampler_name"
-};
-Object.fromEntries(Object.entries(propertyMap).map(([k, v]) => [v, k]));
-function findWidgetByName(node, name) {
-  return node.widgets?.find((w) => w.name === name);
-}
-function getApp() {
-  return window.comfyAPI.app.app;
-}
-
 // web/src/configImport.ts
 function importConfig(sampler) {
   {
@@ -1263,7 +1283,7 @@ var loraProto = {
     serialised.showMode = this._showMode;
     serialised.nodePackVersion = nodePackVersion;
     if (this.widgets) {
-      serialised.widget_values_keyed = Object.fromEntries(this.widgets.map((w) => [w.name, w.value]));
+      serialised.widget_values_keyed = plainWidgetValues(this);
     }
   },
   loraCount: {
@@ -1527,8 +1547,7 @@ var samplerProto = {
   onSerialize(serialised) {
     const ser = serialised;
     ser.nodePackVersion = nodePackVersion;
-    const widgetValuesKeyed = this.widgets?.map((w) => [w.name, w.value]);
-    ser.widget_values_keyed = Object.fromEntries(widgetValuesKeyed ?? []);
+    ser.widget_values_keyed = plainWidgetValues(this);
   },
   onConfigure(serialised) {
     if ("widget_values_keyed" in serialised && serialised.widget_values_keyed && typeof serialised.widget_values_keyed === "object") {
@@ -1732,7 +1751,7 @@ var controlNetProto = {
   onSerialize(serialised) {
     serialised.nodePackVersion = nodePackVersion;
     if (this.widgets) {
-      serialised.widget_values_keyed = Object.fromEntries(this.widgets.map((w) => [w.name, w.value]));
+      serialised.widget_values_keyed = plainWidgetValues(this);
     }
   },
   onConfigure(data) {
