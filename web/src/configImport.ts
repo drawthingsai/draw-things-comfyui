@@ -5,6 +5,7 @@ import type {
 } from "@comfyorg/litegraph/dist/types/widgets";
 import { findPropertiesByNode, findPropertyJson } from "./configProperties.js";
 import { DTSampler } from "./types";
+import { getApp } from "./util.js";
 
 export function importConfig(sampler: DTSampler) {
     {
@@ -98,7 +99,7 @@ export function importConfig(sampler: DTSampler) {
                 }
 
                 if (missingNodes.length) {
-                    window.app?.extensionManager.toast.add({
+                    getApp().extensionManager.toast.add({
                         severity: "warn",
                         summary: "Draw Things gRPC",
                         detail: [

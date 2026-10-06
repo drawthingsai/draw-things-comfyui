@@ -1,3 +1,4 @@
+import { ComfyApp } from '@comfyorg/comfyui-frontend-types';
 import type { LGraphNode } from '@comfyorg/litegraph';
 
 type MethodKeys<T> = {
@@ -120,3 +121,8 @@ export function findWidgetByName(node: LGraphNode, name: string) {
 export function mk<T extends Function>(fn: T): T {
     return fn;
 }
+
+export function getApp(): ComfyApp {
+    // @ts-ignore
+    return window.comfyAPI.app.app
+};

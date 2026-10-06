@@ -6,7 +6,7 @@ import { findPropertyPython } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
 import { checkVersion } from "./upgrade.js";
-import { setCallback, updateProto } from "./util.js";
+import { getApp, setCallback, updateProto } from "./util.js";
 
 export const nodePackVersion = "1.11.1";
 
@@ -84,6 +84,7 @@ export default {
 
 export const samplerProto: Partial<DTSampler> = {
     async onNodeCreated(this: DTSampler & LGraphNode) {
+        const app = getApp();
         const inputPos = this.inputs?.find(
             (inputPos) => inputPos.name == "positive"
         )!;
@@ -167,12 +168,12 @@ export const samplerProto: Partial<DTSampler> = {
             );
             const detail = message + "\n\n" + list.join("\n");
 
-            app.extensionManager.toast.add({
-                severity: "info",
-                summary: "Draw Things gRPC",
-                detail,
-                life: 8000,
-            });
+            getApp().extensionManager.toast.add({
+													severity: "info",
+													summary: "Draw Things gRPC",
+													detail,
+													life: 8000,
+												});
         }
     },
 
@@ -206,6 +207,7 @@ export const samplerProto: Partial<DTSampler> = {
     },
 
     getExtraMenuOptions(this: LGraphNode, _canvas, options) {
+        const app = getApp();
         const showPreview = app.extensionManager.setting.get(
             "drawthings.node.show_preview"
         );
@@ -304,6 +306,7 @@ export const samplerProto: Partial<DTSampler> = {
 
 async function syncSettings(patch?: { show_preview?: boolean; blank_on_error?: boolean }) {
     const api = window.comfyAPI.api.api;
+    const app = getApp();
 
     const showPreview = patch?.show_preview ?? app.extensionManager.setting.get("drawthings.node.show_preview");
     const blankOnError = patch?.blank_on_error ?? app.extensionManager.setting.get("drawthings.node.blank_on_error");

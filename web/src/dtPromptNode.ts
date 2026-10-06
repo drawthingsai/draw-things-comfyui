@@ -1,4 +1,4 @@
-import { updateProto } from "./util.js";
+import { getApp, updateProto } from "./util.js";
 import type { LGraphNode, IWidget, LLink, INodeOutputSlot, IContextMenuItem, LGraphCanvas } from "@comfyorg/litegraph";
 import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
 
@@ -29,7 +29,7 @@ const promptProto: any = {
     },
 
     onConnectionsChange(this: PromptNode, type: number, index: number, isConnected: boolean, link_info: LLink, inputOrOutput: INodeOutputSlot) {
-        if (app.extensionManager.setting.get("drawthings.node.color_prompts") === false) return;
+        if (getApp().extensionManager.setting.get("drawthings.node.color_prompts") === false) return;
 
         let isPositive = false;
         let isNegative = false;
@@ -64,7 +64,7 @@ const promptProto: any = {
     onNodeCreated(this: PromptNode) {
         const output = this.outputs?.find((output) => output.name == "PROMPT");
         if (output) {
-            (output as any).color_on = (output as any).color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
+            (output as any).color_on = (output as any).color_off = getApp().canvas.default_connection_color_byType["CONDITIONING"];
         }
 
         const promptWidget = this.widgets?.find((w) => w.name === "prompt");
@@ -77,6 +77,7 @@ const promptProto: any = {
     },
 
     getExtraMenuOptions(this: PromptNode, canvas: LGraphCanvas, options: IContextMenuItem[]) {
+        const app = getApp();
         const promptColors = app.extensionManager.setting.get("drawthings.node.color_prompts")
         options.push(
             ...[
@@ -115,7 +116,7 @@ const extension: ComfyExtension = {
             category: ["Draw Things", "Nodes", "Change prompt"],
             onChange: (newVal: boolean, oldVal: boolean) => {
                 if (oldVal === false && newVal === true) {
-                    app.graph.nodes
+                    getApp().graph.nodes
                         .filter((n) => n.type === "DrawThingsPrompt")
                         .forEach((n) => {
                             setTimeout(() => (n as any).onConnectionsChange(), 10)

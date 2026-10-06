@@ -13,7 +13,7 @@ var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "acce
 var combinedModelsResponseKeys = ["officialModels", "officialCnets", "officialLoras", "communityModels", "communityCnets", "communityLoras", "communityEmbeddings", "uncuratedModels"];
 
 // web/src/models.ts
-var app2 = window.comfyAPI.app.app;
+var app = window.comfyAPI.app.app;
 var _updateNodesPromise, _ModelService_instances, updateNodes_fn;
 var ModelService = class {
   constructor() {
@@ -21,7 +21,7 @@ var ModelService = class {
     __privateAdd(this, _updateNodesPromise, null);
   }
   async updateNodes() {
-    if (app2.configuringGraph || !app2.graph) return;
+    if (app.configuringGraph || !app.graph) return;
     if (!__privateGet(this, _updateNodesPromise)) {
       __privateSet(this, _updateNodesPromise, new Promise((res) => {
         setTimeout(() => {
@@ -36,7 +36,7 @@ var ModelService = class {
 _updateNodesPromise = new WeakMap();
 _ModelService_instances = new WeakSet();
 updateNodes_fn = async function() {
-  const dtModelNodes = getNodesRecursive(app2.graph).filter(
+  const dtModelNodes = getNodesRecursive(app.graph).filter(
     (n) => n.isDtServerNode !== void 0
   );
   const graphServerNodes = dtModelNodes.filter(
@@ -93,7 +93,7 @@ function getNodesRecursive(graph) {
   return nodes;
 }
 var modelService = new ModelService();
-function DtModelTypeHandler(node, inputName, inputData, app6) {
+function DtModelTypeHandler(node, inputName, inputData, app5) {
   const widget = node.addWidget(
     "combo",
     inputName,
@@ -126,10 +126,10 @@ var combinedModelsJson = null;
 var combinedIncludes = [null, null];
 var combinedBridgeModels = null;
 async function getBridgeModels() {
-  const includeCommunity = app2.extensionManager.setting.get(
+  const includeCommunity = app.extensionManager.setting.get(
     "drawthings.bridge_mode.community"
   );
-  const includeUncurated = app2.extensionManager.setting.get(
+  const includeUncurated = app.extensionManager.setting.get(
     "drawthings.bridge_mode.uncurated"
   );
   if (combinedBridgeModels && combinedIncludes[0] === includeCommunity && combinedIncludes[1] === includeUncurated)
@@ -196,7 +196,7 @@ var notConnectedOptions = [
 }));
 async function getModels(server, port, useTls) {
   if (!server || !port || useTls === void 0) return;
-  if (app2.extensionManager.setting.get("drawthings.bridge_mode.enabled"))
+  if (app.extensionManager.setting.get("drawthings.bridge_mode.enabled"))
     return getBridgeModels();
   const key = modelInfoStoreKey(server, port, useTls);
   if (modelInfoRequests.has(key)) {
@@ -686,6 +686,55 @@ function patchProp(jsonName, funcName, func) {
     prop[funcName] = func;
 }
 
+// web/src/util.ts
+function setCallback(target, callbackName, callback) {
+  const original = target[callbackName];
+  target[callbackName] = function(...args) {
+    const r = original?.apply(this, args);
+    callback?.apply(this, args);
+    return r;
+  };
+}
+function updateProto(base, update) {
+  const proto = base.prototype;
+  for (const key in update) {
+    const val = update[key];
+    if (typeof val === "function" && typeof proto[key] === "function") {
+      const original = proto[key];
+      const added = val;
+      proto[key] = function(...args) {
+        const r = original.apply(this, args);
+        try {
+          added.apply(this, args);
+        } finally {
+          return r;
+        }
+      };
+    } else if (isPropertyDescriptor(val)) {
+      Object.defineProperty(proto, key, val);
+    } else {
+      proto[key] = val;
+    }
+  }
+}
+function isPropertyDescriptor(v) {
+  if (v == null) return false;
+  const hasDescKeys = "value" in v || "get" in v || "set" in v || "writable" in v || "enumerable" in v || "configurable" in v;
+  return typeof v === "object" && hasDescKeys;
+}
+var propertyMap = {
+  preserveOriginalAfterInpaint: "preserve_original",
+  hiresFix: "high_res_fix",
+  sampler: "sampler_name"
+};
+Object.fromEntries(Object.entries(propertyMap).map(([k, v]) => [v, k]));
+function findWidgetByName(node, name) {
+  return node.widgets?.find((w) => w.name === name);
+}
+function getApp() {
+  return window.comfyAPI.app.app;
+}
+
 // web/src/configImport.ts
 function importConfig(sampler) {
   {
@@ -762,7 +811,7 @@ function importConfig(sampler) {
           );
         }
         if (missingNodes.length) {
-          window.app?.extensionManager.toast.add({
+          getApp().extensionManager.toast.add({
             severity: "warn",
             summary: "Draw Things gRPC",
             detail: [
@@ -895,54 +944,8 @@ function getLoraSlotWidgets(node, loraIndex) {
   };
 }
 
-// web/src/util.ts
-function setCallback(target, callbackName, callback) {
-  const original = target[callbackName];
-  target[callbackName] = function(...args) {
-    const r = original?.apply(this, args);
-    callback?.apply(this, args);
-    return r;
-  };
-}
-function updateProto(base, update) {
-  const proto = base.prototype;
-  for (const key in update) {
-    const val = update[key];
-    if (typeof val === "function" && typeof proto[key] === "function") {
-      const original = proto[key];
-      const added = val;
-      proto[key] = function(...args) {
-        const r = original.apply(this, args);
-        try {
-          added.apply(this, args);
-        } finally {
-          return r;
-        }
-      };
-    } else if (isPropertyDescriptor(val)) {
-      Object.defineProperty(proto, key, val);
-    } else {
-      proto[key] = val;
-    }
-  }
-}
-function isPropertyDescriptor(v) {
-  if (v == null) return false;
-  const hasDescKeys = "value" in v || "get" in v || "set" in v || "writable" in v || "enumerable" in v || "configurable" in v;
-  return typeof v === "object" && hasDescKeys;
-}
-var propertyMap = {
-  preserveOriginalAfterInpaint: "preserve_original",
-  hiresFix: "high_res_fix",
-  sampler: "sampler_name"
-};
-Object.fromEntries(Object.entries(propertyMap).map(([k, v]) => [v, k]));
-function findWidgetByName(node, name) {
-  return node.widgets?.find((w) => w.name === name);
-}
-
 // web/src/widgets.ts
-var app3 = window.comfyAPI.app.app;
+var app2 = window.comfyAPI.app.app;
 var basicWidgets = [
   "server",
   "port",
@@ -1041,9 +1044,9 @@ function showWidget(node, widgetName, show = false, suffix = "") {
   widget.linkedWidgets?.forEach((w) => showWidget(node, w, show, ":" + widget.name));
   const minHeight = node.computeSize()[1];
   if (minHeight > node.size[1]) node.setSize([node.size[0], minHeight]);
-  if (app3.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
+  if (app2.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
     node.setSize([node.size[0], minHeight]);
-  setTimeout(() => app3.canvas.setDirty(true, true), 10);
+  setTimeout(() => app2.canvas.setDirty(true, true), 10);
 }
 function showWidgets(node, show, ...widgetNames) {
   widgetNames.forEach((w) => showWidget(node, w, show));
@@ -1135,14 +1138,14 @@ var extension = {
       category: ["Draw Things", "Nodes", "Keep node shrunk"],
       onChange: (newVal, oldVal) => {
         if (oldVal === false && newVal === true) {
-          app3.graph.nodes.filter((n) => n.type === "DrawThingsSampler").forEach((n) => {
+          app2.graph.nodes.filter((n) => n.type === "DrawThingsSampler").forEach((n) => {
             setTimeout(() => n.updateDynamicWidgets(), 10);
           });
         }
       }
     }
   ],
-  async beforeRegisterNodeDef(nodeType, nodeData, app6) {
+  async beforeRegisterNodeDef(nodeType, nodeData, app5) {
     if (nodeType.comfyClass === "DrawThingsSampler") {
       updateProto(nodeType, samplerWidgetsProto);
     }
@@ -1180,7 +1183,7 @@ var samplerWidgetsProto = {
 };
 
 // web/src/lora.ts
-function DtButtonsTypeHandler(node, inputName, inputData, app6) {
+function DtButtonsTypeHandler(node, inputName, inputData, app5) {
   const { container, buttons } = createButtons([
     {
       label: "Show Mode",
@@ -1318,7 +1321,7 @@ var loraProto = {
 };
 var extension2 = {
   name: "loraNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app6) {
+  beforeRegisterNodeDef(nodeType, nodeData, app5) {
     if (nodeType.comfyClass === "DrawThingsLoRA") {
       updateProto(nodeType, loraProto);
     }
@@ -1471,11 +1474,11 @@ var ComfyUI_DrawThings_gRPC_default = {
       updateProto(nodeType, samplerProto);
     }
   },
-  async setup(app6) {
+  async setup(app5) {
     await syncSettings();
-    setCallback(app6.api, "interrupt", async (_e) => {
-      if (app6.rootGraph?.nodes.some((n) => n.type === "DrawThingsSampler")) {
-        await app6.api.fetchApi(`/dt_grpc/interrupt`, {
+    setCallback(app5.api, "interrupt", async (_e) => {
+      if (app5.rootGraph?.nodes.some((n) => n.type === "DrawThingsSampler")) {
+        await app5.api.fetchApi(`/dt_grpc/interrupt`, {
           method: "POST"
         });
       }
@@ -1507,16 +1510,17 @@ var ComfyUI_DrawThings_gRPC_default = {
 };
 var samplerProto = {
   async onNodeCreated() {
+    const app5 = getApp();
     const inputPos = this.inputs?.find(
       (inputPos2) => inputPos2.name == "positive"
     );
     const inputNeg = this.inputs?.find(
       (inputNeg2) => inputNeg2.name == "negative"
     );
-    if (app.canvas) {
-      inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
-      app.canvas.default_connection_color_byType["DT_LORA"] = app.canvas.default_connection_color_byType["MODEL"];
-      app.canvas.default_connection_color_byType["DT_CNET"] = app.canvas.default_connection_color_byType["CONTROL_NET"];
+    if (app5.canvas) {
+      inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app5.canvas.default_connection_color_byType["CONDITIONING"];
+      app5.canvas.default_connection_color_byType["DT_LORA"] = app5.canvas.default_connection_color_byType["MODEL"];
+      app5.canvas.default_connection_color_byType["DT_CNET"] = app5.canvas.default_connection_color_byType["CONTROL_NET"];
     }
     setTimeout(() => checkVersion(), 2e3);
   },
@@ -1559,7 +1563,7 @@ var samplerProto = {
         (c) => `${c.name}: ${c.value} -> ${c.coerced}`
       );
       const detail = message + "\n\n" + list.join("\n");
-      app.extensionManager.toast.add({
+      getApp().extensionManager.toast.add({
         severity: "info",
         summary: "Draw Things gRPC",
         detail,
@@ -1591,19 +1595,20 @@ var samplerProto = {
     return inputs;
   },
   getExtraMenuOptions(_canvas, options) {
-    const showPreview = app.extensionManager.setting.get(
+    const app5 = getApp();
+    const showPreview = app5.extensionManager.setting.get(
       "drawthings.node.show_preview"
     );
-    const keepNodeShrunk = app.extensionManager.setting.get(
+    const keepNodeShrunk = app5.extensionManager.setting.get(
       "drawthings.node.keep_shrunk"
     );
-    const bridgeMode = app.extensionManager.setting.get(
+    const bridgeMode = app5.extensionManager.setting.get(
       "drawthings.bridge_mode.enabled"
     );
-    const bridgeCommunity = app.extensionManager.setting.get(
+    const bridgeCommunity = app5.extensionManager.setting.get(
       "drawthings.bridge_mode.community"
     );
-    const bridgeUncurated = app.extensionManager.setting.get(
+    const bridgeUncurated = app5.extensionManager.setting.get(
       "drawthings.bridge_mode.uncurated"
     );
     options.push(null);
@@ -1629,7 +1634,7 @@ var samplerProto = {
     options.push({
       content: (showPreview ? "\u2713 " : "") + "Show preview while generating",
       callback: () => {
-        app.extensionManager.setting.set(
+        app5.extensionManager.setting.set(
           "drawthings.node.show_preview",
           !showPreview
         );
@@ -1638,7 +1643,7 @@ var samplerProto = {
     options.push({
       content: (keepNodeShrunk ? "\u2713 " : "") + "Keep node shrunk when widgets change",
       callback: () => {
-        app.extensionManager.setting.set(
+        app5.extensionManager.setting.set(
           "drawthings.node.keep_shrunk",
           !keepNodeShrunk
         );
@@ -1648,7 +1653,7 @@ var samplerProto = {
     options.push({
       content: (bridgeMode ? "\u2713 " : "") + "Use bridge mode",
       callback: () => {
-        app.extensionManager.setting.set(
+        app5.extensionManager.setting.set(
           "drawthings.bridge_mode.enabled",
           !bridgeMode
         );
@@ -1658,7 +1663,7 @@ var samplerProto = {
       options.push({
         content: (bridgeCommunity ? "\u2713 " : "") + "Show community models",
         callback: () => {
-          app.extensionManager.setting.set(
+          app5.extensionManager.setting.set(
             "drawthings.bridge_mode.community",
             !bridgeCommunity
           );
@@ -1667,7 +1672,7 @@ var samplerProto = {
       options.push({
         content: (bridgeUncurated ? "\u2713 " : "") + "Show uncurated models",
         callback: () => {
-          app.extensionManager.setting.set(
+          app5.extensionManager.setting.set(
             "drawthings.bridge_mode.uncurated",
             !bridgeUncurated
           );
@@ -1680,8 +1685,9 @@ var samplerProto = {
 };
 async function syncSettings(patch) {
   const api = window.comfyAPI.api.api;
-  const showPreview = patch?.show_preview ?? app.extensionManager.setting.get("drawthings.node.show_preview");
-  const blankOnError = patch?.blank_on_error ?? app.extensionManager.setting.get("drawthings.node.blank_on_error");
+  const app5 = getApp();
+  const showPreview = patch?.show_preview ?? app5.extensionManager.setting.get("drawthings.node.show_preview");
+  const blankOnError = patch?.blank_on_error ?? app5.extensionManager.setting.get("drawthings.node.blank_on_error");
   const body = new FormData();
   body.append("show_preview", String(showPreview));
   body.append("blank_on_error", String(blankOnError));
@@ -1767,7 +1773,7 @@ var controlNetProto = {
 };
 var extension3 = {
   name: "controlNetNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app6) {
+  beforeRegisterNodeDef(nodeType, nodeData, app5) {
     if (nodeType.comfyClass === "DrawThingsControlNet") {
       updateProto(nodeType, controlNetProto);
     }
@@ -1800,7 +1806,7 @@ var dtModelNodeTypes = [
 var dtServerNodeTypes = ["DrawThingsSampler"];
 var extension4 = {
   name: "modelNodes",
-  beforeRegisterNodeDef: (nodeType, nodeData, app6) => {
+  beforeRegisterNodeDef: (nodeType, nodeData, app5) => {
     if (dtModelNodeTypes.includes(nodeType.comfyClass)) {
       updateProto(nodeType, dtModelNodeProto);
       if (dtServerNodeTypes.includes(nodeType.comfyClass)) {
@@ -2088,7 +2094,7 @@ var promptProto = {
     }
   },
   onConnectionsChange(type, index, isConnected, link_info, inputOrOutput) {
-    if (app.extensionManager.setting.get("drawthings.node.color_prompts") === false) return;
+    if (getApp().extensionManager.setting.get("drawthings.node.color_prompts") === false) return;
     let isPositive = false;
     let isNegative = false;
     for (const linkId of this.outputs?.[0]?.links ?? []) {
@@ -2119,7 +2125,7 @@ var promptProto = {
   onNodeCreated() {
     const output = this.outputs?.find((output2) => output2.name == "PROMPT");
     if (output) {
-      output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
+      output.color_on = output.color_off = getApp().canvas.default_connection_color_byType["CONDITIONING"];
     }
     const promptWidget = this.widgets?.find((w) => w.name === "prompt");
     const promptNode = this;
@@ -2130,7 +2136,8 @@ var promptProto = {
     }
   },
   getExtraMenuOptions(canvas, options) {
-    const promptColors = app.extensionManager.setting.get("drawthings.node.color_prompts");
+    const app5 = getApp();
+    const promptColors = app5.extensionManager.setting.get("drawthings.node.color_prompts");
     options.push(
       ...[
         null,
@@ -2138,7 +2145,7 @@ var promptProto = {
           content: (promptColors ? "\u2713 " : "") + "Change colors when connections change",
           callback: async () => {
             try {
-              await app.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
+              await app5.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
             } catch (error) {
               console.error(`Error changing setting: ${error}`);
             }
@@ -2151,7 +2158,7 @@ var promptProto = {
 };
 var extension5 = {
   name: "promptNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app6) {
+  beforeRegisterNodeDef(nodeType, nodeData, app5) {
     if (nodeType.comfyClass === "DrawThingsPrompt") {
       updateProto(nodeType, promptProto);
     }
@@ -2165,7 +2172,7 @@ var extension5 = {
       category: ["Draw Things", "Nodes", "Change prompt"],
       onChange: (newVal, oldVal) => {
         if (oldVal === false && newVal === true) {
-          app.graph.nodes.filter((n) => n.type === "DrawThingsPrompt").forEach((n) => {
+          getApp().graph.nodes.filter((n) => n.type === "DrawThingsPrompt").forEach((n) => {
             setTimeout(() => n.onConnectionsChange(), 10);
           });
         }
