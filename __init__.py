@@ -1,7 +1,7 @@
 """Top-level package for Draw Things for ComfyUI."""
 
 __author__ = """kcjerrell"""
-__version__ = "1.11.1"
+__version__ = "1.12.0"
 
 from .src.util import CancelRequest, Settings
 
