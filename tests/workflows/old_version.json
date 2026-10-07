@@ -582,7 +582,7 @@
                 }
             ],
             "properties": {
-                "cnr_id": "drawthings-grpc",
+                "cnr_id": "draw-things-comfyui",
                 "ver": "f04161fe68defc011dc55a2756f46d33c2577adf",
                 "Node name for S&R": "DrawThingsSampler"
             },
@@ -707,7 +707,7 @@
                 }
             ],
             "properties": {
-                "cnr_id": "drawthings-grpc",
+                "cnr_id": "draw-things-comfyui",
                 "ver": "eea95e391b8c95df20faa610978dbfa3d911e8f5",
                 "Node name for S&R": "DrawThingsNegative"
             },
@@ -755,7 +755,7 @@
                 }
             ],
             "properties": {
-                "cnr_id": "drawthings-grpc",
+                "cnr_id": "draw-things-comfyui",
                 "ver": "eea95e391b8c95df20faa610978dbfa3d911e8f5",
                 "Node name for S&R": "DrawThingsPositive"
             },
