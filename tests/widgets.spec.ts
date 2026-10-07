@@ -9,7 +9,7 @@ if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
 export const workflowFolder = "./tests/workflows";
 
-test.beforeAll(async ({ comfy }) => {
+test.beforeEach(async ({ comfy }) => {
 	await comfy.goto();
 	await comfy.updateSetting("drawthings.bridge_mode.enabled", false);
 });

@@ -14,7 +14,7 @@ const modules: ComfyExtension[] = [dtCore, dtPrompt, dtModelNodes, /* dtDynamicI
 // different features of the nodepack extension are implemented in different modules
 // here we combine them and register a single extension
 app.registerExtension({
-    name: "DrawThings-gRPC",
+    name: "Draw Things for ComfyUI",
 
     getCustomWidgets(...args: any[]) {
         return dtCore.getCustomWidgets ? dtCore.getCustomWidgets.apply(dtCore, args as any) : {}
@@ -62,7 +62,7 @@ app.registerExtension({
 
     aboutPageBadges: [
         {
-            label: `DrawThings-gRPC v${nodePackVersion}`,
+            label: `Draw Things for ComfyUI v${nodePackVersion}`,
             url: "https://github.com/drawthingsai/draw-things-comfyui",
             icon: "dt-grpc-about-badge-logo"
         }

@@ -1,4 +1,4 @@
-"""Top-level package for ComfyUI-DrawThings-gRPC."""
+"""Top-level package for Draw Things for ComfyUI."""
 
 __author__ = """kcjerrell"""
 __version__ = "1.11.1"

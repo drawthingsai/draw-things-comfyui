@@ -2210,7 +2210,7 @@ var modules = [
   controlnet_default
 ];
 app$1.registerExtension({
-  name: "DrawThings-gRPC",
+  name: "Draw Things for ComfyUI",
   getCustomWidgets(...args) {
     return ComfyUI_DrawThings_gRPC_default.getCustomWidgets ? ComfyUI_DrawThings_gRPC_default.getCustomWidgets.apply(ComfyUI_DrawThings_gRPC_default, args) : {};
   },
@@ -2254,7 +2254,7 @@ app$1.registerExtension({
   settings: modules.flatMap((m) => m.settings ?? []),
   aboutPageBadges: [
     {
-      label: `DrawThings-gRPC v${nodePackVersion}`,
+      label: `Draw Things for ComfyUI v${nodePackVersion}`,
       url: "https://github.com/drawthingsai/draw-things-comfyui",
       icon: "dt-grpc-about-badge-logo"
     }

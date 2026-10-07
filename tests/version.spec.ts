@@ -102,7 +102,7 @@ test("updates notes", async ({ comfy, page }) => {
 
     // assert update notes appears
     await expect(toastLoc).toBeVisible();
-    await expect(toastLoc).toContainText("DrawThings-gRPC");
+    await expect(toastLoc).toContainText("Draw Things for ComfyUI");
 
     // reload
     await page.reload();

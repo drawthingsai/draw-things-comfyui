@@ -245,7 +245,7 @@ async def dt_sampler(inputs: dict):
                             )
                         except Exception as e:
                             print(
-                                "DrawThings-gRPC had an error decoding the preview image:",
+                                "Draw Things for ComfyUI had an error decoding the preview image:",
                                 e,
                             )
 
@@ -271,7 +271,7 @@ async def dt_sampler(inputs: dict):
                         continue
                     if len(response_images) > 0:
                         print(
-                            f"DrawThings-gRPC stream ended with {status.name}; returning partial results."
+                            f"Draw Things gRPC stream ended with {status.name}; returning partial results."
                         )
                         break
                     raise Exception(

@@ -221,7 +221,7 @@ export class ComfyPage {
 	async clearUserData() {
 		const dir = join(
 			process.env.TEST_COMFYUI_DIR,
-			"user/default/drawthings-grpc",
+			"user/default/draw-things-comfyui",
 		);
 		await fse.emptyDir(dir);
 	}
