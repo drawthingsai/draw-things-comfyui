@@ -278,7 +278,7 @@ export interface ModelInfo {
 /** @type Map<string, ModelInfo> */
 const modelInfoStore = new Map<string, ModelInfo | null>();
 /** @type Map<string, Promise<void>> */
-const modelInfoRequests = new Map<string, Promise<void>>();
+const modelInfoLoads = new Map<string, Promise<void>>();
 const modelInfoStoreKey = (
     server?: string,
     port?: number | string,
@@ -315,8 +315,8 @@ async function getModels(
         return getBridgeModels();
 
     const key = modelInfoStoreKey(server, port, useTls);
-    if (modelInfoRequests.has(key)) {
-        const request = modelInfoRequests.get(key);
+    if (modelInfoLoads.has(key)) {
+        const request = modelInfoLoads.get(key);
         await request;
     } else {
         const promise = new Promise<void>((resolve) => {
@@ -328,11 +328,11 @@ async function getModels(
                     testHack(data);
                     modelInfoStore.set(key, data);
                 }
-                modelInfoRequests.delete(key);
+                modelInfoLoads.delete(key);
                 resolve();
             });
         });
-        modelInfoRequests.set(key, promise);
+        modelInfoLoads.set(key, promise);
         await promise;
     }
 

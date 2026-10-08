@@ -7,7 +7,7 @@ export default defineConfig({
     sourcemap: true,
     minify: false,
     clean: true,
-    outDir: "web/dist",
+    outDir: "web/js",
     format: "esm",
     platform: "browser",
     outExtension({ format }) {

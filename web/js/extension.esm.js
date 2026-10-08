@@ -244,7 +244,7 @@ async function getBridgeModels() {
   return combinedBridgeModels;
 }
 var modelInfoStore = /* @__PURE__ */ new Map();
-var modelInfoRequests = /* @__PURE__ */ new Map();
+var modelInfoLoads = /* @__PURE__ */ new Map();
 var modelInfoStoreKey = (server, port, useTls) => `${server}:${port}${useTls ? ":tls" : ""}`;
 var failedConnectionOptions = [
   "Couldn't connect to server",
@@ -268,8 +268,8 @@ async function getModels(server, port, useTls) {
   if (app.extensionManager.setting.get("drawthings.bridge_mode.enabled"))
     return getBridgeModels();
   const key = modelInfoStoreKey(server, port, useTls);
-  if (modelInfoRequests.has(key)) {
-    const request = modelInfoRequests.get(key);
+  if (modelInfoLoads.has(key)) {
+    const request = modelInfoLoads.get(key);
     await request;
   } else {
     const promise = new Promise((resolve) => {
@@ -281,11 +281,11 @@ async function getModels(server, port, useTls) {
           testHack(data);
           modelInfoStore.set(key, data);
         }
-        modelInfoRequests.delete(key);
+        modelInfoLoads.delete(key);
         resolve();
       });
     });
-    modelInfoRequests.set(key, promise);
+    modelInfoLoads.set(key, promise);
     await promise;
   }
   return modelInfoStore.get(key) || void 0;
@@ -1267,7 +1267,8 @@ var loraProto = {
         if (node && node.type === "DrawThingsLoRA" && input.link !== null) {
           this.disconnectInput(slot);
           this.graph?.removeLink(input.link);
-          node.connect(0, this, 0);
+          const connectNode = node.connect;
+          connectNode.call(node, 0, this, 0);
         } else if (input.link !== null) {
           this.disconnectInput(slot);
           this.graph?.removeLink(input.link);
@@ -1470,7 +1471,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.12.1";
+var nodePackVersion = "1.12.2";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {

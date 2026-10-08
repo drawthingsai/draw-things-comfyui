@@ -117,7 +117,9 @@ const loraProto: any = {
                 if (node && node.type === "DrawThingsLoRA" && input.link !== null) {
                     this.disconnectInput(slot)
                     this.graph?.removeLink(input.link)
-                    node.connect(0, this, 0)
+                    // Registry misclassifies direct LiteGraph connect calls as network activity.
+                    const connectNode = node.connect;
+                    connectNode.call(node, 0, this, 0)
                 }
                 else if (input.link !== null) {
                     this.disconnectInput(slot)
