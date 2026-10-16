@@ -1,5 +1,5 @@
-import { ComfyApp } from '@comfyorg/comfyui-frontend-types';
-import type { LGraphNode } from '@comfyorg/litegraph';
+import type { ComfyApp } from '@comfyorg/comfyui-frontend-types';
+import { LiteGraph, type LGraphNode } from '@comfyorg/litegraph';
 
 type MethodKeys<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -127,6 +127,10 @@ export function getApp(): ComfyApp {
     return window.comfyAPI.app.app
 };
 
+export function getLiteGraph(): typeof LiteGraph {
+    // @ts-ignore
+    return window.LiteGraph
+}
 
 /**
  * Plain, JSON-safe copies of a node's widget values, keyed by widget name.

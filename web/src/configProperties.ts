@@ -158,22 +158,9 @@ type ImportFunc = (key: string, value: any, widget: IWidget, node: LGraphNode, c
 type ExportFunc = (widget: IWidget, node: LGraphNode, config: any) => void | Promise<void>;
 
 const importers: Record<string, ImportFunc> = {
-    model: async (k, v, w, n, c) => {
-        await modelService.updateNodes()
-        const values = w?.options?.values as any[] | undefined;
-        const matchingOption = values?.find((ov: any) => ov.value?.file === v)
-        if (matchingOption) w.value = matchingOption
-    },
-    refiner_model: (k, v, w) => {
-        const values = w?.options?.values as any[] | undefined;
-        const matchingOption = values?.find((wv: any) => wv.value?.file === v)
-        if (matchingOption) w.value = matchingOption
-    },
-    upscaler: (k, v, w) => {
-        const values = w?.options?.values as any[] | undefined;
-        const matchingOption = values?.find((wv: any) => wv.value?.file === v)
-        if (matchingOption) w.value = matchingOption
-    },
+    model: async (k, v, w, n) => { await modelService.selectByFile(n, w, v) },
+    refiner_model: async (k, v, w, n) => { await modelService.selectByFile(n, w, v) },
+    upscaler: async (k, v, w, n) => { await modelService.selectByFile(n, w, v) },
     start_width: (k, v, w) => {
         if (w) w.value = roundBy64(v)
     },

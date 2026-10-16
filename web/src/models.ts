@@ -1,409 +1,338 @@
 import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
-import {
-    type INodeInputSlot,
-    type LGraph,
-    type LGraphNode
-} from "@comfyorg/litegraph";
-import { CombinedModelsResponse, combinedModelsResponseKeys } from "./modelsTypes";
-import { getApp } from "./util";
+import type { ComboWidget, IWidget, LGraph, LGraphNode } from "@comfyorg/litegraph";
+import { combinedModelsResponseKeys, type CombinedModelsResponse } from "./modelsTypes";
+import { getApp, getLiteGraph } from "./util";
 
-// @ts-ignore
-const app = window.comfyAPI.app.app;
-
-interface DTServerNode extends LGraphNode {
+export interface DTModelNode extends LGraphNode {
     isDtServerNode?: boolean;
-    getServer: () => { server: string; port: number | string; useTls: boolean };
-    updateModels?: (models: any, versions?: any) => void;
-    findServerNodes?: () => DTServerNode[];
-    getModelVersion?: () => string;
-}
-
-interface DTModelNode extends LGraphNode {
-    isDtServerNode?: boolean;
-    updateModels?: (models: any, versions?: any) => void;
-    findServerNodes?: () => DTServerNode[];
+    getServer?: () => { server: string; port: number | string; useTls: boolean };
+    getModelVersion?: () => string | undefined;
     saveSelectedModels?: () => void;
+    updateDynamicWidgets?: () => void;
+    _lastSelectedModel?: Record<string, any>;
 }
-
-class ModelService {
-    #updateNodesPromise: Promise<void> | null = null;
-
-    constructor() { }
-
-    async updateNodes() {
-        // since many nodes may be configured at once, we will batch calls to updateNodes
-        if (app.configuringGraph || !app.graph) return;
-        if (!this.#updateNodesPromise) {
-            this.#updateNodesPromise = new Promise((res) => {
-                setTimeout(() => {
-                    this.#updateNodesPromise = null;
-                    this.#updateNodes().then(() => res());
-                }, 10);
-            });
-        }
-
-        return this.#updateNodesPromise;
-    }
-
-    async #updateNodes() {
-        const dtModelNodes = getNodesRecursive(app.graph).filter(
-            (n: any) => n.isDtServerNode !== undefined,
-        ) as DTModelNode[];
-        const graphServerNodes = dtModelNodes.filter(
-            (n) => n.isDtServerNode,
-        ) as DTServerNode[];
-        if (!graphServerNodes.length) return;
-
-        const nodesUpdated = new Map(dtModelNodes.map((n) => [n, false]));
-        /** @type {Map<string, ModelInfo | undefined>} */
-        const serverModels = new Map<string, ModelInfo | undefined>();
-
-        for (const sn of graphServerNodes) {
-            // get fresh models list for the server
-            const { server, port, useTls } = sn.getServer();
-            if (!server || !port || useTls === undefined) continue;
-            const key = modelInfoStoreKey(server, port, useTls);
-            if (!serverModels.has(key)) {
-                serverModels.set(key, await getModels(server, port, useTls));
-            }
-
-            // update server node's models
-            const models = serverModels.get(key);
-            sn.updateModels?.(models);
-            nodesUpdated.set(sn, true);
-        }
-
-        for (const node of dtModelNodes) {
-            if (nodesUpdated.get(node)) continue;
-
-            // determine the server(s) and version(s) this node is connected to
-            /** @type {import('@comfyorg/litegraph').LGraphNode[]?} */
-            const serverNodes = node?.findServerNodes?.();
-            if (!serverNodes || !serverNodes.length) continue;
-
-            let mergedModels = {};
-            for (const sn of serverNodes) {
-                const { server, port, useTls } = sn.getServer();
-                if (!server || !port || useTls === undefined) continue;
-                const models = serverModels.get(
-                    modelInfoStoreKey(server, port, useTls),
-                );
-                mergedModels = mergeModels(mergedModels, models);
-            }
-            const versions = serverNodes
-                .map((sn) => sn?.getModelVersion?.())
-                .filter((v) => v);
-
-            node.updateModels?.(mergedModels, versions);
-            nodesUpdated.set(node, true);
-        }
-
-        // these nodes are not connected to a sampler node
-        // if there's a single server, update them with those models
-        const models =
-            serverModels.size === 1 ? serverModels.values().next().value : null;
-        for (const node of nodesUpdated.keys()) {
-            if (nodesUpdated.get(node) === false) {
-                nodesUpdated.set(node, true);
-                node.updateModels?.(models);
-            }
-        }
-    }
-}
-
-function getNodesRecursive(graph: LGraph): LGraphNode[] {
-    const nodes = [];
-    for (const node of graph.nodes) {
-        if ("subgraph" in node) {
-            nodes.push(...getNodesRecursive(node.subgraph));
-        } else {
-            nodes.push(node);
-        }
-    }
-    return nodes;
-}
-
-export const modelService = new ModelService();
-
-/**
- * @param node {LGraphNode}
- * @param inputName {string}
- * @param inputData {["DT_MODEL", {model_type: string}]}
- */
-export function DtModelTypeHandler(
-    node: DTModelNode,
-    inputName: string,
-    inputData: any,
-    app: ComfyApp,
-) {
-    const widget = node.addWidget(
-        "combo",
-        inputName,
-        "(None selected)",
-        /** @type WidgetCallback<IWidget<any, any>> */
-        (
-            (value: any, graph: any, node: any) => {
-                node.saveSelectedModels?.();
-                modelService.updateNodes();
-            }
-        ) as any,
-        {
-            values: ["(None selected)"],
-            modelType: inputData[1].model_type,
-        } as any,
-    );
-
-    return { widget };
-}
-
-/**
- * @param {string} server
- * @param {number | string} port
- */
-export async function getFiles(
-    server: string,
-    port: number | string,
-    useTls: boolean,
-) {
-    const body = new FormData();
-    body.append("server", server);
-    body.append("port", String(port));
-    body.append("use_tls", String(useTls));
-
-    const api = window.comfyAPI.api.api;
-    const filesInfoResponse = await api.fetchApi(`/dt_grpc/files_info`, {
-        method: "POST",
-        body,
-    });
-
-    return filesInfoResponse;
-}
-
-let combinedModelsJson: Record<string, any> | null = null;
-let combinedIncludes: [boolean | null, boolean | null] = [null, null];
-let combinedBridgeModels: ModelInfo | null = null;
-async function getBridgeModels() {
-    const includeCommunity = app.extensionManager.setting.get(
-        "drawthings.bridge_mode.community",
-    );
-    const includeUncurated = app.extensionManager.setting.get(
-        "drawthings.bridge_mode.uncurated",
-    );
-    if (
-        combinedBridgeModels &&
-        combinedIncludes[0] === includeCommunity &&
-        combinedIncludes[1] === includeUncurated
-    )
-        return combinedBridgeModels;
-
-    if (!combinedModelsJson) {
-        const api = window.comfyAPI.api.api;
-        const filesResponse = await api.fetchApi("/dt_grpc/bridge_models");
-        if (!filesResponse.ok) {
-            getApp().extensionManager.toast.add({
-                summary: "DT+ Error",
-                severity: "warn",
-                detail: "Couldn't retrieve the list of available DT+ models for bridge mode. DT+ may be down.",
-            }
-
-            );
-        }
-        const files: string[] = filesResponse.ok
-            ? (await filesResponse.json())
-            : [];
-
-        const combinedModelsResponse = await api.fetchApi(
-            "/dt_grpc/combined_models",
-        );
-
-        const combinedModelsRaw: CombinedModelsResponse =
-            await combinedModelsResponse.json();
-        combinedModelsJson = {};
-        for (const key of combinedModelsResponseKeys) {
-            const value = combinedModelsRaw[key];
-
-            if (!Array.isArray(value)) continue
-
-            combinedModelsJson[key] = value.filter(
-                (m) => files.includes(m.file),
-            );
-        }
-    }
-
-    const models = [...combinedModelsJson.officialModels];
-    const controlNets = [...combinedModelsJson.officialCnets];
-    const loras = [...combinedModelsJson.officialLoras];
-    const textualInversions = [];
-
-    if (includeCommunity) {
-        models.push(...combinedModelsJson.communityModels);
-        controlNets.push(...combinedModelsJson.communityCnets);
-        loras.push(...combinedModelsJson.communityLoras);
-        textualInversions.push(...combinedModelsJson.communityEmbeddings);
-    }
-
-    if (includeUncurated) {
-        models.push(...combinedModelsJson.uncuratedModels);
-    }
-
-    combinedBridgeModels = {
-        models,
-        controlNets,
-        loras,
-        textualInversions,
-        upscalers: [],
-    };
-    combinedIncludes = [includeCommunity, includeUncurated];
-
-    return combinedBridgeModels;
-}
-
-/* @typedef {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} ModelInfo */
 
 export interface Model {
     name: string;
     file: string;
     version?: string;
+    [key: string]: any;
 }
-
 export interface ModelInfo {
     models: Model[];
     controlNets: Model[];
     loras: Model[];
     textualInversions: Model[];
     upscalers: Model[];
-    [key: string]: Model[]; // Allow dynamic keys for mergeModels
+    [key: string]: Model[];
 }
 
-/** @type Map<string, ModelInfo> */
-const modelInfoStore = new Map<string, ModelInfo | null>();
-/** @type Map<string, Promise<void>> */
-const modelInfoLoads = new Map<string, Promise<void>>();
-const modelInfoStoreKey = (
-    server?: string,
-    port?: number | string,
-    useTls?: boolean,
-) => `${server}:${port}${useTls ? ":tls" : ""}`;
-
-// yes this is kind of hacky :)
-const failedConnectionOptions = [
-    "Couldn't connect to server",
-    "Check server and click to retry",
-].map((c, i) => ({
-    name: c,
-    file: "",
-    version: "fail",
-    order: i + 1,
-})) as any[];
-
-const notConnectedOptions = [
-    "Not connected to sampler node",
-    "Connect to a sampler node to list available models",
-].map((c) => ({
-    name: c,
-    file: "",
-    version: "fail",
-}));
-
-async function getModels(
-    server: string,
-    port: number | string,
-    useTls: boolean,
-) {
-    if (!server || !port || useTls === undefined) return;
-    if (app.extensionManager.setting.get("drawthings.bridge_mode.enabled"))
-        return getBridgeModels();
-
-    const key = modelInfoStoreKey(server, port, useTls);
-    if (modelInfoLoads.has(key)) {
-        const request = modelInfoLoads.get(key);
-        await request;
-    } else {
-        const promise = new Promise<void>((resolve) => {
-            getFiles(server, port, useTls).then(async (response) => {
-                if (!response.ok) {
-                    modelInfoStore.set(key, null);
-                } else {
-                    const data = await response.json();
-                    testHack(data);
-                    modelInfoStore.set(key, data);
-                }
-                modelInfoLoads.delete(key);
-                resolve();
-            });
-        });
-        modelInfoLoads.set(key, promise);
-        await promise;
-    }
-
-    return modelInfoStore.get(key) || undefined;
-}
-
-const failedConnectionInfo: ModelInfo = {
-    models: failedConnectionOptions,
-    controlNets: notConnectedOptions,
-    loras: notConnectedOptions,
-    upscalers: notConnectedOptions,
-    textualInversions: notConnectedOptions,
-};
-
-modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo);
-
-/** @param node {LGraphNode} */
-function getInputNodes(node: LGraphNode) {
-    return node.inputs
-        .map((input, i) => [i, input] as [number, INodeInputSlot])
-        .filter(([index, input]) => input.link !== null)
-        .map(([index, input]) => node.getInputNode(Number(index)));
-}
-
-export function getMenuItem(model: Model, disabled: boolean) {
+export function getMenuItem(model: Model, disabled = false) {
     return {
         value: model,
-        content:
-            model.version && model.version !== "fail"
-                ? `${model.name} (${getVersionAbbrev(model.version)})`
-                : model.name,
-        toString() {
-            return model.name;
-        },
-        // has_submenu?: boolean;
+        content: model.version ? `${model.name} (${getVersionAbbrev(model.version)})` : model.name,
+        toString() { return model.name; },
         disabled,
-        // submenu?: IContextMenuSubmenu<TValue>;
-        // property?: string;
-        // type?: string;
-        // slot?: IFoundSlot;
-        // callback(this: ContextMenuDivElement<TValue>, value?: TCallbackValue, options?: unknown, event?: MouseEvent, previous_menu?: ContextMenu<TValue>, extra?: TExtra) {
-        callback(...args: any[]) {
-            return false;
-        },
     };
 }
 
-/**
- *
- * @param {ModelInfo?} modelInfoA
- * @param {ModelInfo?} modelInfoB
- */
-function mergeModels(
-    modelInfoA: ModelInfo | undefined | null | {},
-    modelInfoB: ModelInfo | undefined | null,
-) {
-    /** @type {ModelInfo} */
-    const merged: ModelInfo = {} as any;
-    /** @type {Set<keyof ModelInfo>} */
-    const types = new Set(
-        Object.keys(modelInfoA ?? {}).concat(Object.keys(modelInfoB ?? {})),
-    );
-    for (const type of types.values()) {
-        (merged as any)[type] = (modelInfoA as any)[type] ?? [];
-        const modelFiles = (merged as any)[type].map((m: any) => m.file);
-        const extras: any[] = ((modelInfoB as any)[type] ?? []).filter(
-            (m: any) => !modelFiles.includes(m.file),
-        );
-        (merged as any)[type] = (merged as any)[type].concat(extras);
+// Workflows and the Python backend require the full model inside this wrapper.
+export function restoreModelLabel(selection: any) {
+    if (!selection || typeof selection !== "object" || !selection.value) return selection;
+    return {
+        ...selection,
+        content: selection.content ?? getMenuItem(selection.value).content,
+        toString() { return this.value.name; },
+    };
+}
+
+// Run after node-specific migrations, which may replace positional widget values.
+export function restoreModelSelections(node: DTModelNode) {
+    const selections = node._lastSelectedModel ?? {};
+    for (const widget of node.widgets ?? []) {
+        const type = (widget.options as any)?.modelType;
+        if (!type) continue;
+        const saved = selections[widget.name];
+        const value = widget.value === "Not connected" || widget.value === "Click to retry"
+            ? saved ?? (type === "textualInversions" ? "..." : "(None selected)") : widget.value;
+        widget.value = restoreModelLabel(value);
+        if (saved) selections[widget.name] = restoreModelLabel(saved);
     }
-    return merged;
+    node.saveSelectedModels?.();
+}
+
+export function getNodesRecursive(graph: LGraph, seen = new Set<LGraph>()): DTModelNode[] {
+    if (seen.has(graph)) return [];
+    seen.add(graph);
+    return (graph.nodes ?? []).flatMap((node: any) => [
+        node, ...(node.subgraph ? getNodesRecursive(node.subgraph, seen) : []),
+    ]);
+}
+
+// Follow every output, including chains and the installed LiteGraph subgraph IO slots.
+export function findServerNodes(node: DTModelNode): DTModelNode[] {
+    const root = (node.graph as any)?.rootGraph ?? getApp().graph;
+    const nodes = root ? getNodesRecursive(root) : [];
+    const visited = new Set<LGraphNode>();
+    const traversedLinks = new Set<object>();
+    const servers = new Set<DTModelNode>();
+    function followLinks(graph: any, links: readonly number[] = []) {
+        for (const id of links) {
+            const link = graph?.getLink(id);
+            if (!link || traversedLinks.has(link)) continue;
+            traversedLinks.add(link);
+            if (graph.outputNode?.id === link.target_id) {
+                for (const container of nodes as any[]) {
+                    if (container.subgraph === graph)
+                        followLinks(container.graph, container.outputs?.[link.target_slot]?.links ?? []);
+                }
+            } else {
+                const target = graph.getNodeById(link.target_id);
+                if (target?.subgraph) {
+                    const slot = target.subgraph.inputNode?.slots?.[link.target_slot];
+                    const innerLinks = slot?.getLinks?.() ?? [];
+                    followLinks(target.subgraph, innerLinks.map((inner: any) => inner.id));
+                } else if (target) visit(target);
+            }
+        }
+    }
+    function visit(current: DTModelNode) {
+        if (visited.has(current)) return;
+        visited.add(current);
+        if (current.isDtServerNode) { servers.add(current); return; }
+        for (const output of current.outputs ?? []) followLinks(current.graph, output.links ?? []);
+    }
+    visit(node);
+    return [...servers];
+}
+
+function settingsKey() {
+    const setting = getApp().extensionManager.setting;
+    return JSON.stringify([
+        !!setting.get("drawthings.bridge_mode.enabled"),
+        !!setting.get("drawthings.bridge_mode.community"),
+        !!setting.get("drawthings.bridge_mode.uncurated"),
+    ]);
+}
+
+class ModelService {
+    getCachedModels(node: DTModelNode): ModelInfo[] {
+        if (getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled"))
+            return bridgeCache ? [bridgeCatalog(bridgeCache)] : [];
+        return this.context(node).servers.flatMap((server) => {
+            const address = server.getServer?.();
+            const cached = address && modelInfoStore.get(JSON.stringify([address.server, String(address.port), address.useTls]));
+            return cached ? [cached] : [];
+        });
+    }
+    context(node: DTModelNode) {
+        const connected = findServerNodes(node);
+        let servers = connected;
+        if (!servers.length) {
+            const root = (node.graph as any)?.rootGraph ?? getApp().graph;
+            const candidates = root ? getNodesRecursive(root).filter((n) => n.isDtServerNode) : [];
+            const unique = new Map(candidates.map((n) => [JSON.stringify(n.getServer?.()), n]));
+            if (unique.size === 1) servers = [...unique.values()];
+        }
+        return { servers, versions: connected.map((n) => n.getModelVersion?.()).filter((v): v is string => !!v) };
+    }
+
+    contextKey(node: DTModelNode) {
+        const { servers, versions } = this.context(node);
+        return JSON.stringify([settingsKey(), servers.map((n) => n.getServer?.()), versions]);
+    }
+
+    async getMenuItems(node: DTModelNode, type: string, filterVersions = true) {
+        const { servers, versions } = this.context(node);
+        const shouldFilterVersions = filterVersions && type !== "upscalers";
+        const useBridgeCatalog = type !== "upscalers"
+            && getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled");
+        if (!useBridgeCatalog && !servers.length) throw new Error("Connect to a sampler node to list available models");
+        let catalogs: ModelInfo[];
+        if (useBridgeCatalog) catalogs = [await getBridgeModels()];
+        else {
+            const responses = await Promise.allSettled(servers.map(async (server) => {
+                const address = server.getServer?.();
+                if (!address) throw new Error("Check server and click to retry");
+                return getModels(address.server, address.port, address.useTls);
+            }));
+            catalogs = responses.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+            if (!catalogs.length) throw (responses.find((result) => result.status === "rejected") as PromiseRejectedResult).reason;
+        }
+        const models = new Map<string, Model>();
+        for (const catalog of catalogs)
+            for (const model of catalog?.[type] ?? []) if (!models.has(model.file)) models.set(model.file, model);
+        const rank = (model: Model) => !shouldFilterVersions || !versions.length ? 0
+            : model.version ? (versions.includes(model.version) ? 0 : 2) : 1;
+        return [...models.values()].map((model) => getMenuItem(model,
+            !!(shouldFilterVersions && model.version && versions.length && !versions.includes(model.version)),
+        )).sort((a, b) => rank(a.value) - rank(b.value)
+            || a.value.name.localeCompare(b.value.name, undefined, { sensitivity: "base" }));
+    }
+
+    async selectByFile(node: DTModelNode, widget: IWidget, file: unknown) {
+        if (!file) { setModelValue(node, widget, "(None selected)"); return; }
+        const type = (widget.options as any)?.modelType;
+        const cached = this.getCachedModels(node).flatMap((catalog) => catalog[type] ?? [])
+            .find((model) => model.file === file);
+        const selection = cached ? getMenuItem(cached)
+            : (await this.getMenuItems(node, type, false)).find((item) => item.value.file === file);
+        if (selection) setModelValue(node, widget, selection);
+    }
+}
+export const modelService = new ModelService();
+
+export function setModelValue(node: DTModelNode, widget: IWidget, selection: any) {
+    const canvas = getApp().canvas;
+    (widget as ComboWidget).setValue(restoreModelLabel(selection), { node, canvas, e: undefined } as any);
+}
+
+export function DtModelTypeHandler(node: DTModelNode, inputName: string, inputData: any, app: ComfyApp) {
+    const LiteGraph = getLiteGraph();
+    const type: string = inputData[1].model_type;
+    const isPrompt = type === "textualInversions";
+    const widget = node.addWidget("combo", inputName, isPrompt ? "..." : "(None selected)",
+        () => {
+            node.saveSelectedModels?.();
+            if (node.isDtServerNode && type === "models") node.updateDynamicWidgets?.();
+        },
+        { values: [isPrompt ? "..." : "(None selected)"], modelType: type } as any,
+    ) as ComboWidget;
+    const unrestricted = type === "upscalers" || (type === "models" && !!node.isDtServerNode);
+    const getItems = () => modelService.getMenuItems(node, type, !unrestricted);
+    let request = 0;
+    function startRequest() {
+        const token = ++request;
+        const graph = node.graph;
+        const context = modelService.contextKey(node);
+        return () => token === request && node.graph === graph && !!graph
+            && graph.getNodeById(node.id) === node && modelService.contextKey(node) === context;
+    }
+    async function step(delta: number, options: Parameters<ComboWidget["incrementValue"]>[0]) {
+        if (isPrompt) return;
+        const current = startRequest();
+        const value = widget.value;
+        let items: any[];
+        try {
+            items = ["(None selected)", ...await getItems()];
+        } catch {
+            // Keep the saved selection when the catalog is unavailable; the menu allows retrying.
+            return;
+        }
+        if (!current() || widget.value !== value) return;
+        const index = items.findIndex((item) => typeof item === "string"
+            ? item === value : item.value.file === (value as any)?.value?.file);
+        let next = index + delta;
+        while (next >= 0 && next < items.length && items[next].disabled) next += delta;
+        if (next < 0 || next >= items.length) return;
+        options.canvas.last_mouseclick = 0;
+        widget.setValue(restoreModelLabel(items[next]), options);
+    }
+    widget.incrementValue = (options) => step(1, options);
+    widget.decrementValue = (options) => step(-1, options);
+    widget.canIncrement = () => !isPrompt;
+    widget.canDecrement = () => !isPrompt && widget.value !== "(None selected)";
+    widget.onClick = async ({ e, node: clickedNode, canvas }) => {
+        if (!isPrompt) {
+            const x = e.canvasX - clickedNode.pos[0];
+            const width = widget.width || clickedNode.size[0];
+            if (x < 40) return widget.decrementValue({ e, node: clickedNode, canvas });
+            if (x > width - 40) return widget.incrementValue({ e, node: clickedNode, canvas });
+        }
+        const current = startRequest();
+        let menu: any;
+        const open = (items: any[]) => new LiteGraph.ContextMenu(items, {
+            scale: Math.max(1, canvas.ds.scale), event: e, className: "dark",
+            callback: (item: any) => {
+                if (item?.disabled || !current()) return;
+                widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), { e, node: clickedNode, canvas });
+            },
+        });
+        menu = open([{ content: "Loading models…", disabled: true }]);
+        let items: any[];
+        try {
+            items = await getItems();
+            if (isPrompt) {
+                const prompt = String(node.widgets?.find((w) => w.name === "prompt")?.value ?? "");
+                const tags = new Set([...prompt.matchAll(/<(.*?)>/gm)].map((m) => m[1]));
+                items = items.map((item) => ({ ...item, content: `${tags.has(item.value.keyword) ? "✓ " : ""}${item.value.name} (${item.value.version})` }));
+            }
+            if (!items.length) items.push({ content: "No models available", disabled: true });
+        } catch (error) {
+            items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+        }
+        if (!current() || !menu.root?.isConnected) { menu.close(); return; }
+        menu.close();
+        open([isPrompt ? "..." : "(None selected)", ...items]);
+    };
+    return { widget };
+}
+
+export async function getFiles(server: string, port: number | string, useTls: boolean) {
+    const body = new FormData();
+    body.append("server", server);
+    body.append("port", String(port));
+    body.append("use_tls", String(useTls));
+    return window.comfyAPI.api.api.fetchApi("/dt_grpc/files_info", { method: "POST", body });
+}
+
+const modelInfoStore = new Map<string, ModelInfo>();
+const modelInfoLoads = new Map<string, Promise<ModelInfo>>();
+export async function getModels(server: string, port: number | string, useTls: boolean): Promise<ModelInfo> {
+    if (!server || !port || useTls === undefined) throw new Error("Check server and click to retry");
+    const key = JSON.stringify([server, String(port), useTls]);
+    let load = modelInfoLoads.get(key);
+    if (!load) {
+        load = (async () => {
+            const response = await getFiles(server, port, useTls);
+            if (!response.ok) throw new Error("Couldn't connect to server. Check server and click to retry");
+            const models: ModelInfo = await response.json();
+            testHack(models);
+            modelInfoStore.set(key, models);
+            return models;
+        })();
+        modelInfoLoads.set(key, load);
+    }
+    try { return await load; }
+    finally { if (modelInfoLoads.get(key) === load) modelInfoLoads.delete(key); }
+}
+
+let bridgeLoad: Promise<CombinedModelsResponse> | undefined;
+let bridgeCache: CombinedModelsResponse | undefined;
+async function getBridgeModels(): Promise<ModelInfo> {
+    if (bridgeCache) return bridgeCatalog(bridgeCache);
+    if (!bridgeLoad) bridgeLoad = (async () => {
+        const api = window.comfyAPI.api.api;
+        const [filesResponse, combinedResponse] = await Promise.all([
+            api.fetchApi("/dt_grpc/bridge_models"), api.fetchApi("/dt_grpc/combined_models"),
+        ]);
+        if (!filesResponse.ok || !combinedResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
+        const files: string[] = await filesResponse.json();
+        const combined: CombinedModelsResponse = await combinedResponse.json();
+        const filtered = Object.fromEntries(combinedModelsResponseKeys.map((key) => [key,
+            Array.isArray(combined[key]) ? combined[key].filter((model) => files.includes(model.file)) : [],
+        ])) as unknown as CombinedModelsResponse;
+        bridgeCache = filtered;
+        return filtered;
+    })();
+    const load = bridgeLoad;
+    let combined: CombinedModelsResponse;
+    try { combined = await load; }
+    finally { if (bridgeLoad === load) bridgeLoad = undefined; }
+    return bridgeCatalog(combined);
+}
+
+function bridgeCatalog(combined: CombinedModelsResponse): ModelInfo {
+    const setting = getApp().extensionManager.setting;
+    const community = !!setting.get("drawthings.bridge_mode.community");
+    const uncurated = !!setting.get("drawthings.bridge_mode.uncurated");
+    return {
+        models: [...combined.officialModels, ...(community ? combined.communityModels : []), ...(uncurated ? combined.uncuratedModels : [])],
+        controlNets: [...combined.officialCnets, ...(community ? combined.communityCnets : [])],
+        loras: [...combined.officialLoras, ...(community ? combined.communityLoras : [])],
+        textualInversions: community ? [...combined.communityEmbeddings] : [],
+        upscalers: [],
+    };
 }
 
 const versionNames: Record<string, string> = {

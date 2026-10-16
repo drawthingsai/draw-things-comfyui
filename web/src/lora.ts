@@ -1,6 +1,7 @@
 import { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js"
 import { plainWidgetValues, updateProto } from "./util.js"
 import { showWidget } from "./widgets.js"
+import { restoreModelSelections } from "./models.js"
 import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
 import type { ComfyExtension, ComfyApp } from "@comfyorg/comfyui-frontend-types";
 
@@ -133,6 +134,7 @@ const loraProto: any = {
         }
 
         delete this.widget_values_keyed;
+        restoreModelSelections(this);
     },
 
     onSerialize(this: LoraNode, serialised: any) {

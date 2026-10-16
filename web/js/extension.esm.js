@@ -1,14 +1,5 @@
 import { app as app$1 } from '../../scripts/app.js';
 
-var __typeError = (msg) => {
-  throw TypeError(msg);
-};
-var __accessCheck = (obj, member, msg) => member.has(obj) || __typeError("Cannot " + msg);
-var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
-var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), member.set(obj, value), value);
-var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "access private method"), method);
-
 // web/src/modelsTypes.ts
 var combinedModelsResponseKeys = ["officialModels", "officialCnets", "officialLoras", "communityModels", "communityCnets", "communityLoras", "communityEmbeddings", "uncuratedModels"];
 
@@ -60,6 +51,9 @@ function findWidgetByName(node, name) {
 function getApp() {
   return window.comfyAPI.app.app;
 }
+function getLiteGraph() {
+  return window.LiteGraph;
+}
 function plainWidgetValues(node) {
   const keyed = {};
   for (const w of node.widgets ?? []) {
@@ -73,101 +67,241 @@ function plainWidgetValues(node) {
 }
 
 // web/src/models.ts
-var app = window.comfyAPI.app.app;
-var _updateNodesPromise, _ModelService_instances, updateNodes_fn;
-var ModelService = class {
-  constructor() {
-    __privateAdd(this, _ModelService_instances);
-    __privateAdd(this, _updateNodesPromise, null);
-  }
-  async updateNodes() {
-    if (app.configuringGraph || !app.graph) return;
-    if (!__privateGet(this, _updateNodesPromise)) {
-      __privateSet(this, _updateNodesPromise, new Promise((res) => {
-        setTimeout(() => {
-          __privateSet(this, _updateNodesPromise, null);
-          __privateMethod(this, _ModelService_instances, updateNodes_fn).call(this).then(() => res());
-        }, 10);
-      }));
-    }
-    return __privateGet(this, _updateNodesPromise);
-  }
-};
-_updateNodesPromise = new WeakMap();
-_ModelService_instances = new WeakSet();
-updateNodes_fn = async function() {
-  const dtModelNodes = getNodesRecursive(app.graph).filter(
-    (n) => n.isDtServerNode !== void 0
-  );
-  const graphServerNodes = dtModelNodes.filter(
-    (n) => n.isDtServerNode
-  );
-  if (!graphServerNodes.length) return;
-  const nodesUpdated = new Map(dtModelNodes.map((n) => [n, false]));
-  const serverModels = /* @__PURE__ */ new Map();
-  for (const sn of graphServerNodes) {
-    const { server, port, useTls } = sn.getServer();
-    if (!server || !port || useTls === void 0) continue;
-    const key = modelInfoStoreKey(server, port, useTls);
-    if (!serverModels.has(key)) {
-      serverModels.set(key, await getModels(server, port, useTls));
-    }
-    const models2 = serverModels.get(key);
-    sn.updateModels?.(models2);
-    nodesUpdated.set(sn, true);
-  }
-  for (const node of dtModelNodes) {
-    if (nodesUpdated.get(node)) continue;
-    const serverNodes = node?.findServerNodes?.();
-    if (!serverNodes || !serverNodes.length) continue;
-    let mergedModels = {};
-    for (const sn of serverNodes) {
-      const { server, port, useTls } = sn.getServer();
-      if (!server || !port || useTls === void 0) continue;
-      const models2 = serverModels.get(
-        modelInfoStoreKey(server, port, useTls)
-      );
-      mergedModels = mergeModels(mergedModels, models2);
-    }
-    const versions = serverNodes.map((sn) => sn?.getModelVersion?.()).filter((v) => v);
-    node.updateModels?.(mergedModels, versions);
-    nodesUpdated.set(node, true);
-  }
-  const models = serverModels.size === 1 ? serverModels.values().next().value : null;
-  for (const node of nodesUpdated.keys()) {
-    if (nodesUpdated.get(node) === false) {
-      nodesUpdated.set(node, true);
-      node.updateModels?.(models);
-    }
-  }
-};
-function getNodesRecursive(graph) {
-  const nodes = [];
-  for (const node of graph.nodes) {
-    if ("subgraph" in node) {
-      nodes.push(...getNodesRecursive(node.subgraph));
-    } else {
-      nodes.push(node);
-    }
-  }
-  return nodes;
+function getMenuItem(model, disabled = false) {
+  return {
+    value: model,
+    content: model.version ? `${model.name} (${getVersionAbbrev(model.version)})` : model.name,
+    toString() {
+      return model.name;
+    },
+    disabled
+  };
 }
+function restoreModelLabel(selection) {
+  if (!selection || typeof selection !== "object" || !selection.value) return selection;
+  return {
+    ...selection,
+    content: selection.content ?? getMenuItem(selection.value).content,
+    toString() {
+      return this.value.name;
+    }
+  };
+}
+function restoreModelSelections(node) {
+  const selections = node._lastSelectedModel ?? {};
+  for (const widget of node.widgets ?? []) {
+    const type = widget.options?.modelType;
+    if (!type) continue;
+    const saved = selections[widget.name];
+    const value = widget.value === "Not connected" || widget.value === "Click to retry" ? saved ?? (type === "textualInversions" ? "..." : "(None selected)") : widget.value;
+    widget.value = restoreModelLabel(value);
+    if (saved) selections[widget.name] = restoreModelLabel(saved);
+  }
+  node.saveSelectedModels?.();
+}
+function getNodesRecursive(graph, seen = /* @__PURE__ */ new Set()) {
+  if (seen.has(graph)) return [];
+  seen.add(graph);
+  return (graph.nodes ?? []).flatMap((node) => [
+    node,
+    ...node.subgraph ? getNodesRecursive(node.subgraph, seen) : []
+  ]);
+}
+function findServerNodes(node) {
+  const root = node.graph?.rootGraph ?? getApp().graph;
+  const nodes = root ? getNodesRecursive(root) : [];
+  const visited = /* @__PURE__ */ new Set();
+  const traversedLinks = /* @__PURE__ */ new Set();
+  const servers = /* @__PURE__ */ new Set();
+  function followLinks(graph, links = []) {
+    for (const id of links) {
+      const link = graph?.getLink(id);
+      if (!link || traversedLinks.has(link)) continue;
+      traversedLinks.add(link);
+      if (graph.outputNode?.id === link.target_id) {
+        for (const container of nodes) {
+          if (container.subgraph === graph)
+            followLinks(container.graph, container.outputs?.[link.target_slot]?.links ?? []);
+        }
+      } else {
+        const target = graph.getNodeById(link.target_id);
+        if (target?.subgraph) {
+          const slot = target.subgraph.inputNode?.slots?.[link.target_slot];
+          const innerLinks = slot?.getLinks?.() ?? [];
+          followLinks(target.subgraph, innerLinks.map((inner) => inner.id));
+        } else if (target) visit(target);
+      }
+    }
+  }
+  function visit(current) {
+    if (visited.has(current)) return;
+    visited.add(current);
+    if (current.isDtServerNode) {
+      servers.add(current);
+      return;
+    }
+    for (const output of current.outputs ?? []) followLinks(current.graph, output.links ?? []);
+  }
+  visit(node);
+  return [...servers];
+}
+function settingsKey() {
+  const setting = getApp().extensionManager.setting;
+  return JSON.stringify([
+    !!setting.get("drawthings.bridge_mode.enabled"),
+    !!setting.get("drawthings.bridge_mode.community"),
+    !!setting.get("drawthings.bridge_mode.uncurated")
+  ]);
+}
+var ModelService = class {
+  getCachedModels(node) {
+    if (getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled"))
+      return bridgeCache ? [bridgeCatalog(bridgeCache)] : [];
+    return this.context(node).servers.flatMap((server) => {
+      const address = server.getServer?.();
+      const cached = address && modelInfoStore.get(JSON.stringify([address.server, String(address.port), address.useTls]));
+      return cached ? [cached] : [];
+    });
+  }
+  context(node) {
+    const connected = findServerNodes(node);
+    let servers = connected;
+    if (!servers.length) {
+      const root = node.graph?.rootGraph ?? getApp().graph;
+      const candidates = root ? getNodesRecursive(root).filter((n) => n.isDtServerNode) : [];
+      const unique = new Map(candidates.map((n) => [JSON.stringify(n.getServer?.()), n]));
+      if (unique.size === 1) servers = [...unique.values()];
+    }
+    return { servers, versions: connected.map((n) => n.getModelVersion?.()).filter((v) => !!v) };
+  }
+  contextKey(node) {
+    const { servers, versions } = this.context(node);
+    return JSON.stringify([settingsKey(), servers.map((n) => n.getServer?.()), versions]);
+  }
+  async getMenuItems(node, type, filterVersions = true) {
+    const { servers, versions } = this.context(node);
+    const shouldFilterVersions = filterVersions && type !== "upscalers";
+    const useBridgeCatalog = type !== "upscalers" && getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled");
+    if (!useBridgeCatalog && !servers.length) throw new Error("Connect to a sampler node to list available models");
+    let catalogs;
+    if (useBridgeCatalog) catalogs = [await getBridgeModels()];
+    else {
+      const responses = await Promise.allSettled(servers.map(async (server) => {
+        const address = server.getServer?.();
+        if (!address) throw new Error("Check server and click to retry");
+        return getModels(address.server, address.port, address.useTls);
+      }));
+      catalogs = responses.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+      if (!catalogs.length) throw responses.find((result) => result.status === "rejected").reason;
+    }
+    const models = /* @__PURE__ */ new Map();
+    for (const catalog of catalogs)
+      for (const model of catalog?.[type] ?? []) if (!models.has(model.file)) models.set(model.file, model);
+    const rank = (model) => !shouldFilterVersions || !versions.length ? 0 : model.version ? versions.includes(model.version) ? 0 : 2 : 1;
+    return [...models.values()].map((model) => getMenuItem(
+      model,
+      !!(shouldFilterVersions && model.version && versions.length && !versions.includes(model.version))
+    )).sort((a, b) => rank(a.value) - rank(b.value) || a.value.name.localeCompare(b.value.name, void 0, { sensitivity: "base" }));
+  }
+  async selectByFile(node, widget, file) {
+    if (!file) {
+      setModelValue(node, widget, "(None selected)");
+      return;
+    }
+    const type = widget.options?.modelType;
+    const cached = this.getCachedModels(node).flatMap((catalog) => catalog[type] ?? []).find((model) => model.file === file);
+    const selection = cached ? getMenuItem(cached) : (await this.getMenuItems(node, type, false)).find((item) => item.value.file === file);
+    if (selection) setModelValue(node, widget, selection);
+  }
+};
 var modelService = new ModelService();
-function DtModelTypeHandler(node, inputName, inputData, app5) {
+function setModelValue(node, widget, selection) {
+  const canvas = getApp().canvas;
+  widget.setValue(restoreModelLabel(selection), { node, canvas, e: void 0 });
+}
+function DtModelTypeHandler(node, inputName, inputData, app4) {
+  const LiteGraph = getLiteGraph();
+  const type = inputData[1].model_type;
+  const isPrompt = type === "textualInversions";
   const widget = node.addWidget(
     "combo",
     inputName,
-    "(None selected)",
-    /** @type WidgetCallback<IWidget<any, any>> */
-    ((value, graph, node2) => {
-      node2.saveSelectedModels?.();
-      modelService.updateNodes();
-    }),
-    {
-      values: ["(None selected)"],
-      modelType: inputData[1].model_type
-    }
+    isPrompt ? "..." : "(None selected)",
+    () => {
+      node.saveSelectedModels?.();
+      if (node.isDtServerNode && type === "models") node.updateDynamicWidgets?.();
+    },
+    { values: [isPrompt ? "..." : "(None selected)"], modelType: type }
   );
+  const unrestricted = type === "upscalers" || type === "models" && !!node.isDtServerNode;
+  const getItems = () => modelService.getMenuItems(node, type, !unrestricted);
+  let request = 0;
+  function startRequest() {
+    const token = ++request;
+    const graph = node.graph;
+    const context = modelService.contextKey(node);
+    return () => token === request && node.graph === graph && !!graph && graph.getNodeById(node.id) === node && modelService.contextKey(node) === context;
+  }
+  async function step(delta, options) {
+    if (isPrompt) return;
+    const current = startRequest();
+    const value = widget.value;
+    let items;
+    try {
+      items = ["(None selected)", ...await getItems()];
+    } catch {
+      return;
+    }
+    if (!current() || widget.value !== value) return;
+    const index = items.findIndex((item) => typeof item === "string" ? item === value : item.value.file === value?.value?.file);
+    let next = index + delta;
+    while (next >= 0 && next < items.length && items[next].disabled) next += delta;
+    if (next < 0 || next >= items.length) return;
+    options.canvas.last_mouseclick = 0;
+    widget.setValue(restoreModelLabel(items[next]), options);
+  }
+  widget.incrementValue = (options) => step(1, options);
+  widget.decrementValue = (options) => step(-1, options);
+  widget.canIncrement = () => !isPrompt;
+  widget.canDecrement = () => !isPrompt && widget.value !== "(None selected)";
+  widget.onClick = async ({ e, node: clickedNode, canvas }) => {
+    if (!isPrompt) {
+      const x = e.canvasX - clickedNode.pos[0];
+      const width = widget.width || clickedNode.size[0];
+      if (x < 40) return widget.decrementValue({ e, node: clickedNode, canvas });
+      if (x > width - 40) return widget.incrementValue({ e, node: clickedNode, canvas });
+    }
+    const current = startRequest();
+    let menu;
+    const open = (items2) => new LiteGraph.ContextMenu(items2, {
+      scale: Math.max(1, canvas.ds.scale),
+      event: e,
+      className: "dark",
+      callback: (item) => {
+        if (item?.disabled || !current()) return;
+        widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), { e, node: clickedNode, canvas });
+      }
+    });
+    menu = open([{ content: "Loading models\u2026", disabled: true }]);
+    let items;
+    try {
+      items = await getItems();
+      if (isPrompt) {
+        const prompt = String(node.widgets?.find((w) => w.name === "prompt")?.value ?? "");
+        const tags = new Set([...prompt.matchAll(/<(.*?)>/gm)].map((m) => m[1]));
+        items = items.map((item) => ({ ...item, content: `${tags.has(item.value.keyword) ? "\u2713 " : ""}${item.value.name} (${item.value.version})` }));
+      }
+      if (!items.length) items.push({ content: "No models available", disabled: true });
+    } catch (error) {
+      items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+    }
+    if (!current() || !menu.root?.isConnected) {
+      menu.close();
+      return;
+    }
+    menu.close();
+    open([isPrompt ? "..." : "(None selected)", ...items]);
+  };
   return { widget };
 }
 async function getFiles(server, port, useTls) {
@@ -175,162 +309,71 @@ async function getFiles(server, port, useTls) {
   body.append("server", server);
   body.append("port", String(port));
   body.append("use_tls", String(useTls));
-  const api = window.comfyAPI.api.api;
-  const filesInfoResponse = await api.fetchApi(`/dt_grpc/files_info`, {
-    method: "POST",
-    body
-  });
-  return filesInfoResponse;
-}
-var combinedModelsJson = null;
-var combinedIncludes = [null, null];
-var combinedBridgeModels = null;
-async function getBridgeModels() {
-  const includeCommunity = app.extensionManager.setting.get(
-    "drawthings.bridge_mode.community"
-  );
-  const includeUncurated = app.extensionManager.setting.get(
-    "drawthings.bridge_mode.uncurated"
-  );
-  if (combinedBridgeModels && combinedIncludes[0] === includeCommunity && combinedIncludes[1] === includeUncurated)
-    return combinedBridgeModels;
-  if (!combinedModelsJson) {
-    const api = window.comfyAPI.api.api;
-    const filesResponse = await api.fetchApi("/dt_grpc/bridge_models");
-    if (!filesResponse.ok) {
-      getApp().extensionManager.toast.add(
-        {
-          summary: "DT+ Error",
-          severity: "warn",
-          detail: "Couldn't retrieve the list of available DT+ models for bridge mode. DT+ may be down."
-        }
-      );
-    }
-    const files = filesResponse.ok ? await filesResponse.json() : [];
-    const combinedModelsResponse = await api.fetchApi(
-      "/dt_grpc/combined_models"
-    );
-    const combinedModelsRaw = await combinedModelsResponse.json();
-    combinedModelsJson = {};
-    for (const key of combinedModelsResponseKeys) {
-      const value = combinedModelsRaw[key];
-      if (!Array.isArray(value)) continue;
-      combinedModelsJson[key] = value.filter(
-        (m) => files.includes(m.file)
-      );
-    }
-  }
-  const models = [...combinedModelsJson.officialModels];
-  const controlNets = [...combinedModelsJson.officialCnets];
-  const loras = [...combinedModelsJson.officialLoras];
-  const textualInversions = [];
-  if (includeCommunity) {
-    models.push(...combinedModelsJson.communityModels);
-    controlNets.push(...combinedModelsJson.communityCnets);
-    loras.push(...combinedModelsJson.communityLoras);
-    textualInversions.push(...combinedModelsJson.communityEmbeddings);
-  }
-  if (includeUncurated) {
-    models.push(...combinedModelsJson.uncuratedModels);
-  }
-  combinedBridgeModels = {
-    models,
-    controlNets,
-    loras,
-    textualInversions,
-    upscalers: []
-  };
-  combinedIncludes = [includeCommunity, includeUncurated];
-  return combinedBridgeModels;
+  return window.comfyAPI.api.api.fetchApi("/dt_grpc/files_info", { method: "POST", body });
 }
 var modelInfoStore = /* @__PURE__ */ new Map();
 var modelInfoLoads = /* @__PURE__ */ new Map();
-var modelInfoStoreKey = (server, port, useTls) => `${server}:${port}${useTls ? ":tls" : ""}`;
-var failedConnectionOptions = [
-  "Couldn't connect to server",
-  "Check server and click to retry"
-].map((c, i) => ({
-  name: c,
-  file: "",
-  version: "fail",
-  order: i + 1
-}));
-var notConnectedOptions = [
-  "Not connected to sampler node",
-  "Connect to a sampler node to list available models"
-].map((c) => ({
-  name: c,
-  file: "",
-  version: "fail"
-}));
 async function getModels(server, port, useTls) {
-  if (!server || !port || useTls === void 0) return;
-  if (app.extensionManager.setting.get("drawthings.bridge_mode.enabled"))
-    return getBridgeModels();
-  const key = modelInfoStoreKey(server, port, useTls);
-  if (modelInfoLoads.has(key)) {
-    const request = modelInfoLoads.get(key);
-    await request;
-  } else {
-    const promise = new Promise((resolve) => {
-      getFiles(server, port, useTls).then(async (response) => {
-        if (!response.ok) {
-          modelInfoStore.set(key, null);
-        } else {
-          const data = await response.json();
-          testHack(data);
-          modelInfoStore.set(key, data);
-        }
-        modelInfoLoads.delete(key);
-        resolve();
-      });
-    });
-    modelInfoLoads.set(key, promise);
-    await promise;
+  if (!server || !port || useTls === void 0) throw new Error("Check server and click to retry");
+  const key = JSON.stringify([server, String(port), useTls]);
+  let load = modelInfoLoads.get(key);
+  if (!load) {
+    load = (async () => {
+      const response = await getFiles(server, port, useTls);
+      if (!response.ok) throw new Error("Couldn't connect to server. Check server and click to retry");
+      const models = await response.json();
+      testHack(models);
+      modelInfoStore.set(key, models);
+      return models;
+    })();
+    modelInfoLoads.set(key, load);
   }
-  return modelInfoStore.get(key) || void 0;
+  try {
+    return await load;
+  } finally {
+    if (modelInfoLoads.get(key) === load) modelInfoLoads.delete(key);
+  }
 }
-var failedConnectionInfo = {
-  models: failedConnectionOptions,
-  controlNets: notConnectedOptions,
-  loras: notConnectedOptions,
-  upscalers: notConnectedOptions,
-  textualInversions: notConnectedOptions
-};
-modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo);
-function getMenuItem(model, disabled) {
+var bridgeLoad;
+var bridgeCache;
+async function getBridgeModels() {
+  if (bridgeCache) return bridgeCatalog(bridgeCache);
+  if (!bridgeLoad) bridgeLoad = (async () => {
+    const api = window.comfyAPI.api.api;
+    const [filesResponse, combinedResponse] = await Promise.all([
+      api.fetchApi("/dt_grpc/bridge_models"),
+      api.fetchApi("/dt_grpc/combined_models")
+    ]);
+    if (!filesResponse.ok || !combinedResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
+    const files = await filesResponse.json();
+    const combined2 = await combinedResponse.json();
+    const filtered = Object.fromEntries(combinedModelsResponseKeys.map((key) => [
+      key,
+      Array.isArray(combined2[key]) ? combined2[key].filter((model) => files.includes(model.file)) : []
+    ]));
+    bridgeCache = filtered;
+    return filtered;
+  })();
+  const load = bridgeLoad;
+  let combined;
+  try {
+    combined = await load;
+  } finally {
+    if (bridgeLoad === load) bridgeLoad = void 0;
+  }
+  return bridgeCatalog(combined);
+}
+function bridgeCatalog(combined) {
+  const setting = getApp().extensionManager.setting;
+  const community = !!setting.get("drawthings.bridge_mode.community");
+  const uncurated = !!setting.get("drawthings.bridge_mode.uncurated");
   return {
-    value: model,
-    content: model.version && model.version !== "fail" ? `${model.name} (${getVersionAbbrev(model.version)})` : model.name,
-    toString() {
-      return model.name;
-    },
-    // has_submenu?: boolean;
-    disabled,
-    // submenu?: IContextMenuSubmenu<TValue>;
-    // property?: string;
-    // type?: string;
-    // slot?: IFoundSlot;
-    // callback(this: ContextMenuDivElement<TValue>, value?: TCallbackValue, options?: unknown, event?: MouseEvent, previous_menu?: ContextMenu<TValue>, extra?: TExtra) {
-    callback(...args) {
-      return false;
-    }
+    models: [...combined.officialModels, ...community ? combined.communityModels : [], ...uncurated ? combined.uncuratedModels : []],
+    controlNets: [...combined.officialCnets, ...community ? combined.communityCnets : []],
+    loras: [...combined.officialLoras, ...community ? combined.communityLoras : []],
+    textualInversions: community ? [...combined.communityEmbeddings] : [],
+    upscalers: []
   };
-}
-function mergeModels(modelInfoA, modelInfoB) {
-  const merged = {};
-  const types = new Set(
-    Object.keys(modelInfoA ?? {}).concat(Object.keys(modelInfoB ?? {}))
-  );
-  for (const type of types.values()) {
-    merged[type] = modelInfoA[type] ?? [];
-    const modelFiles = merged[type].map((m) => m.file);
-    const extras = (modelInfoB[type] ?? []).filter(
-      (m) => !modelFiles.includes(m.file)
-    );
-    merged[type] = merged[type].concat(extras);
-  }
-  return merged;
 }
 var versionNames = {
   v1: "SD",
@@ -511,21 +554,14 @@ function roundBy64(value) {
   return Math.round(value / 64) * 64;
 }
 var importers = {
-  model: async (k, v, w, n, c) => {
-    await modelService.updateNodes();
-    const values = w?.options?.values;
-    const matchingOption = values?.find((ov) => ov.value?.file === v);
-    if (matchingOption) w.value = matchingOption;
+  model: async (k, v, w, n) => {
+    await modelService.selectByFile(n, w, v);
   },
-  refiner_model: (k, v, w) => {
-    const values = w?.options?.values;
-    const matchingOption = values?.find((wv) => wv.value?.file === v);
-    if (matchingOption) w.value = matchingOption;
+  refiner_model: async (k, v, w, n) => {
+    await modelService.selectByFile(n, w, v);
   },
-  upscaler: (k, v, w) => {
-    const values = w?.options?.values;
-    const matchingOption = values?.find((wv) => wv.value?.file === v);
-    if (matchingOption) w.value = matchingOption;
+  upscaler: async (k, v, w, n) => {
+    await modelService.selectByFile(n, w, v);
   },
   start_width: (k, v, w) => {
     if (w) w.value = roundBy64(v);
@@ -756,9 +792,9 @@ function patchProp(jsonName, funcName, func) {
 }
 
 // web/src/configImport.ts
-function importConfig(sampler) {
+async function importConfig(sampler) {
   {
-    navigator.clipboard.readText().then(async (text) => {
+    return navigator.clipboard.readText().then(async (text) => {
       try {
         const config = JSON.parse(text);
         const requiredNodes = [];
@@ -787,7 +823,7 @@ function importConfig(sampler) {
           if (!availableNodes.DrawThingsUpscaler.length)
             missingNodes.push("DrawThingsUpscaler");
           else
-            applyConfig(
+            await applyConfig(
               availableNodes.DrawThingsUpscaler[0],
               config
             );
@@ -796,7 +832,7 @@ function importConfig(sampler) {
           if (!availableNodes.DrawThingsRefiner.length)
             missingNodes.push("DrawThingsRefiner");
           else
-            applyConfig(
+            await applyConfig(
               availableNodes.DrawThingsRefiner[0],
               config
             );
@@ -811,7 +847,7 @@ function importConfig(sampler) {
             );
           let controlIndex = 0;
           for (const cnetNode of availableNodes.DrawThingsControlNet) {
-            applyCnetConfig(
+            await applyCnetConfig(
               cnetNode,
               config.controls[controlIndex++]
             );
@@ -825,7 +861,7 @@ function importConfig(sampler) {
             missingNodes.push(
               `${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`
             );
-          applyLoraConfig(
+          await applyLoraConfig(
             availableNodes.DrawThingsLoRA,
             config.loras
           );
@@ -850,12 +886,12 @@ function importConfig(sampler) {
     });
   }
 }
-function applyConfig(node, config) {
+async function applyConfig(node, config) {
   const nodeProps = findPropertiesByNode(node.type);
   for (const nodeProp of nodeProps) {
     const widget = node.widgets?.find((w) => w.name === nodeProp.python);
     if (!widget || !nodeProp.json) continue;
-    nodeProp.import(
+    await nodeProp.import(
       nodeProp.json,
       config[nodeProp.json],
       widget,
@@ -864,17 +900,14 @@ function applyConfig(node, config) {
     );
   }
 }
-function applyCnetConfig(node, controlConfig) {
+async function applyCnetConfig(node, controlConfig) {
+  if (!controlConfig) return;
   const widgets = node.widgets?.reduce((acc, w) => {
     acc[w.name] = w;
     return acc;
   }, {}) ?? {};
   if ("file" in controlConfig) {
-    const options = widgets.control_name?.options;
-    const matchingOption = options.values?.find(
-      (wv) => wv.value?.file === controlConfig.file
-    );
-    if (matchingOption) widgets.control_name.value = matchingOption;
+    await modelService.selectByFile(node, widgets.control_name, controlConfig.file);
   }
   if ("globalAveragePooling" in controlConfig)
     widgets.global_average_pooling.value = !!controlConfig.globalAveragePooling;
@@ -932,16 +965,12 @@ async function applyLoraConfig(nodes, loraConfig) {
       const lc = loraConfig[iSlot + iNode * 8];
       const { file, weight, mode } = getLoraSlotWidgets(node, iSlot);
       if (!lc || !lc.file) {
-        file.value = "(None selected)";
+        setModelValue(node, file, "(None selected)");
         weight.value = 1;
         mode.value = "All";
         continue;
       }
-      const loraOptions = file?.options;
-      const matchingOption = loraOptions?.values?.find(
-        (wv) => wv.value?.file === lc.file
-      );
-      if (matchingOption) file.value = matchingOption;
+      await modelService.selectByFile(node, file, lc.file);
       if ("weight" in lc && typeof lc.weight === "number")
         weight.value = Math.min(Math.max(lc.weight, -5), 5);
       else weight.value = 1;
@@ -965,7 +994,7 @@ function getLoraSlotWidgets(node, loraIndex) {
 }
 
 // web/src/widgets.ts
-var app2 = window.comfyAPI.app.app;
+var app = window.comfyAPI.app.app;
 var basicWidgets = [
   "server",
   "port",
@@ -1064,9 +1093,9 @@ function showWidget(node, widgetName, show = false, suffix = "") {
   widget.linkedWidgets?.forEach((w) => showWidget(node, w, show, ":" + widget.name));
   const minHeight = node.computeSize()[1];
   if (minHeight > node.size[1]) node.setSize([node.size[0], minHeight]);
-  if (app2.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
+  if (app.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
     node.setSize([node.size[0], minHeight]);
-  setTimeout(() => app2.canvas.setDirty(true, true), 10);
+  setTimeout(() => app.canvas.setDirty(true, true), 10);
 }
 function showWidgets(node, show, ...widgetNames) {
   widgetNames.forEach((w) => showWidget(node, w, show));
@@ -1158,14 +1187,14 @@ var extension = {
       category: ["Draw Things", "Nodes", "Keep node shrunk"],
       onChange: (newVal, oldVal) => {
         if (oldVal === false && newVal === true) {
-          app2.graph.nodes.filter((n) => n.type === "DrawThingsSampler").forEach((n) => {
+          app.graph.nodes.filter((n) => n.type === "DrawThingsSampler").forEach((n) => {
             setTimeout(() => n.updateDynamicWidgets(), 10);
           });
         }
       }
     }
   ],
-  async beforeRegisterNodeDef(nodeType, nodeData, app5) {
+  async beforeRegisterNodeDef(nodeType, nodeData, app4) {
     if (nodeType.comfyClass === "DrawThingsSampler") {
       updateProto(nodeType, samplerWidgetsProto);
     }
@@ -1203,7 +1232,7 @@ var samplerWidgetsProto = {
 };
 
 // web/src/lora.ts
-function DtButtonsTypeHandler(node, inputName, inputData, app5) {
+function DtButtonsTypeHandler(node, inputName, inputData, app4) {
   const { container, buttons } = createButtons([
     {
       label: "Show Mode",
@@ -1278,6 +1307,7 @@ var loraProto = {
       if (imageInput !== -1) this.removeInput(imageInput);
     }
     delete this.widget_values_keyed;
+    restoreModelSelections(this);
   },
   onSerialize(serialised) {
     serialised.loraCount = this._loraCount;
@@ -1342,7 +1372,7 @@ var loraProto = {
 };
 var extension2 = {
   name: "loraNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app5) {
+  beforeRegisterNodeDef(nodeType, nodeData, app4) {
     if (nodeType.comfyClass === "DrawThingsLoRA") {
       updateProto(nodeType, loraProto);
     }
@@ -1495,11 +1525,11 @@ var ComfyUI_DrawThings_gRPC_default = {
       updateProto(nodeType, samplerProto);
     }
   },
-  async setup(app5) {
+  async setup(app4) {
     await syncSettings();
-    setCallback(app5.api, "interrupt", async (_e) => {
-      if (app5.rootGraph?.nodes.some((n) => n.type === "DrawThingsSampler")) {
-        await app5.api.fetchApi(`/dt_grpc/interrupt`, {
+    setCallback(app4.api, "interrupt", async (_e) => {
+      if (app4.rootGraph?.nodes.some((n) => n.type === "DrawThingsSampler")) {
+        await app4.api.fetchApi(`/dt_grpc/interrupt`, {
           method: "POST"
         });
       }
@@ -1531,17 +1561,17 @@ var ComfyUI_DrawThings_gRPC_default = {
 };
 var samplerProto = {
   async onNodeCreated() {
-    const app5 = getApp();
+    const app4 = getApp();
     const inputPos = this.inputs?.find(
       (inputPos2) => inputPos2.name == "positive"
     );
     const inputNeg = this.inputs?.find(
       (inputNeg2) => inputNeg2.name == "negative"
     );
-    if (app5.canvas) {
-      inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app5.canvas.default_connection_color_byType["CONDITIONING"];
-      app5.canvas.default_connection_color_byType["DT_LORA"] = app5.canvas.default_connection_color_byType["MODEL"];
-      app5.canvas.default_connection_color_byType["DT_CNET"] = app5.canvas.default_connection_color_byType["CONTROL_NET"];
+    if (app4.canvas) {
+      inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app4.canvas.default_connection_color_byType["CONDITIONING"];
+      app4.canvas.default_connection_color_byType["DT_LORA"] = app4.canvas.default_connection_color_byType["MODEL"];
+      app4.canvas.default_connection_color_byType["DT_CNET"] = app4.canvas.default_connection_color_byType["CONTROL_NET"];
     }
     setTimeout(() => checkVersion(), 2e3);
   },
@@ -1615,26 +1645,28 @@ var samplerProto = {
     return inputs;
   },
   getExtraMenuOptions(_canvas, options) {
-    const app5 = getApp();
-    const showPreview = app5.extensionManager.setting.get(
+    const app4 = getApp();
+    const showPreview = app4.extensionManager.setting.get(
       "drawthings.node.show_preview"
     );
-    const keepNodeShrunk = app5.extensionManager.setting.get(
+    const keepNodeShrunk = app4.extensionManager.setting.get(
       "drawthings.node.keep_shrunk"
     );
-    const bridgeMode = app5.extensionManager.setting.get(
+    const bridgeMode = app4.extensionManager.setting.get(
       "drawthings.bridge_mode.enabled"
     );
-    const bridgeCommunity = app5.extensionManager.setting.get(
+    const bridgeCommunity = app4.extensionManager.setting.get(
       "drawthings.bridge_mode.community"
     );
-    const bridgeUncurated = app5.extensionManager.setting.get(
+    const bridgeUncurated = app4.extensionManager.setting.get(
       "drawthings.bridge_mode.uncurated"
     );
     options.push(null);
     options.push({
       content: "Paste Draw Things config",
-      callback: () => importConfig(this)
+      callback: () => {
+        void importConfig(this);
+      }
     });
     options.push({
       content: "Copy Draw Things config",
@@ -1654,7 +1686,7 @@ var samplerProto = {
     options.push({
       content: (showPreview ? "\u2713 " : "") + "Show preview while generating",
       callback: () => {
-        app5.extensionManager.setting.set(
+        app4.extensionManager.setting.set(
           "drawthings.node.show_preview",
           !showPreview
         );
@@ -1663,7 +1695,7 @@ var samplerProto = {
     options.push({
       content: (keepNodeShrunk ? "\u2713 " : "") + "Keep node shrunk when widgets change",
       callback: () => {
-        app5.extensionManager.setting.set(
+        app4.extensionManager.setting.set(
           "drawthings.node.keep_shrunk",
           !keepNodeShrunk
         );
@@ -1673,7 +1705,7 @@ var samplerProto = {
     options.push({
       content: (bridgeMode ? "\u2713 " : "") + "Use bridge mode",
       callback: () => {
-        app5.extensionManager.setting.set(
+        app4.extensionManager.setting.set(
           "drawthings.bridge_mode.enabled",
           !bridgeMode
         );
@@ -1683,7 +1715,7 @@ var samplerProto = {
       options.push({
         content: (bridgeCommunity ? "\u2713 " : "") + "Show community models",
         callback: () => {
-          app5.extensionManager.setting.set(
+          app4.extensionManager.setting.set(
             "drawthings.bridge_mode.community",
             !bridgeCommunity
           );
@@ -1692,7 +1724,7 @@ var samplerProto = {
       options.push({
         content: (bridgeUncurated ? "\u2713 " : "") + "Show uncurated models",
         callback: () => {
-          app5.extensionManager.setting.set(
+          app4.extensionManager.setting.set(
             "drawthings.bridge_mode.uncurated",
             !bridgeUncurated
           );
@@ -1705,9 +1737,9 @@ var samplerProto = {
 };
 async function syncSettings(patch) {
   const api = window.comfyAPI.api.api;
-  const app5 = getApp();
-  const showPreview = patch?.show_preview ?? app5.extensionManager.setting.get("drawthings.node.show_preview");
-  const blankOnError = patch?.blank_on_error ?? app5.extensionManager.setting.get("drawthings.node.blank_on_error");
+  const app4 = getApp();
+  const showPreview = patch?.show_preview ?? app4.extensionManager.setting.get("drawthings.node.show_preview");
+  const blankOnError = patch?.blank_on_error ?? app4.extensionManager.setting.get("drawthings.node.blank_on_error");
   const body = new FormData();
   body.append("show_preview", String(showPreview));
   body.append("blank_on_error", String(blankOnError));
@@ -1778,6 +1810,7 @@ var controlNetProto = {
       }
     }
     delete this.widget_values_keyed;
+    restoreModelSelections(this);
     this.updateDynamicWidgets();
   },
   onWidgetChanged(name, value, old_Value, widget) {
@@ -1793,7 +1826,7 @@ var controlNetProto = {
 };
 var extension3 = {
   name: "controlNetNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app5) {
+  beforeRegisterNodeDef(nodeType, nodeData, app4) {
     if (nodeType.comfyClass === "DrawThingsControlNet") {
       updateProto(nodeType, controlNetProto);
     }
@@ -1802,16 +1835,6 @@ var extension3 = {
 var controlnet_default = extension3;
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-// web/src/dynamicInputs.ts
-function setCallback2(target, callbackName, callback) {
-  const originalCallback = target[callbackName];
-  target[callbackName] = function(...args) {
-    const r = originalCallback?.apply(this, args);
-    callback?.apply(this, args);
-    return r;
-  };
 }
 
 // web/src/dtModelNodes.ts
@@ -1826,20 +1849,13 @@ var dtModelNodeTypes = [
 var dtServerNodeTypes = ["DrawThingsSampler"];
 var extension4 = {
   name: "modelNodes",
-  beforeRegisterNodeDef: (nodeType, nodeData, app5) => {
+  beforeRegisterNodeDef: (nodeType, nodeData, app4) => {
     if (dtModelNodeTypes.includes(nodeType.comfyClass)) {
       updateProto(nodeType, dtModelNodeProto);
       if (dtServerNodeTypes.includes(nodeType.comfyClass)) {
         updateProto(nodeType, dtServerNodeProto);
-      } else if (nodeType.comfyClass === "DrawThingsPrompt") {
-        updateProto(nodeType, dtModelPromptNodeProto);
-      } else {
-        updateProto(nodeType, dtModelStandardNodeProto);
       }
     }
-  },
-  afterConfigureGraph() {
-    modelService.updateNodes();
   },
   settings: [
     {
@@ -1849,10 +1865,7 @@ var extension4 = {
       defaultValue: true,
       category: ["Draw Things", "Bridge mode", "Bridge mode"],
       sortOrder: 2,
-      tooltip: "With bridge mode enabled, your local models will be hidden and the official models available to DT+ will be listed. Be sure to enable Bridge Mode in your Draw Things API settings (DT+ only)",
-      onChange: (value) => {
-        modelService.updateNodes();
-      }
+      tooltip: "With bridge mode enabled, your local models will be hidden and the official models available to DT+ will be listed. Be sure to enable Bridge Mode in your Draw Things API settings (DT+ only)"
     },
     {
       id: "drawthings.bridge_mode.community",
@@ -1861,10 +1874,7 @@ var extension4 = {
       defaultValue: true,
       category: ["Draw Things", "Bridge mode", "Community"],
       sortOrder: 1,
-      tooltip: "When bridge mode is enabled, also list community models",
-      onChange: (value) => {
-        modelService.updateNodes();
-      }
+      tooltip: "When bridge mode is enabled, also list community models"
     },
     {
       id: "drawthings.bridge_mode.uncurated",
@@ -1873,10 +1883,7 @@ var extension4 = {
       defaultValue: false,
       category: ["Draw Things", "Bridge mode", "Uncurated"],
       sortOrder: 0,
-      tooltip: "When bridge mode is enabled, also list uncurated models",
-      onChange: (value) => {
-        modelService.updateNodes();
-      }
+      tooltip: "When bridge mode is enabled, also list uncurated models"
     }
   ]
 };
@@ -1911,41 +1918,16 @@ var dtModelNodeProto = {
   },
   onConfigure(serialised) {
     this._lastSelectedModel = serialised._lastSelectedModel || {};
+    restoreModelSelections(this);
   },
   getModelWidgets() {
     return this.widgets?.filter((w) => w.options?.modelType) || [];
   },
-  onAdded() {
-    modelService.updateNodes();
-  },
   findServerNodes() {
-    if (dtServerNodeTypes.includes(this.comfyClass)) return [this];
-    if (this.outputs?.length !== 1)
-      throw new Error("what node is this? Should only have a single output");
-    function searchOutputNodes(node) {
-      const serverNodes = [];
-      const outputNodes = node.getOutputNodes(0) ?? [];
-      for (const outputNode of outputNodes) {
-        if (outputNode.isDtServerNode) serverNodes.push(outputNode);
-        else serverNodes.push(...searchOutputNodes(outputNode));
-      }
-      return serverNodes;
-    }
-    return searchOutputNodes(this);
+    return findServerNodes(this);
   }
 };
 var dtServerNodeProto = {
-  onNodeCreated() {
-    const serverWidget = this.widgets?.find((w) => w.name === "server");
-    if (serverWidget)
-      setCallback2(serverWidget, "callback", () => modelService.updateNodes());
-    const portWidget = this.widgets?.find((w) => w.name === "port");
-    if (portWidget)
-      setCallback2(portWidget, "callback", () => modelService.updateNodes());
-    const tlsWidget = this.widgets?.find((w) => w.name === "use_tls");
-    if (tlsWidget)
-      setCallback2(tlsWidget, "callback", () => modelService.updateNodes());
-  },
   getServer() {
     const server = this.widgets?.find((w) => w.name === "server")?.value;
     const port = this.widgets?.find((w) => w.name === "port")?.value;
@@ -1954,145 +1936,8 @@ var dtServerNodeProto = {
   },
   getModelVersion() {
     return this.widgets?.find((w) => w.options?.modelType === "models")?.value?.value?.version;
-  },
-  updateModels(models, version) {
-    const widgets = this.getModelWidgets();
-    for (const widget of widgets) {
-      if (!widget) return;
-      if (!models) {
-        if (widget.options)
-          widget.options.values = ["Not connected", "Click to retry"];
-        widget.value = "Not connected";
-        continue;
-      }
-      if (widget.options)
-        widget.options.values = [
-          "(None selected)",
-          ...models.models.map((m) => getMenuItem(m, false)).sort((a, b) => a.content.localeCompare(b.content))
-        ];
-      if (widget.value === "Click to retry" || widget.value === "Not connected") {
-        if (this._lastSelectedModel?.model)
-          widget.value = this._lastSelectedModel.model;
-        else widget.value = "(None selected)";
-      }
-      if (widget.value?.toString() === "[object Object]") {
-        const value = {
-          ...widget.value,
-          toString() {
-            return this.value.name;
-          }
-        };
-        widget.value = value;
-      }
-    }
   }
 };
-var dtModelStandardNodeProto = {
-  onConnectionsChange(type, index, isConnected, link_info, inputOrOutput) {
-    if (isConnected) modelService.updateNodes();
-  },
-  updateModels(models, versions = []) {
-    const widgets = this.getModelWidgets();
-    for (const widget of widgets) {
-      if (!widget) return;
-      const type = widget?.options?.modelType;
-      if (!models?.[type]) {
-        if (widget.options)
-          widget.options.values = ["Not connected", "Click to retry"];
-        widget.value = "Not connected";
-        continue;
-      }
-      if (widget.options)
-        widget.options.values = [
-          "(None selected)",
-          ...models[type].map(
-            (m) => getMenuItem(
-              m,
-              m.version && versions.length > 0 && !versions.includes(m.version)
-            )
-          ).sort((a, b) => {
-            if (a.disabled && !b.disabled) return 1;
-            if (!a.disabled && b.disabled) return -1;
-            return a.content.toUpperCase().localeCompare(b.content.toUpperCase());
-          })
-        ];
-      if (widget.value === "Click to retry" || widget.value === "Not connected") {
-        if (this._lastSelectedModel?.[widget.name])
-          widget.value = fixLabel(this._lastSelectedModel[widget.name]);
-        else widget.value = "(None selected)";
-      }
-      if (widget.value?.toString() === "[object Object]") {
-        const value = {
-          ...widget.value,
-          toString() {
-            return this.value.name;
-          }
-        };
-        widget.value = value;
-      }
-    }
-  }
-};
-var dtModelPromptNodeProto = {
-  onConnectionsChange(type, index, isConnected, link_info, inputOrOutput) {
-    if (isConnected) modelService.updateNodes();
-  },
-  updateModels(models, version) {
-    this._models = models?.textualInversions || null;
-    this._version = version;
-    this.updateOptions();
-  },
-  updateOptions() {
-    const widgets = this.getModelWidgets();
-    for (const widget of widgets) {
-      if (!widget) return;
-      if (this._models === null) {
-        if (widget.options)
-          widget.options.values = ["Not connected", "Click to retry"];
-        widget.value = "Not connected";
-        return;
-      }
-      const promptText = this.widgets.find(
-        (w) => w.name === "prompt"
-      )?.value;
-      const matches = [...promptText.matchAll(/<(.*?)>/gm)];
-      const tags = matches.map((m) => m[1]);
-      if (widget.options)
-        widget.options.values = [
-          "...",
-          ...this._models.map(
-            (m) => getMenuItem(
-              m,
-              this._version && this._version.length > 0 && !this._version.includes(m.version) && !tags.includes(m.keyword)
-            )
-          ).map((m) => {
-            Object.defineProperty(m, "content", {
-              get() {
-                return `${tags.includes(m.value.keyword) ? "\u2713 " : ""}${m.value.name} (${m.value.version})`;
-              }
-            });
-            return m;
-          }).sort((a, b) => {
-            if (a.disabled && !b.disabled) return 1;
-            if (!a.disabled && b.disabled) return -1;
-            return a.content.toUpperCase().localeCompare(b.content.toUpperCase());
-          })
-        ];
-      widget.value = "...";
-    }
-  }
-};
-function fixLabel(value) {
-  if (value?.toString() === "[object Object]") {
-    return {
-      ...value,
-      toString() {
-        return this.value.name;
-      }
-    };
-  }
-  return value;
-}
 
 // web/src/dtPromptNode.ts
 var promptProto = {
@@ -2147,17 +1992,10 @@ var promptProto = {
     if (output) {
       output.color_on = output.color_off = getApp().canvas.default_connection_color_byType["CONDITIONING"];
     }
-    const promptWidget = this.widgets?.find((w) => w.name === "prompt");
-    const promptNode = this;
-    if (promptWidget?.element) {
-      promptWidget.element.addEventListener("change", () => {
-        promptNode.updateOptions();
-      });
-    }
   },
   getExtraMenuOptions(canvas, options) {
-    const app5 = getApp();
-    const promptColors = app5.extensionManager.setting.get("drawthings.node.color_prompts");
+    const app4 = getApp();
+    const promptColors = app4.extensionManager.setting.get("drawthings.node.color_prompts");
     options.push(
       ...[
         null,
@@ -2165,7 +2003,7 @@ var promptProto = {
           content: (promptColors ? "\u2713 " : "") + "Change colors when connections change",
           callback: async () => {
             try {
-              await app5.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
+              await app4.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
             } catch (error) {
               console.error(`Error changing setting: ${error}`);
             }
@@ -2178,7 +2016,7 @@ var promptProto = {
 };
 var extension5 = {
   name: "promptNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app5) {
+  beforeRegisterNodeDef(nodeType, nodeData, app4) {
     if (nodeType.comfyClass === "DrawThingsPrompt") {
       updateProto(nodeType, promptProto);
     }

@@ -1,191 +1,86 @@
-import { join } from 'path';
-import { test } from './fixtures';
-import { NodeRef } from './nodeRef';
-import { expect } from '@playwright/test';
+import { join } from "path";
+import { test } from "./fixtures";
+import { expect } from "@playwright/test";
 
-const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
-if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
+const models = [
+    { name: "Alpha", file: "alpha.ckpt", version: "v1", modifier: "none", text_encoder: "alpha_clip.ckpt", default_scale: 12 },
+    { name: "Beta", file: "beta.ckpt", version: "flux1", keyword: "beta" },
+];
+const catalog = { models, loras: models, controlNets: models, upscalers: models, textualInversions: models };
 
-export const workflowFolder = "./tests/workflows";
+test.beforeEach(async ({ page, comfy }) => {
+    await page.route("**/dt_grpc/files_info", (route) => route.fulfill({ json: catalog }));
+    await comfy.openWorkflow(join("./tests/workflows", "model_nodes.json"));
+    await page.evaluate(async () => {
+        await window.app.extensionManager.setting.set("drawthings.bridge_mode.enabled", false);
+    });
+});
 
-test("models update with server", async ({ page, comfy }) => {
-    // load workflow
-    await comfy.openWorkflow(join(workflowFolder, "model_nodes.json"))
+test("model menus are fresh without changing static options or saved selections", async ({ page, comfy }) => {
+    const sampler = (await comfy.getNodeRef("DrawThingsSampler"))!;
+    const before = await sampler.getWidgetValue("model");
+    const options = await sampler.getWidgetOptions("model");
+    expect(options).toEqual(["(None selected)", "Alpha (SD)", "Beta (F1)"]);
+    expect(await sampler.getWidgetValue("model")).toEqual(before);
+    await sampler.selectWidgetOption("model", "Alpha (SD)");
+    expect(await sampler.getWidgetValue("model")).toMatchObject({ value: models[0], content: "Alpha (SD)" });
+    expect(await sampler.isWidgetVisible("res_dpt_shift")).toBe(false);
+    await sampler.selectWidgetOption("model", "Beta (F1)");
+    expect(await sampler.isWidgetVisible("res_dpt_shift")).toBe(true);
+    await page.route("**/dt_grpc/files_info", (route) => route.fulfill({ status: 503 }));
+    const failed = await sampler.getWidgetMenuItems("model");
+    expect(failed.some((item) => item.disabled && item.content.includes("Couldn't connect"))).toBe(true);
+    expect(await sampler.getWidgetValue("model")).toMatchObject({ value: models[1] });
+    expect(await page.evaluate(() => window.app.graph.nodes.find((n) => n.type === "DrawThingsSampler").widgets.find((w) => w.name === "model").options.values)).toEqual(["(None selected)"]);
+});
 
-    const sampler = await comfy.getNodeRef("DrawThingsSampler", { tag: 'sampler'})
-    const lora = await comfy.getNodeRef("DrawThingsLoRA", { tag: 'lora'})
-    const cnet = await comfy.getNodeRef("DrawThingsControlNet", { tag: 'cnet'})
-    const prompt = await comfy.getNodeRef("DrawThingsPrompt", { tag: 'prompt'})
-    const upscaler = await comfy.getNodeRef("DrawThingsUpscaler", { tag: 'upscaler'})
-    const refiner = await comfy.getNodeRef("DrawThingsRefiner", { tag: 'refiner'})
+test("bridge model catalog is fetched once across repeated menu opens", async ({ page, comfy }) => {
+    const requests = { bridgeFiles: 0, combined: 0, serverFiles: 0 };
+    await page.route("**/dt_grpc/files_info", (route) => {
+        requests.serverFiles++;
+        return route.fulfill({ json: catalog });
+    });
+    await page.route("**/dt_grpc/bridge_models", (route) => {
+        requests.bridgeFiles++;
+        return route.fulfill({ json: models.map((model) => model.file) });
+    });
+    await page.route("**/dt_grpc/combined_models", (route) => {
+        requests.combined++;
+        return route.fulfill({
+            json: {
+                officialModels: models,
+                officialCnets: [],
+                officialLoras: [],
+                communityModels: [],
+                communityCnets: [],
+                communityLoras: [],
+                communityEmbeddings: [],
+                uncuratedModels: [],
+            },
+        });
+    });
+    await page.evaluate(async () => {
+        await window.app.extensionManager.setting.set("drawthings.bridge_mode.enabled", true);
+    });
 
-    const nodes = [sampler, lora, cnet, prompt, upscaler, refiner]
-    const widgets = ["model", "lora", "control_name", "insert_textual_inversion", "upscaler_model", "refiner_model"]
+    const sampler = (await comfy.getNodeRef("DrawThingsSampler"))!;
+    expect(await sampler.getWidgetOptions("model")).toEqual(["(None selected)", "Alpha (SD)", "Beta (F1)"]);
+    expect(await sampler.getWidgetOptions("model")).toEqual(["(None selected)", "Alpha (SD)", "Beta (F1)"]);
+    const upscaler = (await comfy.getNodeRef("DrawThingsUpscaler"))!;
+    expect(await upscaler.getWidgetOptions("upscaler_model")).toEqual(["(None selected)", "Alpha (SD)", "Beta (F1)"]);
+    expect(requests).toEqual({ bridgeFiles: 1, combined: 1, serverFiles: 1 });
+});
 
-    async function assertAll(assertion: (node: NodeRef, widget: string) => void) {
-        for (let i = 0; i < nodes.length; i++) {
-            const node = nodes[i]
-            const widget = widgets[i]
-            await assertion(node, widget)
-        }
-    }
-
-    await assertAll(async (node, widget) => {
-        await expect(node, node.tag).toBeDefined()
-        await expect(widget, node.tag).toBeDefined()
-        await expect(await node?.isWidgetVisible(widget!), node.tag).toBeTruthy()
-        await expect((await node?.getWidgetOptions(widget!))?.filter(o => !o.disabled).length, node.tag).toBeGreaterThan(2)
-    })
-    await expect(await sampler?.getWidgetValue("model")).not.toBe("Not connected")
-
-    // set server to invalid address
-    await sampler?.setWidgetValue("port", 1234)
-    await page.waitForTimeout(500)
-
-    // assert error model options
-
-    // sampler, lora, cnet, prompt, upscaler, refiner
-    // currently only the sampler node model shows "not connected"
-    await expect(await sampler?.getWidgetValue("model")).toBe("Not connected")
-    await expect((await sampler?.getWidgetOptions("model"))?.length).toBe(2)
-
-    // set server to valid address
-    await sampler?.setWidgetValue("port", 7859)
-    await page.waitForTimeout(500)
-
-    // assert model options are updated
-    // sampler, lora, cnet, prompt, upscaler, refiner
-    await expect(await sampler?.getWidgetValue("model")).not.toBe("Not connected")
-    await expect((await sampler?.getWidgetOptions("model"))?.length).toBeGreaterThan(2)
-})
-
-test("sampler model version", async ({ page, comfy }) => {
-    // load workflow
-    await comfy.openWorkflow(join(workflowFolder, "model_nodes.json"))
-
-    const sampler = await comfy.getNodeRef("DrawThingsSampler")
-    const lora = await comfy.getNodeRef("DrawThingsLoRA")
-    const cnet = await comfy.getNodeRef("DrawThingsControlNet")
-    const prompt = await comfy.getNodeRef("DrawThingsPrompt")
-    const upscaler = await comfy.getNodeRef("DrawThingsUpscaler")
-    const refiner = await comfy.getNodeRef("DrawThingsRefiner")
-
-    const nodes = [sampler, lora, cnet, prompt, upscaler, refiner]
-    const widgets = ["model", "lora", "control_name", "insert_textual_inversion", "upscaler_model", "refiner_model"]
-
-    async function assertAll(assertion: (node?: NodeRef, widget?: string) => void, excludeSampler?: boolean) {
-        for (let i = excludeSampler ? 1 : 0; i < nodes.length; i++) {
-            const node = nodes[i]
-            const widget = widgets[i]
-            await assertion(node, widget)
-        }
-    }
-
-    await assertAll(async (node, widget) => {
-        await expect(node).toBeDefined()
-        await expect(widget).toBeDefined()
-        await expect(await node?.isWidgetVisible(widget!)).toBeTruthy()
-    })
-
-    // select (none selected)
-    await sampler?.selectWidgetOption("model", "(None selected)")
-    await page.waitForTimeout(500)
-
-    // assert lora, cnet, prompt node models are all enabled
-    await assertAll(async (node, widget) => {
-        const options = await node?.getWidgetOptions(widget!)
-        expect(options?.length).toBeGreaterThan(0)
-        await expect(options?.filter(o => !o.disabled).length).toBe(options?.length)
-    }, true)
-
-    // select an sd1 model
-    // assert non-sd1 models are disabled
-    // select an sdxl model
-    // assert sd1 models are disabled, and sdxl models are enabled
-})
-
-test("single server workflow", async ({ page }) => { })
-
-test("multiple server workflow", async ({ page }) => { })
-
-test("save/restore previous model", async ({ page, comfy }) => {
-    // load workflow
-    await comfy.openWorkflow(join(workflowFolder, "model_nodes.json"))
-
-    const sampler = await comfy.getNodeRef("DrawThingsSampler")
-    const lora = await comfy.getNodeRef("DrawThingsLoRA")
-    const cnet = await comfy.getNodeRef("DrawThingsControlNet")
-    const upscaler = await comfy.getNodeRef("DrawThingsUpscaler")
-    const refiner = await comfy.getNodeRef("DrawThingsRefiner")
-
-    const nodes = [sampler, lora, cnet, upscaler, refiner]
-    const widgets = ["model", "lora", "control_name", "upscaler_model", "refiner_model"]
-
-    async function assertAll(assertion: (node?: NodeRef, widget?: string) => void, excludeSampler?: boolean) {
-        for (let i = excludeSampler ? 1 : 0; i < nodes.length; i++) {
-            const node = nodes[i]
-            const widget = widgets[i]
-            await assertion(node, widget)
-        }
-    }
-
-    await assertAll(async (node, widget) => {
-        await expect(node).toBeDefined()
-        await expect(widget).toBeDefined()
-        await expect(await node?.isWidgetVisible(widget!)).toBeTruthy()
-        await expect((await node?.getWidgetValue(widget!))?.value).toHaveProperty('file')
-    })
-
-    const originalModels = []
-
-    for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i]
-        const widget = widgets[i]
-        const model = await node?.getWidgetValue(widget!)
-        originalModels.push(model?.value?.file)
-    }
-    console.log(originalModels)
-
-    // set server to invalid address
-    await sampler?.setWidgetValue("port", 1234)
-    await page.waitForTimeout(500)
-
-    // reload page
-    await page.reload()
-    await page.waitForLoadState('domcontentloaded')
-    await page.waitForTimeout(2000)
-
-    // assert error options oppear on model
-    await assertAll(async (node, widget) => {
-        const value = await node?.getWidgetValue(widget!)
-        expect(value).toBe("Not connected")
-    })
-
-    // set server to valid address
-
-    // assert previously select model is selected
-})
-
-test("lora model filtering", async ({ page }) => {
-    // load workflow (two samplers, one lora, connected to one sampler)
-
-    // change model on connected sampler
-
-    // assert correct version filtered
-
-    // connect lora to second sampler, select different model version
-
-    // assert both versions are filtered
-})
-
-test("multiple lora node filtering", async ({ page }) => {
-    // load workflow (two samplers with their own lora nodes, sharing prompt node)
-
-    // switch models on one sampler, assert it's connect lora node is filtered correctly
-
-    // assert other lora has not changed
-
-    // which models on the other sampler, assert it's lora node updates correctly
-
-    // assert other lora has not changed
-})
+test("downstream model versions are disabled and selecting none removes restriction", async ({ comfy }) => {
+    const sampler = (await comfy.getNodeRef("DrawThingsSampler"))!;
+    const lora = (await comfy.getNodeRef("DrawThingsLoRA"))!;
+    const upscaler = (await comfy.getNodeRef("DrawThingsUpscaler"))!;
+    await sampler.selectWidgetOption("model", "Alpha (SD)");
+    const items = await lora.getWidgetMenuItems("lora");
+    expect(items.find((item) => item.content === "Alpha (SD)")?.disabled).toBe(false);
+    expect(items.find((item) => item.content === "Beta (F1)")?.disabled).toBe(true);
+    const upscalers = await upscaler.getWidgetMenuItems("upscaler_model");
+    expect(upscalers.filter((item) => item.content !== "(None selected)").every((item) => !item.disabled)).toBe(true);
+    await sampler.selectWidgetOption("model", "(None selected)");
+    expect((await lora.getWidgetMenuItems("lora")).some((item) => item.disabled)).toBe(false);
+});

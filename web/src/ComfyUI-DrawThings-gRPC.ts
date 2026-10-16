@@ -225,7 +225,7 @@ export const samplerProto: Partial<DTSampler> = {
         options.push(null);
         options.push({
             content: "Paste Draw Things config",
-            callback: () => importConfig(this as unknown as DTSampler),
+            callback: () => { void importConfig(this as unknown as DTSampler); },
         });
         options.push({
             content: "Copy Draw Things config",

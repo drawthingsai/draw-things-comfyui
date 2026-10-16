@@ -295,7 +295,25 @@ export class NodeRef {
 		await this.page.waitForTimeout(this.delay);
 	}
 
-	async getWidgetOptions(widget: string): Promise<(string | null)[]> {
+    async getWidgetMenuItems(name: string): Promise<{ content: string; disabled: boolean }[]> {
+        await this.clickWidget(name);
+        await this.page.getByRole("menuitem", { name: "Loading models…", exact: true }).waitFor({ state: "hidden" });
+        const items = await this.page.locator(".litecontextmenu").last().locator(".litemenu-entry").evaluateAll((entries) =>
+            entries.map((entry) => ({ content: entry.textContent ?? "", disabled: entry.classList.contains("disabled") })),
+        );
+        await this.page.evaluate(() => {
+            document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+        });
+        await this.page.locator(".litecontextmenu").last().waitFor({ state: "hidden" });
+        return items;
+    }
+
+    async getWidgetOptions(widget: string): Promise<(string | null)[]> {
+        const dynamic = await this.page.evaluate(([id, name]) => {
+            const node = app.graph.getNodeById(id);
+            return !!node.widgets.find((w) => w.name === name)?.options?.modelType;
+        }, [this.id, widget]);
+        if (dynamic) return (await this.getWidgetMenuItems(widget)).map((item) => item.content);
 		const options = (await this.page.evaluate(
 			([nodeId, name]) => {
 				const node = app.graph.getNodeById(nodeId);
@@ -314,7 +332,13 @@ export class NodeRef {
 		});
 	}
 
+
 	async widgetHasOption(widget: string, option: string, useApi = false) {
+        const dynamic = await this.page.evaluate(([id, name]) => {
+            const node = app.graph.getNodeById(id);
+            return !!node.widgets.find((w) => w.name === name)?.options?.modelType;
+        }, [this.id, widget]);
+        if (dynamic) return (await this.getWidgetOptions(widget)).includes(option);
 		if (useApi) {
 			const result = await this.page.evaluate(
 				([nodeId, name, option]) => {
