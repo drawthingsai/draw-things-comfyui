@@ -793,98 +793,98 @@ function patchProp(jsonName, funcName, func) {
 
 // web/src/configImport.ts
 async function importConfig(sampler) {
-  {
-    return navigator.clipboard.readText().then(async (text) => {
-      try {
-        const config = JSON.parse(text);
-        const requiredNodes = [];
-        for (const [k, v] of Object.entries(config)) {
-          const prop = findPropertyJson(k);
-          if (!prop) {
-            continue;
-          }
-          if (prop.node !== sampler.type) {
-            requiredNodes.push(...prop.getRequiredNodes(v, config));
-            continue;
-          }
-          const widget = sampler.widgets?.find(
-            (w) => w.name === prop.python
-          );
-          if (!widget) {
-            continue;
-          }
-          await prop.import(k, v, widget, sampler, config);
+  return navigator.clipboard.readText().then(async (text) => {
+    try {
+      const config = JSON.parse(text);
+      const requiredNodes = [];
+      for (const [k, v] of Object.entries(config)) {
+        const prop = findPropertyJson(k);
+        if (!prop) {
+          continue;
         }
-        sampler.coerceWidgetValues();
-        sampler.updateDynamicWidgets?.();
-        const availableNodes = sampler.getConfigInputNodes();
-        const missingNodes = [];
-        if (requiredNodes.includes("DrawThingsUpscaler")) {
-          if (!availableNodes.DrawThingsUpscaler.length)
-            missingNodes.push("DrawThingsUpscaler");
-          else
-            await applyConfig(
-              availableNodes.DrawThingsUpscaler[0],
-              config
-            );
+        if (prop.node !== sampler.type) {
+          requiredNodes.push(...prop.getRequiredNodes(v, config));
+          continue;
         }
-        if (requiredNodes.includes("DrawThingsRefiner")) {
-          if (!availableNodes.DrawThingsRefiner.length)
-            missingNodes.push("DrawThingsRefiner");
-          else
-            await applyConfig(
-              availableNodes.DrawThingsRefiner[0],
-              config
-            );
-        }
-        if (requiredNodes.includes("DrawThingsControlNet")) {
-          const cnetNeeded = requiredNodes.filter(
-            (n) => n === "DrawThingsControlNet"
-          ).length;
-          if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
-            missingNodes.push(
-              `${cnetNeeded - availableNodes.DrawThingsControlNet.length} x DrawThingsControlNet`
-            );
-          let controlIndex = 0;
-          for (const cnetNode of availableNodes.DrawThingsControlNet) {
-            await applyCnetConfig(
-              cnetNode,
-              config.controls[controlIndex++]
-            );
-          }
-        }
-        if (requiredNodes.includes("DrawThingsLoRA")) {
-          const loraNeeded = requiredNodes.filter(
-            (n) => n === "DrawThingsLoRA"
-          ).length;
-          if (loraNeeded > availableNodes.DrawThingsLoRA.length)
-            missingNodes.push(
-              `${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`
-            );
-          await applyLoraConfig(
-            availableNodes.DrawThingsLoRA,
-            config.loras
-          );
-        }
-        if (missingNodes.length) {
-          getApp().extensionManager.toast.add({
-            severity: "warn",
-            summary: "Draw Things gRPC",
-            detail: [
-              "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
-              ...missingNodes.map((n) => `\u2022 ${n}`)
-            ].join("\n"),
-            life: 8e3
-          });
-        }
-      } catch (e) {
-        alert(
-          "Failed to parse Draw Things config from clipboard\n\n" + e
+        const widget = sampler.widgets?.find(
+          (w) => w.name === prop.python
         );
-        console.warn(e);
+        if (!widget) {
+          continue;
+        }
+        await prop.import(k, v, widget, sampler, config);
       }
-    });
-  }
+      sampler.coerceWidgetValues();
+      sampler.updateDynamicWidgets?.();
+      const availableNodes = sampler.getConfigInputNodes();
+      const missingNodes = [];
+      if (requiredNodes.includes("DrawThingsUpscaler")) {
+        if (!availableNodes.DrawThingsUpscaler.length)
+          missingNodes.push("DrawThingsUpscaler");
+        else
+          await applyConfig(
+            availableNodes.DrawThingsUpscaler[0],
+            config
+          );
+      }
+      if (requiredNodes.includes("DrawThingsRefiner")) {
+        if (!availableNodes.DrawThingsRefiner.length)
+          missingNodes.push("DrawThingsRefiner");
+        else
+          await applyConfig(
+            availableNodes.DrawThingsRefiner[0],
+            config
+          );
+      }
+      if (requiredNodes.includes("DrawThingsControlNet")) {
+        const cnetNeeded = requiredNodes.filter(
+          (n) => n === "DrawThingsControlNet"
+        ).length;
+        if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
+          missingNodes.push(
+            `${cnetNeeded - availableNodes.DrawThingsControlNet.length} x DrawThingsControlNet`
+          );
+        let controlIndex = 0;
+        for (const cnetNode of availableNodes.DrawThingsControlNet) {
+          await applyCnetConfig(
+            cnetNode,
+            config.controls[controlIndex++]
+          );
+        }
+      }
+      if (requiredNodes.includes("DrawThingsLoRA")) {
+        const loraNeeded = requiredNodes.filter(
+          (n) => n === "DrawThingsLoRA"
+        ).length;
+        if (loraNeeded > availableNodes.DrawThingsLoRA.length)
+          missingNodes.push(
+            `${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`
+          );
+        await applyLoraConfig(
+          availableNodes.DrawThingsLoRA,
+          config.loras
+        );
+      }
+      if (missingNodes.length) {
+        getApp().extensionManager.toast.add({
+          severity: "warn",
+          summary: "Draw Things gRPC",
+          detail: [
+            "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
+            ...missingNodes.map((n) => `\u2022 ${n}`)
+          ].join("\n"),
+          life: 8e3
+        });
+      }
+    } catch (e) {
+      alert(
+        `Failed to parse Draw Things config from clipboard
+
+${e}`
+      );
+      console.warn(e);
+    }
+  });
 }
 async function applyConfig(node, config) {
   const nodeProps = findPropertiesByNode(node.type);
@@ -964,7 +964,7 @@ async function applyLoraConfig(nodes, loraConfig) {
     for (let iSlot = 0; iSlot < 8; iSlot++) {
       const lc = loraConfig[iSlot + iNode * 8];
       const { file, weight, mode } = getLoraSlotWidgets(node, iSlot);
-      if (!lc || !lc.file) {
+      if (!lc?.file) {
         setModelValue(node, file, "(None selected)");
         weight.value = 1;
         mode.value = "All";
@@ -1563,16 +1563,15 @@ var samplerProto = {
   async onNodeCreated() {
     const app4 = getApp();
     const inputPos = this.inputs?.find(
-      (inputPos2) => inputPos2.name == "positive"
+      (inputPos2) => inputPos2.name === "positive"
     );
     const inputNeg = this.inputs?.find(
-      (inputNeg2) => inputNeg2.name == "negative"
+      (inputNeg2) => inputNeg2.name === "negative"
     );
-    if (app4.canvas) {
-      inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app4.canvas.default_connection_color_byType["CONDITIONING"];
-      app4.canvas.default_connection_color_byType["DT_LORA"] = app4.canvas.default_connection_color_byType["MODEL"];
-      app4.canvas.default_connection_color_byType["DT_CNET"] = app4.canvas.default_connection_color_byType["CONTROL_NET"];
-    }
+    if (!app4.canvas || !inputPos || !inputNeg) return;
+    inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app4.canvas.default_connection_color_byType.CONDITIONING;
+    app4.canvas.default_connection_color_byType.DT_LORA = app4.canvas.default_connection_color_byType.MODEL;
+    app4.canvas.default_connection_color_byType.DT_CNET = app4.canvas.default_connection_color_byType.CONTROL_NET;
     setTimeout(() => checkVersion(), 2e3);
   },
   onSerialize(serialised) {
@@ -1612,7 +1611,9 @@ var samplerProto = {
       const list = corrections.map(
         (c) => `${c.name}: ${c.value} -> ${c.coerced}`
       );
-      const detail = message + "\n\n" + list.join("\n");
+      const detail = `${message}
+
+${list.join("\n")}`;
       getApp().extensionManager.toast.add({
         severity: "info",
         summary: "Draw Things gRPC",
@@ -1703,7 +1704,7 @@ var samplerProto = {
     });
     options.push(null);
     options.push({
-      content: (bridgeMode ? "\u2713 " : "") + "Use bridge mode",
+      content: `${bridgeMode ? "\u2713 " : ""}Use bridge mode`,
       callback: () => {
         app4.extensionManager.setting.set(
           "drawthings.bridge_mode.enabled",
@@ -1713,7 +1714,7 @@ var samplerProto = {
     });
     if (bridgeMode) {
       options.push({
-        content: (bridgeCommunity ? "\u2713 " : "") + "Show community models",
+        content: `${bridgeCommunity ? "\u2713 " : ""}Show community models`,
         callback: () => {
           app4.extensionManager.setting.set(
             "drawthings.bridge_mode.community",
@@ -1722,7 +1723,7 @@ var samplerProto = {
         }
       });
       options.push({
-        content: (bridgeUncurated ? "\u2713 " : "") + "Show uncurated models",
+        content: `${bridgeUncurated ? "\u2713 " : ""}Show uncurated models`,
         callback: () => {
           app4.extensionManager.setting.set(
             "drawthings.bridge_mode.uncurated",

@@ -46,6 +46,24 @@ gRPCServerCLI-macOS [path to models] --no-response-compression --model-browser
 
 ---
 
+### Development
+
+Install JavaScript/TypeScript development dependencies with `npm ci`.
+
+This project uses [Biome](https://biomejs.dev/) for linting and formatting:
+
+- `npm run lint` — check lint rules.
+- `npm run lint:fix` — apply safe lint fixes.
+- `npm run format:check` — check formatting without changing files.
+- `npm run format` — format files in place.
+- `npm run check` — check lint rules, formatting, and import organization.
+- `npm run check:fix` — apply safe fixes, formatting, and import organization.
+
+Biome respects `.gitignore` and excludes generated files, bundled frontend output,
+static assets, and test fixtures. Python code is not handled by Biome.
+
+---
+
 ### Discussion
 
 Join the conversation and get support on [Discord](https://discord.com/channels/1038516303666876436/1357377020299837464).
