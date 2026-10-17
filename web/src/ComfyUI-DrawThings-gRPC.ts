@@ -8,7 +8,7 @@ import type { DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
 import { getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.12.2";
+export const nodePackVersion = "1.13.0";
 
 export default {
     name: "core",

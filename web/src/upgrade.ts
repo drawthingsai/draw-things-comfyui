@@ -102,6 +102,11 @@ const announcements = [
             "\n",
             "Note: Nodes 2.0 is not yet supported at this time."
         ].join('\n')
+    },
+    {
+        version: "1.13.0",
+        title: "Draw Things for ComfyUI 1.13.0",
+        detail: "Had to make a variety of fixes and changes to get the node working again with the latest version of Comfy. Model widgets now load the model list on demand. Added missing model versions. Next update will include the new/missing config properties as well as fixes to preview for newer models."
     }
 ]
 

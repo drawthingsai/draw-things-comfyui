@@ -1797,11 +1797,16 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
       "\n",
       "Note: Nodes 2.0 is not yet supported at this time."
     ].join("\n")
+  },
+  {
+    version: "1.13.0",
+    title: "Draw Things for ComfyUI 1.13.0",
+    detail: "Had to make a variety of fixes and changes to get the node working again with the latest version of Comfy. Model widgets now load the model list on demand. Added missing model versions. Next update will include the new/missing config properties as well as fixes to preview for newer models."
   }
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.12.2";
+var nodePackVersion = "1.13.0";
 var ComfyUI_DrawThings_gRPC_default = {
   name: "core",
   getCustomWidgets() {
