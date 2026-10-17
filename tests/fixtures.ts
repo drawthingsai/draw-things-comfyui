@@ -34,6 +34,8 @@ export class ComfyPage {
 			url.searchParams.set(this.queryParam[0], this.queryParam[1]);
 		}
 		await this.page.goto(url.toString());
+		await this.page.waitForFunction(() => !!window.app?.extensionManager?.setting);
+		await this.canvas.waitFor({ state: "visible" });
 		this.gotoCalled = true;
 
 		const bannerClose = this.page.locator(
@@ -96,7 +98,7 @@ export class ComfyPage {
 	) {
 		const nodeId = await this.page.evaluate((node) => {
 			if (typeof node === "number") {
-				return window.app.graph._nodes.find((n) => n.id === node)?.id;
+				return window.app.graph._nodes.find((n) => String(n.id) === String(node))?.id;
 			} else if (typeof node === "string") {
 				return window.app.graph._nodes.find((n) => n.type === node)?.id;
 			} else if (typeof node === "function") {
@@ -192,14 +194,19 @@ export class ComfyPage {
 
 	async setClipboard(data: string | Record<string, unknown>) {
 		const cliptext = typeof data === "string" ? data : JSON.stringify(data);
-		await this.page.addInitScript((text) => {
+		const installClipboard = (text: string) => {
 			Object.defineProperty(navigator, "clipboard", {
+				configurable: true,
 				value: {
-					readText: () => Promise.resolve(text),
-					writeText: (t: string) => Promise.resolve(), // optional stub
+					readText: async () => text,
+					writeText: async (value: string) => { text = value; },
 				},
 			});
-		}, cliptext);
+		};
+		// Cover both an already-open workflow and subsequent navigations without
+		// depending on OS clipboard permissions or a secure browser origin.
+		await this.page.addInitScript(installClipboard, cliptext);
+		await this.page.evaluate(installClipboard, cliptext);
 	}
 
 	async getTempDir() {
@@ -228,8 +235,8 @@ export class ComfyPage {
 
 	async updateSetting(setting: string, value: unknown) {
 		await this.page.evaluate(
-			([setting, value]) => {
-				window.app.extensionManager.setting.set(setting, value);
+			async ([setting, value]) => {
+				await window.app.extensionManager.setting.set(setting, value);
 			},
 			[setting, value] as const,
 		);

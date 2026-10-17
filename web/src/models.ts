@@ -1,5 +1,6 @@
 import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 import type { ComboWidget, IWidget, LGraph, LGraphNode } from "@comfyorg/litegraph";
+import { modelVersions } from "./modelVersions";
 import { combinedModelsResponseKeys, type CombinedModelsResponse } from "./modelsTypes";
 import { getApp, getLiteGraph } from "./util";
 
@@ -42,7 +43,7 @@ export function restoreModelLabel(selection: any) {
     return {
         ...selection,
         content: selection.content ?? getMenuItem(selection.value).content,
-        toString() { return this.value.name; },
+        toString() { return this.value.name ?? this.value.file; },
     };
 }
 
@@ -119,6 +120,9 @@ class ModelService {
     getCachedModels(node: DTModelNode): ModelInfo[] {
         if (getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled"))
             return bridgeCache ? [bridgeCatalog(bridgeCache)] : [];
+        return this.getCachedLocalModels(node);
+    }
+    getCachedLocalModels(node: DTModelNode): ModelInfo[] {
         return this.context(node).servers.flatMap((server) => {
             const address = server.getServer?.();
             const cached = address && modelInfoStore.get(JSON.stringify([address.server, String(address.port), address.useTls]));
@@ -173,11 +177,25 @@ class ModelService {
     async selectByFile(node: DTModelNode, widget: IWidget, file: unknown) {
         if (!file) { setModelValue(node, widget, "(None selected)"); return; }
         const type = (widget.options as any)?.modelType;
-        const cached = this.getCachedModels(node).flatMap((catalog) => catalog[type] ?? [])
+        const find = (catalogs: ModelInfo[]) => catalogs.flatMap((catalog) => catalog[type] ?? [])
             .find((model) => model.file === file);
-        const selection = cached ? getMenuItem(cached)
-            : (await this.getMenuItems(node, type, false)).find((item) => item.value.file === file);
-        if (selection) setModelValue(node, widget, selection);
+        let model = find(this.getCachedLocalModels(node));
+        if (!model) {
+            // Presets are independent of menu mode, availability and version filters.
+            const local = await Promise.allSettled(this.context(node).servers.map(async (server) => {
+                const address = server.getServer?.();
+                if (!address) throw new Error("Missing server address");
+                return getModels(address.server, address.port, address.useTls);
+            }));
+            model = find(local.flatMap((result) => result.status === "fulfilled" ? [result.value] : []));
+        }
+        if (!model) {
+            try { model = find([allModelsCatalog(await getCombinedModels())]); }
+            catch { /* Unavailable catalogs must not prevent importing a filename. */ }
+        }
+        setModelValue(node, widget, model ? getMenuItem(model) : {
+            value: { file }, content: file,
+        });
     }
 }
 export const modelService = new ModelService();
@@ -299,16 +317,41 @@ export async function getModels(server: string, port: number | string, useTls: b
 
 let bridgeLoad: Promise<CombinedModelsResponse> | undefined;
 let bridgeCache: CombinedModelsResponse | undefined;
+let combinedLoad: Promise<CombinedModelsResponse> | undefined;
+let combinedCache: CombinedModelsResponse | undefined;
+async function getCombinedModels(): Promise<CombinedModelsResponse> {
+    if (combinedCache) return combinedCache;
+    if (!combinedLoad) combinedLoad = (async () => {
+        const response = await window.comfyAPI.api.api.fetchApi("/dt_grpc/combined_models");
+        if (!response.ok) throw new Error("Couldn't retrieve model metadata");
+        const combined: CombinedModelsResponse = await response.json();
+        combinedCache = combined;
+        return combined;
+    })();
+    const load = combinedLoad;
+    try { return await load; }
+    finally { if (combinedLoad === load) combinedLoad = undefined; }
+}
+
+function allModelsCatalog(combined: CombinedModelsResponse): ModelInfo {
+    return {
+        models: [...combined.officialModels, ...combined.communityModels, ...combined.uncuratedModels],
+        controlNets: [...combined.officialCnets, ...combined.communityCnets],
+        loras: [...combined.officialLoras, ...combined.communityLoras],
+        textualInversions: [...combined.communityEmbeddings],
+        upscalers: [],
+    };
+}
+
 async function getBridgeModels(): Promise<ModelInfo> {
     if (bridgeCache) return bridgeCatalog(bridgeCache);
     if (!bridgeLoad) bridgeLoad = (async () => {
         const api = window.comfyAPI.api.api;
-        const [filesResponse, combinedResponse] = await Promise.all([
-            api.fetchApi("/dt_grpc/bridge_models"), api.fetchApi("/dt_grpc/combined_models"),
+        const [filesResponse, combined] = await Promise.all([
+            api.fetchApi("/dt_grpc/bridge_models"), getCombinedModels(),
         ]);
-        if (!filesResponse.ok || !combinedResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
+        if (!filesResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
         const files: string[] = await filesResponse.json();
-        const combined: CombinedModelsResponse = await combinedResponse.json();
         const filtered = Object.fromEntries(combinedModelsResponseKeys.map((key) => [key,
             Array.isArray(combined[key]) ? combined[key].filter((model) => files.includes(model.file)) : [],
         ])) as unknown as CombinedModelsResponse;
@@ -335,39 +378,8 @@ function bridgeCatalog(combined: CombinedModelsResponse): ModelInfo {
     };
 }
 
-const versionNames: Record<string, string> = {
-    v1: "SD",
-    v2: "SD2",
-    "kandinsky2.1": "Kan",
-    "sdxl_base_v0.9": "SDXL",
-    "sdxl_refiner_v0.9": "SDXL",
-    ssd_1b: "SSD",
-    svd_i2v: "SVD",
-    "wurstchen_v3.0_stage_c": "Wur",
-    "wurstchen_v3.0_stage_b": "Wur",
-    sd3: "SD3",
-    pixart: "Pix",
-    auraflow: "AF",
-    flux1: "F1",
-    sd3_large: "SD3L",
-    hunyuan_video: "Hun",
-    "wan_v2.1_1.3b": "Wan",
-    "wan_v2.1_14b": "Wan",
-    hidream_i1: "HiD",
-    qwen_image: "Qwen",
-    z_image: "Z Image",
-    flux2: "F2",
-    ltx2: "LTX2",
-    "ltx2.3": "LTX2.3",
-    "ltx2_3": "LTX2.3",
-    "cosmos2.5_2b": "Cosmos2.5",
-    "ernie_image": "Ernie",
-    "seedvr2_3b": "SeedVR2 3b",
-    "seedvr2_7b": "SeedVR2 7b",
-};
-
 function getVersionAbbrev(version: string) {
-    return versionNames[version] ?? version;
+    return modelVersions.find((model) => model.version === version)?.tag ?? version;
 }
 
 function testHack(models: ModelInfo) {

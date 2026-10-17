@@ -71,6 +71,27 @@ test("traversal follows all outputs and protects cycles and shared paths", () =>
     assert.deepEqual(findServerNodes(first), [server]);
 });
 
+test("offline imports preserve unknown filenames for every model widget and retry catalogs", async () => {
+    const { node, widget } = widgetNode();
+    node.getServer = () => ({ server: "offline", port: 7999, useTls: true });
+    const requests: string[] = [];
+    fetchApi = async (path) => { requests.push(path); throw new Error("offline"); };
+    for (const [name, type] of [
+        ["model", "models"], ["refiner_model", "models"], ["upscaler_model", "upscalers"],
+        ["lora", "loras"], ["control_name", "controlNets"], ["insert_textual_inversion", "textualInversions"],
+    ]) {
+        widget.name = name; widget.options.modelType = type;
+        await modelService.selectByFile(node, widget, "unknown.ckpt");
+        assert.deepEqual(JSON.parse(JSON.stringify(widget.value)), {
+            value: { file: "unknown.ckpt" }, content: "unknown.ckpt",
+        });
+        assert.equal(String(widget.value), "unknown.ckpt");
+        assert.equal(node.saved[0].value.file, "unknown.ckpt");
+    }
+    assert.equal(requests.filter((path) => path.endsWith("combined_models")).length, 6);
+    assert.equal(requests.some((path) => path.endsWith("bridge_models")), false);
+});
+
 test("bridge works without server, coalesces and respects community and uncurated settings", async () => {
     const node: any = { id: 2, graph, outputs: [] }; reset([node]);
     settings.set("drawthings.bridge_mode.enabled", true);
@@ -80,7 +101,7 @@ test("bridge works without server, coalesces and respects community and uncurate
         requests++;
         await new Promise((r) => setTimeout(r, 5));
         if (path.endsWith("bridge_models")) return response([official.file, community.file, uncurated.file]);
-        return response({ officialModels: [official], communityModels: [community], uncuratedModels: [uncurated], officialCnets: [], communityCnets: [], officialLoras: [], communityLoras: [], communityEmbeddings: [community] });
+        return response({ officialModels: [official, model("Not on bridge", "flux1", { custom: 42 })], communityModels: [community], uncuratedModels: [uncurated], officialCnets: [official], communityCnets: [community], officialLoras: [official], communityLoras: [community], communityEmbeddings: [community] });
     };
     const items = await Promise.all([modelService.getMenuItems(node, "models"), modelService.getMenuItems(node, "loras")]);
     assert.equal(requests, 2);
@@ -92,6 +113,66 @@ test("bridge works without server, coalesces and respects community and uncurate
     fetchApi = async () => { throw new Error("bridge offline"); };
     assert.deepEqual((await modelService.getMenuItems(node, "models")).map((m) => m.value.name), ["Community", "Official", "Uncurated"]);
     assert.equal(requests, 2);
+});
+
+test("imports search every metadata source regardless of bridge visibility or availability", async () => {
+    const { node, widget } = widgetNode();
+    node.getServer = () => ({ server: "empty", port: 7998, useTls: true });
+    fetchApi = async (path) => {
+        assert.equal(path, "/dt_grpc/files_info");
+        return response(catalog([]));
+    };
+    for (const bridge of [false, true]) {
+        settings.set("drawthings.bridge_mode.enabled", bridge);
+        settings.set("drawthings.bridge_mode.community", false);
+        settings.set("drawthings.bridge_mode.uncurated", false);
+        for (const type of ["models", "loras", "controlNets", "textualInversions"]) {
+            widget.options.modelType = type;
+            for (const name of type === "models" ? ["Official", "Community", "Uncurated", "Not on bridge"]
+                : type === "textualInversions" ? ["Community"] : ["Official", "Community"]) {
+                await modelService.selectByFile(node, widget, `${name}.ckpt`);
+                assert.equal(widget.value.value.name, name);
+                assert.equal(widget.value.value.file, `${name}.ckpt`);
+                if (name === "Not on bridge") {
+                    assert.equal(widget.value.value.custom, 42);
+                    assert.equal(widget.value.content, "Not on bridge (F1)");
+                }
+            }
+        }
+        widget.options.modelType = "models";
+        await modelService.selectByFile(node, widget, "absent-everywhere.ckpt");
+        assert.deepEqual(widget.value.value, { file: "absent-everywhere.ckpt" });
+    }
+});
+
+test("imports use local metadata for every widget even in bridge mode", async () => {
+    const { node, widget } = widgetNode();
+    node.getServer = () => ({ server: "local-import", port: 7997, useTls: true });
+    settings.set("drawthings.bridge_mode.enabled", true);
+    const local = model("Community", "v2", { localMetadata: 123 });
+    let requests = 0;
+    fetchApi = async (path) => {
+        assert.equal(path, "/dt_grpc/files_info"); requests++;
+        return response(catalog([local]));
+    };
+    for (const type of ["models", "upscalers", "loras", "controlNets", "textualInversions"]) {
+        widget.options.modelType = type;
+        await modelService.selectByFile(node, widget, local.file);
+        assert.deepEqual(widget.value.value, local);
+    }
+    assert.equal(requests, 1);
+});
+
+test("disconnected imports resolve metadata and preserve filenames without a server", async () => {
+    const { node, widget } = widgetNode();
+    node.isDtServerNode = false;
+    fetchApi = async () => { throw new Error("offline"); };
+    await modelService.selectByFile(node, widget, "Uncurated.ckpt");
+    assert.equal(widget.value.value.name, "Uncurated");
+    await modelService.selectByFile(node, widget, "disconnected.ckpt");
+    assert.deepEqual(widget.value.value, { file: "disconnected.ckpt" });
+    await modelService.selectByFile(node, widget, null);
+    assert.equal(widget.value, "(None selected)");
 });
 
 test("upscalers always come from the connected server when bridge mode is enabled", async () => {

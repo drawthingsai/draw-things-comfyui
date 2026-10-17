@@ -1,5 +1,248 @@
 import { app as app$1 } from '../../scripts/app.js';
 
+// web/src/modelVersions.ts
+var modelVersions = [
+  {
+    version: "auraflow",
+    name: "AuraFlow",
+    tag: "AF",
+    features: ["cfgZero"]
+  },
+  {
+    version: "flux1",
+    name: "FLUX.1",
+    tag: "F1",
+    features: [
+      "cfgZero",
+      "resolutionDependentShift",
+      "zeroNegativePrompt",
+      "separateClipL",
+      "guidanceEmbed",
+      "teaCache"
+    ]
+  },
+  {
+    version: "flux2",
+    name: "FLUX.2",
+    tag: "F2",
+    features: ["cfgZero", "guidanceEmbed", "resolutionDependentShift"]
+  },
+  {
+    version: "flux2_4b",
+    name: "FLUX.2 [4B]",
+    tag: "F2",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "flux2_9b",
+    name: "FLUX.2 [9B]",
+    tag: "F2",
+    features: ["resolutionDependentShift", "cfgZero"]
+  },
+  {
+    version: "hidream_i1",
+    name: "HiDream-I1",
+    tag: "HiD",
+    features: [
+      "cfgZero",
+      "resolutionDependentShift",
+      "zeroNegativePrompt",
+      "separateClipL",
+      "guidanceEmbed",
+      "separateOpenClipG",
+      "separateT5Text"
+    ]
+  },
+  {
+    version: "hunyuan_video",
+    name: "HunyuanVideo",
+    tag: "Hun",
+    features: ["cfgZero", "numFrames", "compressionArtifacts", "teaCache", "guidanceEmbed"]
+  },
+  {
+    version: "kandinsky2.1",
+    name: "Kandinsky 2.1",
+    tag: "Kan",
+    features: ["deprecated"]
+  },
+  {
+    version: "ltx2",
+    name: "LTX-2",
+    tag: "LTX2",
+    features: ["cfgZero", "numFrames", "compressionArtifacts"]
+  },
+  {
+    version: "ltx2.3",
+    name: "LTX-2.3",
+    tag: "LTX2.3",
+    features: []
+  },
+  {
+    version: "pixart",
+    name: "PixArt",
+    tag: "Pix",
+    features: ["zeroNegativePrompt"]
+  },
+  {
+    version: "qwen_image",
+    name: "Qwen-Image",
+    tag: "Qwen",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "sd3",
+    name: "Stable Diffusion 3",
+    tag: "SD3",
+    features: [
+      "cfgZero",
+      "resolutionDependentShift",
+      "zeroNegativePrompt",
+      "separateClipL",
+      "t5TextEncoder",
+      "separateOpenClipG"
+    ]
+  },
+  {
+    version: "sd3_large",
+    name: "Stable Diffusion 3 Large",
+    tag: "SD3L",
+    features: [
+      "cfgZero",
+      "resolutionDependentShift",
+      "zeroNegativePrompt",
+      "separateClipL",
+      "separateOpenClipG",
+      "t5TextEncoder"
+    ]
+  },
+  {
+    version: "sdxl_base_v0.9",
+    name: "Stable Diffusion XL 0.9 Base",
+    tag: "SDXL",
+    features: ["zeroNegativePrompt", "sdxlSize"]
+  },
+  {
+    version: "sdxl_refiner_v0.9",
+    name: "Stable Diffusion XL 0.9 Refiner",
+    tag: "SDXL",
+    features: ["zeroNegativePrompt", "sdxlSize"]
+  },
+  {
+    version: "ssd_1b",
+    name: "Segmind Stable Diffusion 1B",
+    tag: "SSD",
+    features: ["zeroNegativePrompt"]
+  },
+  {
+    version: "svd_i2v",
+    name: "Stable Video Diffusion Image-to-Video",
+    tag: "SVD",
+    features: ["numFrames", "svdOptions"]
+  },
+  {
+    version: "v1",
+    name: "Stable Diffusion",
+    tag: "SD",
+    features: []
+  },
+  {
+    version: "v2",
+    name: "Stable Diffusion 2",
+    tag: "SD2",
+    features: []
+  },
+  {
+    version: "wan_v2.1_1.3b",
+    name: "Wan 2.1 [1.3B]",
+    tag: "Wan",
+    features: [
+      "numFrames",
+      "cfgZero",
+      "causalInference",
+      "compressionArtifacts",
+      "teaCache"
+    ]
+  },
+  {
+    version: "wan_v2.1_14b",
+    name: "Wan 2.1 [14B]",
+    tag: "Wan",
+    features: [
+      "numFrames",
+      "compressionArtifacts",
+      "cfgZero",
+      "causalInference",
+      "teaCache"
+    ]
+  },
+  {
+    version: "wan_v2.2_5b",
+    name: "Wan 2.2 [5B]",
+    tag: "Wan",
+    features: ["numFrames", "cfgZero", "causalInference", "compressionArtifacts"]
+  },
+  {
+    version: "wurstchen_v3.0_stage_c",
+    name: "W\xFCrstchen 3.0 Stage C",
+    tag: "Wur",
+    features: ["deprecated"]
+  },
+  {
+    version: "z_image",
+    name: "Z-Image",
+    tag: "Z Image",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "ernie_image",
+    name: "ERNIE Image",
+    tag: "Ernie",
+    features: ["cfgZero"]
+  },
+  {
+    version: "cosmos2.5_2b",
+    name: "Cosmos 2.5 [2B]",
+    tag: "Cosmos2.5",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "ideogram_4",
+    name: "Ideogram 4",
+    tag: "Ideogram4",
+    features: ["cfgZero", "resolutionDependentShift", "zeroNegativePrompt"]
+  },
+  {
+    version: "krea_2",
+    name: "Krea 2",
+    tag: "Krea2",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "minimax_h3",
+    name: "MiniMax Hailuo 3",
+    tag: "MiniMax",
+    features: ["cfgZero", "resolutionDependentShift", "numFrames", "audioShift", "compressionArtifacts", "solAttention", "teaCache"]
+  },
+  {
+    version: "qwen_image_2.1",
+    name: "Qwen-Image 2.1",
+    tag: "Qwen 2.1",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "seedvr2_3b",
+    name: "SeedVR2 3B",
+    tag: "SeedVR2 3b",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "seedvr2_7b",
+    name: "SeedVR2 7B",
+    tag: "SeedVR2 7b",
+    features: ["cfgZero", "resolutionDependentShift"]
+  }
+];
+
 // web/src/modelsTypes.ts
 var combinedModelsResponseKeys = ["officialModels", "officialCnets", "officialLoras", "communityModels", "communityCnets", "communityLoras", "communityEmbeddings", "uncuratedModels"];
 
@@ -83,7 +326,7 @@ function restoreModelLabel(selection) {
     ...selection,
     content: selection.content ?? getMenuItem(selection.value).content,
     toString() {
-      return this.value.name;
+      return this.value.name ?? this.value.file;
     }
   };
 }
@@ -157,6 +400,9 @@ var ModelService = class {
   getCachedModels(node) {
     if (getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled"))
       return bridgeCache ? [bridgeCatalog(bridgeCache)] : [];
+    return this.getCachedLocalModels(node);
+  }
+  getCachedLocalModels(node) {
     return this.context(node).servers.flatMap((server) => {
       const address = server.getServer?.();
       const cached = address && modelInfoStore.get(JSON.stringify([address.server, String(address.port), address.useTls]));
@@ -209,9 +455,26 @@ var ModelService = class {
       return;
     }
     const type = widget.options?.modelType;
-    const cached = this.getCachedModels(node).flatMap((catalog) => catalog[type] ?? []).find((model) => model.file === file);
-    const selection = cached ? getMenuItem(cached) : (await this.getMenuItems(node, type, false)).find((item) => item.value.file === file);
-    if (selection) setModelValue(node, widget, selection);
+    const find = (catalogs) => catalogs.flatMap((catalog) => catalog[type] ?? []).find((model2) => model2.file === file);
+    let model = find(this.getCachedLocalModels(node));
+    if (!model) {
+      const local = await Promise.allSettled(this.context(node).servers.map(async (server) => {
+        const address = server.getServer?.();
+        if (!address) throw new Error("Missing server address");
+        return getModels(address.server, address.port, address.useTls);
+      }));
+      model = find(local.flatMap((result) => result.status === "fulfilled" ? [result.value] : []));
+    }
+    if (!model) {
+      try {
+        model = find([allModelsCatalog(await getCombinedModels())]);
+      } catch {
+      }
+    }
+    setModelValue(node, widget, model ? getMenuItem(model) : {
+      value: { file },
+      content: file
+    });
   }
 };
 var modelService = new ModelService();
@@ -336,17 +599,43 @@ async function getModels(server, port, useTls) {
 }
 var bridgeLoad;
 var bridgeCache;
+var combinedLoad;
+var combinedCache;
+async function getCombinedModels() {
+  if (combinedCache) return combinedCache;
+  if (!combinedLoad) combinedLoad = (async () => {
+    const response = await window.comfyAPI.api.api.fetchApi("/dt_grpc/combined_models");
+    if (!response.ok) throw new Error("Couldn't retrieve model metadata");
+    const combined = await response.json();
+    combinedCache = combined;
+    return combined;
+  })();
+  const load = combinedLoad;
+  try {
+    return await load;
+  } finally {
+    if (combinedLoad === load) combinedLoad = void 0;
+  }
+}
+function allModelsCatalog(combined) {
+  return {
+    models: [...combined.officialModels, ...combined.communityModels, ...combined.uncuratedModels],
+    controlNets: [...combined.officialCnets, ...combined.communityCnets],
+    loras: [...combined.officialLoras, ...combined.communityLoras],
+    textualInversions: [...combined.communityEmbeddings],
+    upscalers: []
+  };
+}
 async function getBridgeModels() {
   if (bridgeCache) return bridgeCatalog(bridgeCache);
   if (!bridgeLoad) bridgeLoad = (async () => {
     const api = window.comfyAPI.api.api;
-    const [filesResponse, combinedResponse] = await Promise.all([
+    const [filesResponse, combined2] = await Promise.all([
       api.fetchApi("/dt_grpc/bridge_models"),
-      api.fetchApi("/dt_grpc/combined_models")
+      getCombinedModels()
     ]);
-    if (!filesResponse.ok || !combinedResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
+    if (!filesResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
     const files = await filesResponse.json();
-    const combined2 = await combinedResponse.json();
     const filtered = Object.fromEntries(combinedModelsResponseKeys.map((key) => [
       key,
       Array.isArray(combined2[key]) ? combined2[key].filter((model) => files.includes(model.file)) : []
@@ -375,38 +664,8 @@ function bridgeCatalog(combined) {
     upscalers: []
   };
 }
-var versionNames = {
-  v1: "SD",
-  v2: "SD2",
-  "kandinsky2.1": "Kan",
-  "sdxl_base_v0.9": "SDXL",
-  "sdxl_refiner_v0.9": "SDXL",
-  ssd_1b: "SSD",
-  svd_i2v: "SVD",
-  "wurstchen_v3.0_stage_c": "Wur",
-  "wurstchen_v3.0_stage_b": "Wur",
-  sd3: "SD3",
-  pixart: "Pix",
-  auraflow: "AF",
-  flux1: "F1",
-  sd3_large: "SD3L",
-  hunyuan_video: "Hun",
-  "wan_v2.1_1.3b": "Wan",
-  "wan_v2.1_14b": "Wan",
-  hidream_i1: "HiD",
-  qwen_image: "Qwen",
-  z_image: "Z Image",
-  flux2: "F2",
-  ltx2: "LTX2",
-  "ltx2.3": "LTX2.3",
-  "ltx2_3": "LTX2.3",
-  "cosmos2.5_2b": "Cosmos2.5",
-  "ernie_image": "Ernie",
-  "seedvr2_3b": "SeedVR2 3b",
-  "seedvr2_7b": "SeedVR2 7b"
-};
 function getVersionAbbrev(version) {
-  return versionNames[version] ?? version;
+  return modelVersions.find((model) => model.version === version)?.tag ?? version;
 }
 function testHack(models) {
   try {
@@ -1103,6 +1362,7 @@ function showWidgets(node, show, ...widgetNames) {
 function updateSamplerWidgets(node) {
   const selectedModel = findWidgetByName(node, "model")?.value;
   const version = selectedModel?.value?.version ?? node?._lastSelectedModel?.model?.value?.version;
+  const features = modelVersions.find((model) => model.version === version)?.features ?? [];
   const settings = findWidgetByName(node, "settings")?.value;
   const isBasic = settings === "Basic" || settings === "All";
   const isAdvanced = settings === "Advanced" || settings === "All";
@@ -1111,24 +1371,20 @@ function updateSamplerWidgets(node) {
   if (isBasic) {
     const isTcd = findWidgetByName(node, "sampler_name")?.value?.toString().startsWith("TCD");
     showWidget(node, "stochastic_sampling_gamma", isTcd);
-    const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "cosmos2.5_2b"].includes(version);
+    const resDPTShiftAvailable = features.includes("resolutionDependentShift");
     showWidget(node, "res_dpt_shift", resDPTShiftAvailable);
     const shiftDisabled = resDPTShiftAvailable && findWidgetByName(node, "res_dpt_shift")?.value;
     const shiftWidget = findWidgetByName(node, "shift");
     if (shiftWidget) shiftWidget.disabled = shiftDisabled;
-    const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v", "ltx2", "ltx2.3", "ltx2_3"].includes(version);
+    const isVideo = features.includes("numFrames");
     showWidget(node, "num_frames", isVideo);
-    const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "ltx2", "ltx2.3", "ltx2_3", "cosmos2.5_2b", "ernie_image"].includes(
-      version
-    );
+    const zeroCfgAvailable = features.includes("cfgZero");
     const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
     showWidget(node, "cfg_zero_star", zeroCfgAvailable);
     showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled);
   }
   if (isAdvanced) {
-    const teaCacheAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "hunyuan_video"].includes(
-      version
-    );
+    const teaCacheAvailable = features.includes("teaCache");
     const teaCacheEnabled = teaCacheAvailable && findWidgetByName(node, "tea_cache")?.value;
     showWidget(node, "tea_cache", teaCacheAvailable);
     showWidgets(
@@ -1139,23 +1395,23 @@ function updateSamplerWidgets(node) {
       "tea_cache_threshold",
       "tea_cache_max_skip_steps"
     );
-    const speedUpAvailable = ["flux1", "hidream_i1", "hunyuan_video"].includes(version);
+    const speedUpAvailable = features.includes("guidanceEmbed");
     showWidget(node, "speed_up", speedUpAvailable);
     const speedUpEnabled = findWidgetByName(node, "speed_up")?.value;
     showWidget(node, "guidance_embed", speedUpAvailable && !speedUpEnabled);
-    const separateClipLAvailable = ["flux1", "hidream_i1", "sd3"].includes(version);
+    const separateClipLAvailable = features.includes("separateClipL");
     showWidget(node, "separate_clip_l", separateClipLAvailable);
     const separateClipLEnabled = separateClipLAvailable && findWidgetByName(node, "separate_clip_l")?.value;
     showWidget(node, "clip_l_text", !!separateClipLEnabled);
-    const separateOpenClipGAvailable = ["sd3"].includes(version);
+    const separateOpenClipGAvailable = features.includes("separateOpenClipG");
     showWidget(node, "separate_open_clip_g", separateOpenClipGAvailable);
     const separateOpenClipGEnabled = separateOpenClipGAvailable && findWidgetByName(node, "separate_open_clip_g")?.value;
     showWidget(node, "open_clip_g_text", !!separateOpenClipGEnabled);
-    const isSvd = ["svd_i2v"].includes(version);
+    const isSvd = features.includes("svdOptions");
     showWidgets(node, isSvd, "fps", "motion_scale", "guiding_frame_noise", "start_frame_guidance");
-    const causalInferenceAvailable = version?.toLowerCase().startsWith("wan");
-    showWidget(node, "causal_inference", !!causalInferenceAvailable);
-    showWidget(node, "causal_inference_pad", !!causalInferenceAvailable);
+    const causalInferenceAvailable = features.includes("causalInference");
+    showWidget(node, "causal_inference", causalInferenceAvailable);
+    showWidget(node, "causal_inference_pad", causalInferenceAvailable);
     const hiResFixEnabled = findWidgetByName(node, "high_res_fix")?.value;
     showWidgets(
       node,
@@ -1217,7 +1473,9 @@ var samplerWidgetsProto = {
   onWidgetChanged(name, value, old_Value, widget) {
     this.updateDynamicWidgets();
     if (name === "res_dpt_shift") {
-      const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(this.getModelVersion());
+      const version = this.getModelVersion();
+      const features = modelVersions.find((model) => model.version === version)?.features ?? [];
+      const resDPTShiftAvailable = features.includes("resolutionDependentShift");
       const resDptShiftEnabled = resDPTShiftAvailable && findWidgetByName(this, "res_dpt_shift")?.value;
       if (resDptShiftEnabled) {
         const height = findWidgetByName(this, "height")?.value;

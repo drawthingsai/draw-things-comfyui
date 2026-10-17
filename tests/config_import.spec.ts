@@ -6,7 +6,7 @@ import configs from "./data/configs";
 
 export const workflowFolder = "./tests/workflows";
 
-test.beforeAll(async ({ comfy }) => {
+test.beforeEach(async ({ comfy }) => {
 	await comfy.goto();
 	await comfy.updateSetting("drawthings.bridge_mode.enabled", false);
 	await comfy.page.waitForTimeout(2000);
@@ -22,10 +22,6 @@ test.describe("Sampler node", () => {
 		const sampler = await comfy.getNodeRef("DrawThingsSampler");
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		await comfy.page.waitForTimeout(1000);
-
-		const actual = await sampler?.getAllWidgetValues();
-
 		const expected = {
 			settings: "All",
 			server: "localhost",
@@ -35,7 +31,7 @@ test.describe("Sampler node", () => {
 				value: {
 					file: "flux_1_dev_q5p.ckpt",
 				},
-				content: "FLUX.1 [dev] (8-bit) (F1)",
+				content: "FLUX.1 [dev] (5-bit) (F1)",
 			},
 			strength: 0.9,
 			seed: 22222,
@@ -70,7 +66,7 @@ test.describe("Sampler node", () => {
 			separate_open_clip_g: false,
 		};
 
-		expect(actual).toMatchObject(expected);
+		await expect.poll(() => sampler!.getAllWidgetValues()).toMatchObject(expected);
 	});
 
 	test("Pasting DT config sets all properties to correct values (2)", async ({
@@ -82,16 +78,12 @@ test.describe("Sampler node", () => {
 		const sampler = await comfy.getNodeRef("DrawThingsSampler");
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		await comfy.page.waitForTimeout(1000);
-
-		const actual = await sampler?.getAllWidgetValues();
-
 		const expected = {
 			model: {
 				value: {
-					file: "xi_v2_f16.ckpt",
+					file: "foxaiponyfantastic_v2_f16.ckpt",
 				},
-				content: "xi_v2 (SDXL)",
+				content: "foxaiPONYFantastic_v2 (SDXL)",
 			},
 			strength: 0.8,
 			seed: 33333,
@@ -123,7 +115,7 @@ test.describe("Sampler node", () => {
 			diffusion_tile_overlap: 64,
 		};
 
-		expect(actual).toMatchObject(expected);
+		await expect.poll(() => sampler!.getAllWidgetValues()).toMatchObject(expected);
 	});
 
 	test("Error message is displayed when clipboard does not contain a DT config", async ({
@@ -140,9 +132,8 @@ test.describe("Sampler node", () => {
 		});
 
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
-		await comfy.page.waitForTimeout(1000);
 
-		expect(message).toContain("Failed to parse Draw Things config from clipboard");
+		await expect.poll(() => message).toContain("Failed to parse Draw Things config from clipboard");
 	});
 
 	test("Invalid or incorrect values in the config are coerced to valid values", async ({
@@ -162,14 +153,9 @@ test.describe("Sampler node", () => {
 		const sampler = await comfy.getNodeRef("DrawThingsSampler");
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		await comfy.page.waitForTimeout(1000);
 		await expect(
-			comfy.page.getByText(
-				"The Draw Things Sampler node contained invalid values - they have been corrected:",
-			),
+			comfy.page.getByText("The Draw Things Sampler node contained invalid values - they have been corrected:"),
 		).toBeVisible();
-
-		const actual = await sampler?.getAllWidgetValues();
 
 		const expected = {
 			settings: "All",
@@ -180,7 +166,7 @@ test.describe("Sampler node", () => {
 				value: {
 					file: "flux_1_dev_q5p.ckpt",
 				},
-				content: "FLUX.1 [dev] (8-bit) (F1)",
+				content: "FLUX.1 [dev] (5-bit) (F1)",
 			},
 			strength: 0.9,
 			seed: 22222,
@@ -215,7 +201,7 @@ test.describe("Sampler node", () => {
 			separate_open_clip_g: false,
 		};
 
-		expect(actual).toMatchObject(expected);
+		await expect.poll(() => sampler!.getAllWidgetValues()).toMatchObject(expected);
 	});
 
 	test("Size or weight values for disabled features are not imported", async ({
@@ -238,19 +224,20 @@ test.describe("Upscaler and Refiner", () => {
 		const sampler = await comfy.getNodeRef("DrawThingsSampler");
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		await comfy.page.waitForTimeout(1000);
-
 		const upscaler = await comfy.getNodeRef("DrawThingsUpscaler");
-		const upscalerActual = await upscaler?.getAllWidgetValues();
 		const refiner = await comfy.getNodeRef("DrawThingsRefiner");
-		const refinerActual = await refiner?.getAllWidgetValues();
 
-		expect({ ...upscalerActual, ...refinerActual }).toMatchObject({
-			upscaler_model: { value: { file: "realesrgan_x4plus_f16.ckpt" } },
-			upscaler_scale_factor: 2,
-			refiner_model: { value: { file: "xi_v2_f16.ckpt" } },
-			refiner_start: 0.9,
-		});
+		await expect
+			.poll(async () => ({
+				...(await upscaler!.getAllWidgetValues()),
+				...(await refiner!.getAllWidgetValues()),
+			}))
+			.toMatchObject({
+				upscaler_model: { value: { file: "realesrgan_x4plus_f16.ckpt" } },
+				upscaler_scale_factor: 2,
+				refiner_model: { value: { file: "xi_v2_f16.ckpt" } },
+				refiner_start: 0.9,
+			});
 	});
 
 	test("if nodes are connected, invalid values are coerced", async ({
@@ -268,21 +255,22 @@ test.describe("Upscaler and Refiner", () => {
 		const sampler = await comfy.getNodeRef("DrawThingsSampler");
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		await comfy.page.waitForTimeout(1000);
-
 		const upscaler = await comfy.getNodeRef("DrawThingsUpscaler");
-		const upscalerActual = await upscaler?.getAllWidgetValues();
 		const refiner = await comfy.getNodeRef("DrawThingsRefiner");
-		const refinerActual = await refiner?.getAllWidgetValues();
 
-		expect({ ...upscalerActual, ...refinerActual }).toMatchObject({
-			upscaler_model: {
-				value: { file: "realesrgan_x4plus_f16.ckpt" },
-			},
-			upscaler_scale_factor: 4,
-			refiner_model: { value: { file: "xi_v2_f16.ckpt" } },
-			refiner_start: 0.85,
-		});
+		await expect
+			.poll(async () => ({
+				...(await upscaler!.getAllWidgetValues()),
+				...(await refiner!.getAllWidgetValues()),
+			}))
+			.toMatchObject({
+				upscaler_model: {
+					value: { file: "realesrgan_x4plus_f16.ckpt" },
+				},
+				upscaler_scale_factor: 4,
+				refiner_model: { value: { file: "xi_v2_f16.ckpt" } },
+				refiner_start: 0.85,
+			});
 	});
 
 	test("if nodes are not connected, a message is displayed listing the missing nodes", async ({
@@ -298,10 +286,13 @@ test.describe("Upscaler and Refiner", () => {
 		const sampler = await comfy.getNodeRef("DrawThingsSampler");
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		const toast = comfy.page.getByText(
-			"The Draw Things config has been partially loaded.",
-		);
+		const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
 
+		const refiner = await comfy.getNodeRef("DrawThingsRefiner");
+		await expect.poll(() => refiner!.getAllWidgetValues()).toMatchObject({
+			refiner_model: { value: { file: configs.refiner.refinerModel } },
+			refiner_start: configs.refiner.refinerStart,
+		});
 		await expect(toast).not.toBeVisible();
 
 		await sampler?.disconnectInput("upscaler");
@@ -309,7 +300,7 @@ test.describe("Upscaler and Refiner", () => {
 
 		await expect(toast).toContainText("DrawThingsUpscaler");
 		await expect(toast).not.toContainText("DrawThingsRefiner");
-		await comfy.page.getByRole("button", { name: "Close" }).click();
+		await comfy.page.getByRole("alert").getByRole("button", { name: "Close", exact: true }).click();
 
 		await sampler?.disconnectInput("refiner");
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
@@ -332,7 +323,6 @@ test.describe("Lora", () => {
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
 		const loraNode = await comfy.getNodeRef("DrawThingsLoRA");
-		const actual = await loraNode?.getAllWidgetValues();
 
 		const expected = {
 			lora: { value: { file: "hyper_sdxl_8_step_lora_f16.ckpt" } },
@@ -361,16 +351,16 @@ test.describe("Lora", () => {
 			mode_8: "All",
 		};
 
-		expect(actual).toMatchObject(expected);
+		await expect.poll(() => loraNode!.getAllWidgetValues()).toMatchObject(expected);
 	});
 
 	test("if nodes are connected, invalid values are coerced", async ({
 		comfy,
 	}) => {
-		const config = {
+		const config = structuredClone({
 			...configs.samplerFlux,
 			...configs.lora2,
-		};
+		});
 		config.loras[0].weight = "not a number";
 		config.loras[0].mode = "every";
 		config.loras[1].weight = 70;
@@ -384,7 +374,6 @@ test.describe("Lora", () => {
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
 		const loraNode = await comfy.getNodeRef("DrawThingsLoRA");
-		const actual = await loraNode?.getAllWidgetValues();
 
 		const expected = {
 			lora: {
@@ -399,7 +388,7 @@ test.describe("Lora", () => {
 			mode_2: "All",
 		};
 
-		expect(actual).toMatchObject(expected);
+		await expect.poll(() => loraNode!.getAllWidgetValues()).toMatchObject(expected);
 	});
 
 	test("if not enough lora nodes are connected, a message is displayed listing the missing nodes", async ({
@@ -417,12 +406,16 @@ test.describe("Lora", () => {
 		// the lora node ids are 25 and 26
 		const secondLora = await comfy.getNodeRef(26);
 
-		const toast = comfy.page.getByText(
-			"The Draw Things config has been partially loaded.",
-		);
+		const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
 
 		// load the config with both lora nodes connected, assert no message
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
+		const firstLora = await comfy.getNodeRef(25);
+		await expect.poll(() => firstLora!.getAllWidgetValues()).toMatchObject({
+			lora_4: { value: { file: configs.lora12.loras[11].file } },
+			weight_4: configs.lora12.loras[11].weight,
+			mode_4: "Refiner",
+		});
 		await expect(toast).not.toBeVisible();
 
 		// disconnect first lora node, leaving only 8 available slots
@@ -458,13 +451,10 @@ test.describe("Lora", () => {
 
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		const firstLoraValues = await firstLora?.getAllWidgetValues();
-		const secondLoraValues = await secondLora?.getAllWidgetValues();
-
 		const modelA = { value: { file: "hyper_sdxl_8_step_lora_f16.ckpt" } };
 		const modelB = { value: { file: "dmd2_sdxl_4_step_lora_f16.ckpt" } };
 
-		expect(secondLoraValues).toMatchObject({
+		await expect.poll(() => secondLora!.getAllWidgetValues()).toMatchObject({
 			lora: modelA,
 			weight: 0.1,
 			mode: "All",
@@ -491,7 +481,7 @@ test.describe("Lora", () => {
 			mode_8: "Refiner",
 		});
 
-		expect(firstLoraValues).toMatchObject({
+		await expect.poll(() => firstLora!.getAllWidgetValues()).toMatchObject({
 			lora: modelA,
 			weight: 0.9,
 			mode: "All",
@@ -537,12 +527,10 @@ test.describe("Lora", () => {
 
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-		const secondLoraValues = await secondLora?.getAllWidgetValues();
-
 		const modelA = { value: { file: "hyper_sdxl_8_step_lora_f16.ckpt" } };
 		const modelB = { value: { file: "dmd2_sdxl_4_step_lora_f16.ckpt" } };
 
-		expect(secondLoraValues).toMatchObject({
+		await expect.poll(() => secondLora!.getAllWidgetValues()).toMatchObject({
 			lora: modelA,
 			weight: 0.1,
 			mode: "All",
@@ -569,9 +557,7 @@ test.describe("Lora", () => {
 			mode_8: "Refiner",
 		});
 
-		const toast = comfy.page.getByText(
-			"The Draw Things config has been partially loaded.",
-		);
+		const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
 
 		await expect(toast).toContainText("1 x DrawThingsLoRA");
 	});
@@ -590,9 +576,8 @@ test.describe("Controlnet", () => {
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
 		const cnetNode = await comfy.getNodeRef("DrawThingsControlNet");
-		const actual = await cnetNode?.getAllWidgetValues();
 
-		expect(actual).toMatchObject({
+		await expect.poll(() => cnetNode!.getAllWidgetValues()).toMatchObject({
 			control_name: {
 				value: { file: "controlnet_depth_sdxl_v1.0_mid_f16.ckpt" },
 			},
@@ -606,10 +591,10 @@ test.describe("Controlnet", () => {
 	test("if nodes are connected, invalid values are coerced", async ({
 		comfy,
 	}) => {
-		const config = {
+		const config = structuredClone({
 			...configs.samplerFlux,
 			...configs.cnet,
-		};
+		});
 		config.controls[0].controlImportance = 7;
 		config.controls[0].guidanceEnd = 8;
 		config.controls[0].guidanceStart = -5;
@@ -622,9 +607,8 @@ test.describe("Controlnet", () => {
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
 
 		const cnetNode = await comfy.getNodeRef("DrawThingsControlNet");
-		const actual = await cnetNode?.getAllWidgetValues();
 
-		expect(actual).toMatchObject({
+		await expect.poll(() => cnetNode!.getAllWidgetValues()).toMatchObject({
 			control_name: {
 				value: {
 					file: "controlnet_depth_sdxl_v1.0_mid_f16.ckpt",
@@ -652,12 +636,16 @@ test.describe("Controlnet", () => {
 		// the cnet node ids are 29 and 28
 		const secondCnet = await comfy.getNodeRef(28);
 
-		const toast = comfy.page.getByText(
-			"The Draw Things config has been partially loaded.",
-		);
+		const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
 
 		// load the config with both cnet nodes connected, assert no message
 		await sampler?.selectContextMenuOption("Paste Draw Things config");
+		const firstCnet = await comfy.getNodeRef(29);
+		await expect.poll(() => firstCnet!.getAllWidgetValues()).toMatchObject({
+			control_name: { value: { file: configs.cnet2.controls[1].file } },
+			control_weight: configs.cnet2.controls[1].weight,
+			control_end: configs.cnet2.controls[1].guidanceEnd,
+		});
 		await expect(toast).not.toBeVisible();
 
 		// disconnect first cnet node, leaving only 1
@@ -678,10 +666,10 @@ test.describe("Controlnet", () => {
 	test("if the config has more controls than there are nodes connected, the first n are applied and a message is displayed listing the missing nodes", async ({
 		comfy,
 	}) => {
-		const config = {
+		const config = structuredClone({
 			...configs.samplerFlux,
 			...configs.cnet2,
-		};
+		});
 		config.controls.push(config.controls[0]);
 		await comfy.setClipboard(config);
 
@@ -694,13 +682,10 @@ test.describe("Controlnet", () => {
 		const firstCnet = await comfy.getNodeRef(29);
 		const secondCnet = await comfy.getNodeRef(28);
 
-		const toast = comfy.page.getByText(
-			"The Draw Things config has been partially loaded.",
-		);
+		const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
 		await expect(toast).toContainText("1 x DrawThingsControlNet");
 
-		const firstActual = await firstCnet?.getAllWidgetValues();
-		expect(firstActual).toMatchObject({
+		await expect.poll(() => firstCnet!.getAllWidgetValues()).toMatchObject({
 			control_name: {
 				value: {
 					file: "controlnet_xinsir_union_promax_sdxl_1.0_f16.ckpt",
@@ -713,8 +698,7 @@ test.describe("Controlnet", () => {
 			control_input_type: "Depth",
 		});
 
-		const secondActual = await secondCnet?.getAllWidgetValues();
-		expect(secondActual).toMatchObject({
+		await expect.poll(() => secondCnet!.getAllWidgetValues()).toMatchObject({
 			control_name: {
 				value: { file: "controlnet_depth_sdxl_v1.0_mid_f16.ckpt" },
 			},

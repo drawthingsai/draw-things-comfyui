@@ -63,7 +63,7 @@ const samplerXL = {
 	cfgZeroInitSteps: 3,
 	hiresFixStrength: 0.59999999999999998,
 	hiresFixWidth: 640,
-	model: "xi_v2_f16.ckpt",
+	model: "foxaiponyfantastic_v2_f16.ckpt",
 	clipSkip: 2,
 	sampler: 9,
 	batchSize: 1,
