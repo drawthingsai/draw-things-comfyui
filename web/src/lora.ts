@@ -1,8 +1,9 @@
+import type { ComfyApp, ComfyExtension } from "@comfyorg/comfyui-frontend-types";
+import type { LGraphNode } from "@comfyorg/litegraph";
 import { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js"
+import { restoreModelSelections } from "./models.js"
 import { plainWidgetValues, updateProto } from "./util.js"
 import { showWidget } from "./widgets.js"
-import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
-import type { ComfyExtension, ComfyApp } from "@comfyorg/comfyui-frontend-types";
 
 /**
  * so I don't really see an official way to remove widgets other than .splice
@@ -10,9 +11,6 @@ import type { ComfyExtension, ComfyApp } from "@comfyorg/comfyui-frontend-types"
  * So I'm going to go with "create 8 of them and hide the ones you don't need"
  * If someone needs more than 8 lora, well, they are crazy, and also they can
  * just chain another node
- *
- * we'll use model = null for loras above count
- * distinct from model = "(None selected)"
  *
  * .loraCount prop will 'add' and 'remove' (hide/show) widgets when changed
  * serialize and deserialize it with the node
@@ -26,7 +24,9 @@ import type { ComfyExtension, ComfyApp } from "@comfyorg/comfyui-frontend-types"
  * code, event listeners attached by the type handler
  */
 
-export function DtButtonsTypeHandler(node: any, inputName: string, inputData: any, app: ComfyApp) {
+const DEFAULT_LORA = "(None selected)"
+
+export function DtButtonsTypeHandler(node: any, _inputName: string, _inputData: unknown, _app: ComfyApp) {
     const { container, buttons } = createButtons([
         {
             label: "Show Mode",
@@ -53,7 +53,7 @@ export function DtButtonsTypeHandler(node: any, inputName: string, inputData: an
     const options = {
         hideOnZoom: false,
         getValue: () => undefined,
-        setValue: (value: any) => {},
+        setValue: (_value: any) => { },
         getMinHeight: () => 36,
         getMaxHeight: () => 36,
         getHeight: () => 36,
@@ -75,7 +75,7 @@ interface LoraNode extends LGraphNode {
 }
 
 const loraProto: any = {
-    onNodeCreated(this: LoraNode, graph: any) {
+    onNodeCreated(this: LoraNode, _graph: any) {
         this.loraCount = 1;
         this.showMode = false;
     },
@@ -132,7 +132,12 @@ const loraProto: any = {
             if (imageInput !== -1) this.removeInput(imageInput)
         }
 
+        for (const widget of this.widgets ?? []) {
+            if ("model_type" in widget && !widget.value) widget.value = DEFAULT_LORA
+        }
+
         delete this.widget_values_keyed;
+        restoreModelSelections(this);
     },
 
     onSerialize(this: LoraNode, serialised: any) {
@@ -191,14 +196,14 @@ const loraProto: any = {
                 showWidget(this, this.widgets[weightIndex].name, true);
                 showWidget(this, this.widgets[modeIndex].name, this.showMode);
                 if (!this.widgets[modelIndex].value) {
-                    this.widgets[modelIndex].value = "(None selected)";
+                    this.widgets[modelIndex].value = DEFAULT_LORA;
                 }
             } else {
                 showWidget(this, this.widgets[modelIndex].name, false);
                 showWidget(this, this.widgets[weightIndex].name, false);
                 showWidget(this, this.widgets[modeIndex].name, false);
 
-                this.widgets[modelIndex].value = null as any;
+                this.widgets[modelIndex].value = DEFAULT_LORA;
             }
         }
     },
@@ -207,7 +212,7 @@ const loraProto: any = {
 const extension: ComfyExtension = {
     name: "loraNode",
 
-    beforeRegisterNodeDef(nodeType, nodeData, app) {
+    beforeRegisterNodeDef(nodeType, _nodeData, _app) {
         if ((nodeType as any).comfyClass === "DrawThingsLoRA") {
             updateProto(nodeType, loraProto);
         }

@@ -4,127 +4,124 @@ import type {
     IWidgetOptions
 } from "@comfyorg/litegraph/dist/types/widgets";
 import { findPropertiesByNode, findPropertyJson } from "./configProperties.js";
-import { DTSampler } from "./types";
+import { modelService, setModelValue } from "./models.js";
+import type { DTSampler } from "./types";
 import { getApp } from "./util.js";
 
-export function importConfig(sampler: DTSampler) {
-    {
-        navigator.clipboard.readText().then(async (text) => {
-            try {
-                const config = JSON.parse(text);
+export async function importConfig(sampler: DTSampler) {
+    return navigator.clipboard.readText().then(async (text) => {
+        try {
+            const config = JSON.parse(text);
 
-                const requiredNodes: string[] = [];
+            const requiredNodes: string[] = [];
 
-                for (const [k, v] of Object.entries(config)) {
-                    const prop = findPropertyJson(k);
-                    if (!prop) {
-                        continue;
-                    }
-                    if (prop.node !== sampler.type) {
-                        requiredNodes.push(...prop.getRequiredNodes(v, config));
-                        continue;
-                    }
-                    const widget = sampler.widgets?.find(
-                        (w) => w.name === prop.python
-                    );
-                    if (!widget) {
-                        continue;
-                    }
-                    await prop.import(k, v, widget as any, sampler as any, config);
+            for (const [k, v] of Object.entries(config)) {
+                const prop = findPropertyJson(k);
+                if (!prop) {
+                    continue;
                 }
-                sampler.coerceWidgetValues();
-                sampler.updateDynamicWidgets?.();
-
-                const availableNodes = sampler.getConfigInputNodes();
-                const missingNodes: string[] = [];
-
-                if (requiredNodes.includes("DrawThingsUpscaler")) {
-                    if (!availableNodes.DrawThingsUpscaler.length)
-                        missingNodes.push("DrawThingsUpscaler");
-                    else
-                        applyConfig(
-                            availableNodes.DrawThingsUpscaler[0],
-                            config
-                        );
+                if (prop.node !== sampler.type) {
+                    requiredNodes.push(...prop.getRequiredNodes(v, config));
+                    continue;
                 }
-
-                if (requiredNodes.includes("DrawThingsRefiner")) {
-                    if (!availableNodes.DrawThingsRefiner.length)
-                        missingNodes.push("DrawThingsRefiner");
-                    else
-                        applyConfig(
-                            availableNodes.DrawThingsRefiner[0],
-                            config
-                        );
-                }
-
-                if (requiredNodes.includes("DrawThingsControlNet")) {
-                    const cnetNeeded = requiredNodes.filter(
-                        (n) => n === "DrawThingsControlNet"
-                    ).length;
-                    if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
-                        missingNodes.push(
-                            `${
-                                cnetNeeded -
-                                availableNodes.DrawThingsControlNet.length
-                            } x DrawThingsControlNet`
-                        );
-                    let controlIndex = 0;
-                    for (const cnetNode of availableNodes.DrawThingsControlNet) {
-                        applyCnetConfig(
-                            cnetNode,
-                            config.controls[controlIndex++]
-                        );
-                    }
-                }
-
-                if (requiredNodes.includes("DrawThingsLoRA")) {
-                    const loraNeeded = requiredNodes.filter(
-                        (n) => n === "DrawThingsLoRA"
-                    ).length;
-                    if (loraNeeded > availableNodes.DrawThingsLoRA.length)
-                        missingNodes.push(
-                            `${
-                                loraNeeded -
-                                availableNodes.DrawThingsLoRA.length
-                            } x DrawThingsLoRA`
-                        );
-
-                    applyLoraConfig(
-                        availableNodes.DrawThingsLoRA as (LGraphNode & {
-                            loraCount: number;
-                        })[],
-                        config.loras
-                    );
-                }
-
-                if (missingNodes.length) {
-                    getApp().extensionManager.toast.add({
-                        severity: "warn",
-                        summary: "Draw Things gRPC",
-                        detail: [
-                            "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
-                            ...missingNodes.map((n) => `• ${n}`),
-                        ].join("\n"),
-                        life: 8000,
-                    });
-                }
-            } catch (e) {
-                alert(
-                    "Failed to parse Draw Things config from clipboard\n\n" + e
+                const widget = sampler.widgets?.find(
+                    (w) => w.name === prop.python
                 );
-                console.warn(e);
+                if (!widget) {
+                    continue;
+                }
+                await prop.import(k, v, widget as any, sampler as any, config);
             }
-        });
-    }
+            sampler.coerceWidgetValues();
+            sampler.updateDynamicWidgets?.();
+
+            const availableNodes = sampler.getConfigInputNodes();
+            const missingNodes: string[] = [];
+
+            if (requiredNodes.includes("DrawThingsUpscaler")) {
+                if (!availableNodes.DrawThingsUpscaler.length)
+                    missingNodes.push("DrawThingsUpscaler");
+                else
+                    await applyConfig(
+                        availableNodes.DrawThingsUpscaler[0],
+                        config
+                    );
+            }
+
+            if (requiredNodes.includes("DrawThingsRefiner")) {
+                if (!availableNodes.DrawThingsRefiner.length)
+                    missingNodes.push("DrawThingsRefiner");
+                else
+                    await applyConfig(
+                        availableNodes.DrawThingsRefiner[0],
+                        config
+                    );
+            }
+
+            if (requiredNodes.includes("DrawThingsControlNet")) {
+                const cnetNeeded = requiredNodes.filter(
+                    (n) => n === "DrawThingsControlNet"
+                ).length;
+                if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
+                    missingNodes.push(
+                        `${cnetNeeded -
+                        availableNodes.DrawThingsControlNet.length
+                        } x DrawThingsControlNet`
+                    );
+                let controlIndex = 0;
+                for (const cnetNode of availableNodes.DrawThingsControlNet) {
+                    await applyCnetConfig(
+                        cnetNode,
+                        config.controls[controlIndex++]
+                    );
+                }
+            }
+
+            if (requiredNodes.includes("DrawThingsLoRA")) {
+                const loraNeeded = requiredNodes.filter(
+                    (n) => n === "DrawThingsLoRA"
+                ).length;
+                if (loraNeeded > availableNodes.DrawThingsLoRA.length)
+                    missingNodes.push(
+                        `${loraNeeded -
+                        availableNodes.DrawThingsLoRA.length
+                        } x DrawThingsLoRA`
+                    );
+
+                await applyLoraConfig(
+                    availableNodes.DrawThingsLoRA as (LGraphNode & {
+                        loraCount: number;
+                    })[],
+                    config.loras
+                );
+            }
+
+            if (missingNodes.length) {
+                getApp().extensionManager.toast.add({
+                    severity: "warn",
+                    summary: "Draw Things gRPC",
+                    detail: [
+                        "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
+                        ...missingNodes.map((n) => `• ${n}`),
+                    ].join("\n"),
+                    life: 8000,
+                });
+            }
+        } catch (e) {
+            alert(
+                `Failed to parse Draw Things config from clipboard\n\n${e}`
+            );
+            console.warn(e);
+        }
+    });
 }
 
-function applyConfig(node: LGraphNode, config: Record<string, unknown>) {
+async function applyConfig(node: LGraphNode, config: Record<string, unknown>) {
     const nodeProps = findPropertiesByNode(node.type);
     for (const nodeProp of nodeProps) {
         const widget = node.widgets?.find((w) => w.name === nodeProp.python);
         if (!widget || !nodeProp.json) continue;
-        nodeProp.import(
+        await nodeProp.import(
             nodeProp.json,
             config[nodeProp.json],
             widget as any,
@@ -134,10 +131,11 @@ function applyConfig(node: LGraphNode, config: Record<string, unknown>) {
     }
 }
 
-function applyCnetConfig(
+async function applyCnetConfig(
     node: LGraphNode,
     controlConfig: Record<string, unknown>
 ) {
+    if (!controlConfig) return;
     const widgets =
         node.widgets?.reduce((acc, w) => {
             acc[w.name] = w;
@@ -146,13 +144,7 @@ function applyCnetConfig(
         {};
 
     if ("file" in controlConfig) {
-        const options = widgets.control_name?.options as IWidgetOptions<
-            { value: { file: string } }[]
-        >;
-        const matchingOption = options.values?.find(
-            (wv) => wv.value?.file === controlConfig.file
-        );
-        if (matchingOption) widgets.control_name.value = matchingOption;
+        await modelService.selectByFile(node, widgets.control_name as any, controlConfig.file);
     }
 
     if ("globalAveragePooling" in controlConfig)
@@ -256,20 +248,14 @@ async function applyLoraConfig(
             const lc = loraConfig[iSlot + iNode * 8];
             const { file, weight, mode } = getLoraSlotWidgets(node, iSlot);
 
-            if (!lc || !lc.file) {
-                file.value = "(None selected)";
+            if (!lc?.file) {
+                setModelValue(node, file as any, "(None selected)");
                 weight.value = 1.0;
                 mode.value = "All";
                 continue;
             }
 
-            const loraOptions = file?.options as {
-                values: { value: { file: string } }[];
-            };
-            const matchingOption = loraOptions?.values?.find(
-                (wv: { value: { file: string } }) => wv.value?.file === lc.file
-            );
-            if (matchingOption) file.value = matchingOption;
+            await modelService.selectByFile(node, file as any, lc.file);
 
             if ("weight" in lc && typeof lc.weight === "number")
                 weight.value = Math.min(Math.max(lc.weight, -5.0), 5.0);

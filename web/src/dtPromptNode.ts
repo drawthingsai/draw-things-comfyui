@@ -2,9 +2,7 @@ import { getApp, updateProto } from "./util.js";
 import type { LGraphNode, IWidget, LLink, INodeOutputSlot, IContextMenuItem, LGraphCanvas } from "@comfyorg/litegraph";
 import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
 
-interface PromptNode extends LGraphNode {
-    updateOptions: () => void;
-}
+type PromptNode = LGraphNode;
 
 const promptProto: any = {
     onWidgetChanged(this: PromptNode, name: string, value: any, old_Value: any, widget: IWidget) {
@@ -65,14 +63,6 @@ const promptProto: any = {
         const output = this.outputs?.find((output) => output.name == "PROMPT");
         if (output) {
             (output as any).color_on = (output as any).color_off = getApp().canvas.default_connection_color_byType["CONDITIONING"];
-        }
-
-        const promptWidget = this.widgets?.find((w) => w.name === "prompt");
-        const promptNode = this;
-        if ((promptWidget as any)?.element) {
-            (promptWidget as any).element.addEventListener("change", () => {
-                promptNode.updateOptions();
-            });
         }
     },
 

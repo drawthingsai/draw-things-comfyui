@@ -1,6 +1,7 @@
 import { nodePackVersion } from './ComfyUI-DrawThings-gRPC.js'
 import { findWidgetByName, plainWidgetValues, updateProto } from "./util.js"
 import { showWidget } from './widgets.js'
+import { restoreModelSelections } from "./models.js"
 import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
 import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
 
@@ -89,6 +90,7 @@ const controlNetProto: any = {
 
         delete this.widget_values_keyed
 
+        restoreModelSelections(this)
         this.updateDynamicWidgets()
     },
     onWidgetChanged(this: ControlNetNode, name: string, value: any, old_Value: any, widget: IWidget) {

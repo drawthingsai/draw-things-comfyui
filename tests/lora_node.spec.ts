@@ -1,8 +1,5 @@
 import "dotenv/config";
 import { expect } from "@playwright/test";
-// import { expect } from "./fixtures";
-import { getNodeRef, NodeRef } from "./nodeRef";
-import { openWorkflow } from "./util";
 import { join } from "node:path";
 import { test } from './fixtures';
 import fse from 'fs-extra'
@@ -12,7 +9,7 @@ if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
 export const workflowFolder = "./tests/workflows";
 
-test("Values are loaded correctly from previous version worklow", async ({ comfy, page }) => {
+test("Values are loaded correctly from previous version workflow", async ({ comfy }) => {
     // read json and assert workflow is previous version
     const workflow = await fse.readJSON(join(workflowFolder, "flux_a.json"))
     const loraNodeJson = workflow.nodes.find(n => n.type === "DrawThingsLoRA")
@@ -21,7 +18,7 @@ test("Values are loaded correctly from previous version worklow", async ({ comfy
     expect(loraNodeJson).not.toHaveProperty('showMode')
     expect(loraNodeJson).not.toHaveProperty('widget_values_keyed')
     expect(loraNodeJson).not.toHaveProperty('nodePackVersion')
-    expect(loraNodeJson).toHaveProperty('widgets_values')
+    expect(loraNodeJson.widgets_values).toHaveLength(2)
 
     // load workflow, check that node has correct values
     await comfy.openWorkflow(join(workflowFolder, "flux_a.json"));
@@ -38,6 +35,11 @@ test("Values are loaded correctly from previous version worklow", async ({ comfy
 });
 
 test('Widget values serialization', async ({ page, comfy }) => {
+    test.setTimeout(60000)
+    await comfy.updateSetting("drawthings.bridge_mode.enabled", true);
+    await comfy.updateSetting("drawthings.bridge_mode.community", true);
+    await comfy.updateSetting("drawthings.bridge_mode.uncurated", false);
+
     // create a new workflow, add a lora node
     await comfy.createNewWorkflow()
     const node = await comfy.addNode(["DrawThings", "Draw Things LoRA"], 0, 0)
@@ -64,17 +66,18 @@ test('Widget values serialization', async ({ page, comfy }) => {
     const workflow = await comfy.exportWorkflow()
 
     // assert correct values, including showMode and loraCount
-    console.log(workflow)
     const loraNodeJson = workflow.nodes.find(n => n.type === "DrawThingsLoRA")
     expect(loraNodeJson).toBeDefined()
     expect(loraNodeJson).toHaveProperty('loraCount', 3)
     expect(loraNodeJson).toHaveProperty('showMode', true)
     expect(loraNodeJson).toHaveProperty('widget_values_keyed')
     expect(loraNodeJson).toHaveProperty('nodePackVersion')
-    expect(loraNodeJson.widget_values_keyed).toMatchObject({
+    const expectedValues = {
         "lora": {
             "value": {
                 "file": "dmd2_sdxl_4_step_lora_f16.ckpt",
+                "name": "DMD2 SDXL 4-Step",
+                "version": "sdxl_base_v0.9",
             },
             "content": "DMD2 SDXL 4-Step (SDXL)"
         },
@@ -83,6 +86,8 @@ test('Widget values serialization', async ({ page, comfy }) => {
         "lora_2": {
             "value": {
                 "file": "hyper_sdxl_4_step_lora_f16.ckpt",
+                "name": "Hyper SDXL 4-Step",
+                "version": "sdxl_base_v0.9",
             },
             "content": "Hyper SDXL 4-Step (SDXL)"
         },
@@ -91,22 +96,65 @@ test('Widget values serialization', async ({ page, comfy }) => {
         "lora_3": "(None selected)",
         "weight_3": 1,
         "mode_3": "All",
-        "lora_4": null,
+        // Unselected LoRA widgets retain "(None selected)", including hidden slots.
+        "lora_4": "(None selected)",
         "weight_4": 1,
         "mode_4": "All",
-        "lora_5": null,
+        "lora_5": "(None selected)",
         "weight_5": 1,
         "mode_5": "All",
-        "lora_6": null,
+        "lora_6": "(None selected)",
         "weight_6": 1,
         "mode_6": "All",
-        "lora_7": null,
+        "lora_7": "(None selected)",
         "weight_7": 1,
         "mode_7": "All",
-        "lora_8": null,
+        "lora_8": "(None selected)",
         "weight_8": 1,
         "mode_8": "All"
+    }
+    const values = loraNodeJson.widget_values_keyed
+    expect(values).toMatchObject(expectedValues)
+    for (const name of ["lora", "lora_2"]) {
+        expect(Object.keys(values[name])).not.toContain("toString")
+        expect(loraNodeJson._lastSelectedModel[name]).toEqual(values[name])
+    }
+    expect(loraNodeJson._lastSelectedModel).toMatchObject({
+        lora_3: "(None selected)",
+        lora_4: "(None selected)",
+        lora_5: "(None selected)",
+        lora_6: "(None selected)",
+        lora_7: "(None selected)",
+        lora_8: "(None selected)",
     })
+
+    const workflowPath = join(await comfy.getTempDir(), "lora-roundtrip.json")
+    await fse.writeJSON(workflowPath, workflow)
+    await comfy.createNewWorkflow()
+    await comfy.openWorkflow(workflowPath)
+
+    const restoredNode = await comfy.getNodeRef("DrawThingsLoRA")
+    expect(await restoredNode?.getWidgetValue("lora")).toMatchObject(expectedValues.lora)
+    expect(await restoredNode?.getWidgetValue("lora_2")).toMatchObject(expectedValues.lora_2)
+    expect(await restoredNode?.getWidgetValue("weight")).toBeCloseTo(0.25, 5)
+    expect(await restoredNode?.getWidgetValue("weight_2")).toBeCloseTo(0.5, 5)
+    expect(await restoredNode?.getWidgetValue("mode_2")).toBe("Refiner")
+    expect(await restoredNode?.getWidgetValue("lora_3")).toBe("(None selected)")
+    expect(await restoredNode?.getWidgetValue("lora_4")).toBe("(None selected)")
+    expect(await restoredNode?.isWidgetVisible(["lora", "lora_2", "lora_3", "lora_4"])).toEqual([true, true, true, false])
+    expect(await restoredNode?.isWidgetVisible(["mode", "mode_2", "mode_3", "mode_4"])).toEqual([true, true, true, false])
+    await expect(page.getByTestId("dtgrpc-lora-show-mode")).toHaveText("Hide Mode")
+    expect(await page.evaluate(() => {
+        const node = app.graph.nodes.find(n => n.type === "DrawThingsLoRA")
+        return ["lora", "lora_2"].map(name => node.widgets.find(w => w.name === name).value.toString())
+    })).toEqual([expectedValues.lora.value.name, expectedValues.lora_2.value.name])
+
+    const roundtrip = await comfy.exportWorkflow()
+    const restoredJson = roundtrip.nodes.find(n => n.type === "DrawThingsLoRA")
+    expect(restoredJson.loraCount).toBe(3)
+    expect(restoredJson.showMode).toBe(true)
+    expect(restoredJson.widget_values_keyed).toEqual(values)
+    expect(restoredJson._lastSelectedModel).toEqual(loraNodeJson._lastSelectedModel)
 });
 
 // - UI tests

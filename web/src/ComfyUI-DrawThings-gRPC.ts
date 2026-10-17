@@ -1,10 +1,10 @@
-import { type ComfyExtension } from "@comfyorg/comfyui-frontend-types";
-import { type LGraphNode } from "@comfyorg/litegraph";
-import { type DTSampler } from "./types.js";
+import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
+import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 import { importConfig } from "./configImport.js";
 import { findPropertyPython } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
+import type { DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
 import { getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
@@ -13,7 +13,7 @@ export const nodePackVersion = "1.12.2";
 export default {
     name: "core",
 
-    getCustomWidgets(): unknown {
+    getCustomWidgets() {
         return {
             DT_MODEL: DtModelTypeHandler,
             DT_BUTTONS: DtButtonsTypeHandler,
@@ -80,28 +80,29 @@ export default {
             }
         }
     ]
-} as ComfyExtension;
+} satisfies ComfyExtension;
 
 export const samplerProto: Partial<DTSampler> = {
     async onNodeCreated(this: DTSampler & LGraphNode) {
         const app = getApp();
         const inputPos = this.inputs?.find(
-            (inputPos) => inputPos.name == "positive"
-        )!;
+            (inputPos) => inputPos.name === "positive"
+        );
         const inputNeg = this.inputs?.find(
-            (inputNeg) => inputNeg.name == "negative"
-        )!;
-        if (app.canvas) {
-            inputPos.color_on =
-                inputPos.color_off =
-                inputNeg.color_on =
-                inputNeg.color_off =
-                app.canvas.default_connection_color_byType["CONDITIONING"];
-            app.canvas.default_connection_color_byType["DT_LORA"] =
-                app.canvas.default_connection_color_byType["MODEL"];
-            app.canvas.default_connection_color_byType["DT_CNET"] =
-                app.canvas.default_connection_color_byType["CONTROL_NET"];
-        }
+            (inputNeg) => inputNeg.name === "negative"
+        );
+        if (!app.canvas || !inputPos || !inputNeg) return
+
+        inputPos.color_on =
+            inputPos.color_off =
+            inputNeg.color_on =
+            inputNeg.color_off =
+            app.canvas.default_connection_color_byType.CONDITIONING;
+        app.canvas.default_connection_color_byType.DT_LORA =
+            app.canvas.default_connection_color_byType.MODEL;
+        app.canvas.default_connection_color_byType.DT_CNET =
+            app.canvas.default_connection_color_byType.CONTROL_NET;
+
 
         setTimeout(() => checkVersion(), 2000);
     },
@@ -164,14 +165,14 @@ export const samplerProto: Partial<DTSampler> = {
             const list = corrections.map(
                 (c) => `${c.name}: ${c.value} -> ${c.coerced}`
             );
-            const detail = message + "\n\n" + list.join("\n");
+            const detail = `${message}\n\n${list.join("\n")}`;
 
             getApp().extensionManager.toast.add({
-													severity: "info",
-													summary: "Draw Things gRPC",
-													detail,
-													life: 8000,
-												});
+                severity: "info",
+                summary: "Draw Things gRPC",
+                detail,
+                life: 8000,
+            });
         }
     },
 
@@ -225,7 +226,7 @@ export const samplerProto: Partial<DTSampler> = {
         options.push(null);
         options.push({
             content: "Paste Draw Things config",
-            callback: () => importConfig(this as unknown as DTSampler),
+            callback: () => { void importConfig(this as unknown as DTSampler); },
         });
         options.push({
             content: "Copy Draw Things config",
@@ -234,7 +235,7 @@ export const samplerProto: Partial<DTSampler> = {
                 for (const w of this.widgets ?? []) {
                     const prop = findPropertyPython(w.name);
                     if (!prop) continue;
-                    prop.export(w as any, this, config);
+                    prop.export(w as IWidget, this, config);
                 }
                 config.loras = [];
                 config.control = [];
@@ -266,7 +267,7 @@ export const samplerProto: Partial<DTSampler> = {
         });
         options.push(null);
         options.push({
-            content: (bridgeMode ? "✓ " : "") + "Use bridge mode",
+            content: `${bridgeMode ? "✓ " : ""}Use bridge mode`,
             callback: () => {
                 app.extensionManager.setting.set(
                     "drawthings.bridge_mode.enabled",
@@ -277,7 +278,7 @@ export const samplerProto: Partial<DTSampler> = {
         if (bridgeMode) {
             options.push({
                 content:
-                    (bridgeCommunity ? "✓ " : "") + "Show community models",
+                    `${bridgeCommunity ? "✓ " : ""}Show community models`,
                 callback: () => {
                     app.extensionManager.setting.set(
                         "drawthings.bridge_mode.community",
@@ -287,7 +288,7 @@ export const samplerProto: Partial<DTSampler> = {
             });
             options.push({
                 content:
-                    (bridgeUncurated ? "✓ " : "") + "Show uncurated models",
+                    `${bridgeUncurated ? "✓ " : ""}Show uncurated models`,
                 callback: () => {
                     app.extensionManager.setting.set(
                         "drawthings.bridge_mode.uncurated",

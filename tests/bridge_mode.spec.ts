@@ -2,8 +2,6 @@ import "dotenv/config";
 import { expect } from "@playwright/test";
 import { ComfyPage, test } from "./fixtures";
 
-// import fse from "fs-extra";
-// import { join } from "node:path";
 
 const localOnlyModels = [
 	"animyo (SD)",
@@ -62,7 +60,7 @@ test("When bridge mode is enabled, local models are hidden and official models a
 	let result = await checkAllNodesModels(...localOnlyModels);
 	expect(result).toMatchObject([true, true, true, true, true]);
 
-	// enable bridge mode through context menu
+	// Enable bridge mode and verify its context-menu state.
 	await comfy.updateSetting("drawthings.bridge_mode.enabled", true);
 	await comfy.page.waitForTimeout(2000);
 	menuOptions = await sampler?.getContextMenuOptions();
@@ -74,7 +72,7 @@ test("When bridge mode is enabled, local models are hidden and official models a
 	result = await checkAllNodesModels(...officialModels);
 	expect(result).toMatchObject([true, true, true, false, true]);
 
-	// disable bridge mode through context menu
+	// Disable bridge mode and verify its context-menu state.
 	await comfy.updateSetting("drawthings.bridge_mode.enabled", false);
 	await comfy.page.waitForTimeout(2000);
 	menuOptions = await sampler?.getContextMenuOptions();
@@ -293,16 +291,15 @@ async function getCheckAllNodesModels(comfy: ComfyPage) {
 		refinerModel,
 	): Promise<(boolean | undefined)[]> {
 		return [
-			await sampler?.widgetHasOption("model", samplerModel, true),
-			await lora?.widgetHasOption("lora", loraModel, true),
-			await cnet?.widgetHasOption("control_name", cnetModel, true),
-			await prompt?.widgetHasOption(
+			await sampler?.widgetMenuHasItem("model", samplerModel),
+			await lora?.widgetMenuHasItem("lora", loraModel),
+			await cnet?.widgetMenuHasItem("control_name", cnetModel),
+			await prompt?.widgetMenuHasItem(
 				"insert_textual_inversion",
 				promptModel,
-				true,
 			),
-			// await upscaler?.widgetHasOption("upscaler_model", upscalerModel),
-			await refiner?.widgetHasOption("refiner_model", refinerModel, true),
+			// await upscaler?.widgetMenuHasItem("upscaler_model", upscalerModel),
+			await refiner?.widgetMenuHasItem("refiner_model", refinerModel),
 		];
 	}
 

@@ -2,6 +2,7 @@ import { calcShift } from "./configProperties.js"
 import { findWidgetByName, updateProto } from "./util.js"
 import type { INodeInputSlot, LGraphNode, IWidget } from '@comfyorg/litegraph'
 import type { ComfyApp, ComfyExtension } from "@comfyorg/comfyui-frontend-types";
+import { modelVersions } from "./modelVersions.js";
 
 // @ts-ignore
 const app = window.comfyAPI.app.app;
@@ -136,6 +137,7 @@ function showWidgets(node: LGraphNode, show: boolean, ...widgetNames: string[]) 
 function updateSamplerWidgets(node: any) {
     const selectedModel = findWidgetByName(node, "model")?.value
     const version = (selectedModel as any)?.value?.version ?? node?._lastSelectedModel?.model?.value?.version
+    const features = modelVersions.find((model) => model.version === version)?.features ?? [];
 
     const settings = findWidgetByName(node, "settings")?.value
     const isBasic = settings === "Basic" || settings === "All"
@@ -144,44 +146,28 @@ function updateSamplerWidgets(node: any) {
     showWidgets(node, isBasic, ...basicWidgets)
     showWidgets(node, isAdvanced, ...advancedWidgets)
 
-    /**
-     * A list of versions can be found here:
-     * https://github.com/drawthingsai/draw-things-community/blob/6f03f7d4a200ffeb6fdc6022a6ee579e4e534831/Libraries/SwiftDiffusion/Sources/Samplers/Sampler.swift#L4
-     * "v1", "v2", "kandinsky2.1", "sdxl_base_v0.9", "sdxl_refiner_v0.9", "ssd_1b", "svd_i2v",
-     * "wurstchen_v3.0_stage_c", "wurstchen_v3.0_stage_b", "sd3", "pixart", "auraflow", "flux1",
-     * "sd3_large", "hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "hidream_i1"
-     * "qwen_image", "ltx2", "ltx2.3", "ltx2_3", "cosmos2.5_2b", "ernie_image"
-     */
 
     if (isBasic) {
         const isTcd = findWidgetByName(node, "sampler_name")?.value?.toString().startsWith("TCD")
         showWidget(node, "stochastic_sampling_gamma", isTcd)
 
-        // res_dpt_shift (flux, sd3, hidream, qwen_image, flux2, z_image, cosmos2.5_2b)
-        const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "cosmos2.5_2b"].includes(version)
+        const resDPTShiftAvailable = features.includes("resolutionDependentShift")
         showWidget(node, "res_dpt_shift", resDPTShiftAvailable)
         const shiftDisabled = resDPTShiftAvailable && findWidgetByName(node, "res_dpt_shift")?.value
         const shiftWidget = findWidgetByName(node, "shift")
         if (shiftWidget) (shiftWidget as any).disabled = shiftDisabled
 
-        // num_frames (wan, hunyuan, svd)
-        const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v", "ltx2", "ltx2.3", "ltx2_3"].includes(version)
+        const isVideo = features.includes("numFrames")
         showWidget(node, "num_frames", isVideo)
 
-        // zero cfg (flux, hidream, wan, sd3, hunyuan, qwen_image, flux2, z_image, cosmos2.5_2b, ernie_image)
-        const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b", "ltx2", "ltx2.3", "ltx2_3", "cosmos2.5_2b", "ernie_image"].includes(
-            version
-        )
+        const zeroCfgAvailable = features.includes("cfgZero")
         const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value
         showWidget(node, "cfg_zero_star", zeroCfgAvailable)
         showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled)
     }
 
     if (isAdvanced) {
-        // tea cache (for hidream, wan, hunyuan)
-        const teaCacheAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "hunyuan_video"].includes(
-            version
-        )
+        const teaCacheAvailable = features.includes("teaCache")
         const teaCacheEnabled = teaCacheAvailable && findWidgetByName(node, "tea_cache")?.value
         showWidget(node, "tea_cache", teaCacheAvailable)
         showWidgets(
@@ -193,34 +179,28 @@ function updateSamplerWidgets(node: any) {
             "tea_cache_max_skip_steps"
         )
 
-        // speed up (flux, hidream, hunyuan)
-        const speedUpAvailable = ["flux1", "hidream_i1", "hunyuan_video"].includes(version)
+        const speedUpAvailable = features.includes("guidanceEmbed")
         showWidget(node, "speed_up", speedUpAvailable)
         const speedUpEnabled = findWidgetByName(node, "speed_up")?.value
         showWidget(node, "guidance_embed", speedUpAvailable && !speedUpEnabled)
 
-        // separate clip l (flux, hidream, sd3)
-        const separateClipLAvailable = ["flux1", "hidream_i1", "sd3"].includes(version)
+        const separateClipLAvailable = features.includes("separateClipL")
         showWidget(node, "separate_clip_l", separateClipLAvailable)
         const separateClipLEnabled = separateClipLAvailable && findWidgetByName(node, "separate_clip_l")?.value
         showWidget(node, "clip_l_text", !!separateClipLEnabled)
 
-        // separate open clip g (sd3)
-        const separateOpenClipGAvailable = ["sd3"].includes(version)
+        const separateOpenClipGAvailable = features.includes("separateOpenClipG")
         showWidget(node, "separate_open_clip_g", separateOpenClipGAvailable)
         const separateOpenClipGEnabled =
             separateOpenClipGAvailable && findWidgetByName(node, "separate_open_clip_g")?.value
         showWidget(node, "open_clip_g_text", !!separateOpenClipGEnabled)
 
-        // svd
-        const isSvd = ["svd_i2v"].includes(version)
+        const isSvd = features.includes("svdOptions")
         showWidgets(node, isSvd, "fps", "motion_scale", "guiding_frame_noise", "start_frame_guidance")
 
-        // causal_inference (just for wan I think)
-        // const causalInferenceAvailable = ["wan_v2.1_1.3b", "wan_v2.1_14b"].includes(version)
-        const causalInferenceAvailable = version?.toLowerCase().startsWith("wan")
-        showWidget(node, "causal_inference", !!causalInferenceAvailable)
-        showWidget(node, "causal_inference_pad", !!causalInferenceAvailable)
+        const causalInferenceAvailable = features.includes("causalInference")
+        showWidget(node, "causal_inference", causalInferenceAvailable)
+        showWidget(node, "causal_inference_pad", causalInferenceAvailable)
 
         // high res fix
         const hiResFixEnabled = findWidgetByName(node, "high_res_fix")?.value
@@ -296,7 +276,9 @@ const samplerWidgetsProto = {
         this.updateDynamicWidgets()
 
         if (name === "res_dpt_shift") {
-            const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1", "qwen_image", "z_image", "flux2", "flux2_4b", "flux2_9b"].includes(this.getModelVersion())
+            const version = this.getModelVersion()
+            const features = modelVersions.find((model) => model.version === version)?.features ?? []
+            const resDPTShiftAvailable = features.includes("resolutionDependentShift")
             const resDptShiftEnabled = resDPTShiftAvailable && findWidgetByName(this, "res_dpt_shift")?.value
 
             if (resDptShiftEnabled) {
@@ -310,5 +292,3 @@ const samplerWidgetsProto = {
         }
     },
 };
-
-
