@@ -36,6 +36,9 @@ test("Values are loaded correctly from previous version workflow", async ({ comf
 
 test('Widget values serialization', async ({ page, comfy }) => {
     test.setTimeout(60000)
+    await comfy.updateSetting("drawthings.bridge_mode.enabled", true);
+    await comfy.updateSetting("drawthings.bridge_mode.community", true);
+    await comfy.updateSetting("drawthings.bridge_mode.uncurated", false);
 
     // create a new workflow, add a lora node
     await comfy.createNewWorkflow()
@@ -93,21 +96,20 @@ test('Widget values serialization', async ({ page, comfy }) => {
         "lora_3": "(None selected)",
         "weight_3": 1,
         "mode_3": "All",
-        // Model widgets initialize to "(None selected)", but the More/Show Mode
-        // updates clear slots above loraCount to null before serialization.
-        "lora_4": null,
+        // Unselected LoRA widgets retain "(None selected)", including hidden slots.
+        "lora_4": "(None selected)",
         "weight_4": 1,
         "mode_4": "All",
-        "lora_5": null,
+        "lora_5": "(None selected)",
         "weight_5": 1,
         "mode_5": "All",
-        "lora_6": null,
+        "lora_6": "(None selected)",
         "weight_6": 1,
         "mode_6": "All",
-        "lora_7": null,
+        "lora_7": "(None selected)",
         "weight_7": 1,
         "mode_7": "All",
-        "lora_8": null,
+        "lora_8": "(None selected)",
         "weight_8": 1,
         "mode_8": "All"
     }
@@ -119,11 +121,11 @@ test('Widget values serialization', async ({ page, comfy }) => {
     }
     expect(loraNodeJson._lastSelectedModel).toMatchObject({
         lora_3: "(None selected)",
-        lora_4: null,
-        lora_5: null,
-        lora_6: null,
-        lora_7: null,
-        lora_8: null,
+        lora_4: "(None selected)",
+        lora_5: "(None selected)",
+        lora_6: "(None selected)",
+        lora_7: "(None selected)",
+        lora_8: "(None selected)",
     })
 
     const workflowPath = join(await comfy.getTempDir(), "lora-roundtrip.json")
@@ -138,7 +140,7 @@ test('Widget values serialization', async ({ page, comfy }) => {
     expect(await restoredNode?.getWidgetValue("weight_2")).toBeCloseTo(0.5, 5)
     expect(await restoredNode?.getWidgetValue("mode_2")).toBe("Refiner")
     expect(await restoredNode?.getWidgetValue("lora_3")).toBe("(None selected)")
-    expect(await restoredNode?.getWidgetValue("lora_4")).toBeNull()
+    expect(await restoredNode?.getWidgetValue("lora_4")).toBe("(None selected)")
     expect(await restoredNode?.isWidgetVisible(["lora", "lora_2", "lora_3", "lora_4"])).toEqual([true, true, true, false])
     expect(await restoredNode?.isWidgetVisible(["mode", "mode_2", "mode_3", "mode_4"])).toEqual([true, true, true, false])
     await expect(page.getByTestId("dtgrpc-lora-show-mode")).toHaveText("Hide Mode")

@@ -9,7 +9,7 @@ const app: any = { graph, canvas: { graph_mouse: [0, 0] }, extensionManager: { s
 let fetchApi: (path: string, options?: any) => Promise<any>;
 (globalThis as any).window = { comfyAPI: { app: { app }, api: { api: { fetchApi: (...args: any[]) => fetchApi(args[0], args[1]) } } } };
 const { ComboWidget } = await import("@comfyorg/litegraph");
-const { modelService, getMenuItem, restoreModelLabel, findServerNodes, DtModelTypeHandler } = await import("../../web/src/models");
+const { modelService, getMenuItem, restoreModelLabel, findServerNodes, DtModelTypeHandler, updateServerConnection } = await import("../../web/src/models");
 const model = (name: string, version?: string, extra = {}) => ({ name, file: `${name}.ckpt`, version, ...extra });
 const catalog = (models: any[]) => ({ models, loras: models, controlNets: models, textualInversions: models, upscalers: models });
 const response = (value: any) => ({ ok: true, json: async () => value });
@@ -46,7 +46,7 @@ test("coalesces local requests, rejects failures, retains success and retries ne
     await Promise.all([modelService.getMenuItems(node, "models"), modelService.getMenuItems(node, "loras")]);
     assert.equal(requests, 1);
     fetchApi = async () => { throw new Error("offline"); };
-    await assert.rejects(modelService.getMenuItems(node, "models"), /offline/);
+    await assert.rejects(modelService.getMenuItems(node, "models"), /Couldn't connect/);
     assert.equal(modelService.getCachedModels(node)[0].models[0].name, "Saved");
     fetchApi = async () => response(catalog([model("Retried")]));
     assert.equal((await modelService.getMenuItems(node, "models"))[0].value.name, "Retried");
@@ -58,7 +58,7 @@ test("disconnected nodes use only a single unique server and have no version res
     fetchApi = async () => response(catalog([model("Other", "v2")]));
     assert.equal((await modelService.getMenuItems(node, "loras"))[0].disabled, false);
     graph.nodes.push(sampler(2, 7860));
-    await assert.rejects(modelService.getMenuItems(node, "loras"), /Connect to a sampler/);
+    await assert.rejects(modelService.getMenuItems(node, "loras"), /Couldn't connect/);
 });
 
 test("traversal follows all outputs and protects cycles and shared paths", () => {
@@ -92,27 +92,33 @@ test("offline imports preserve unknown filenames for every model widget and retr
     assert.equal(requests.some((path) => path.endsWith("bridge_models")), false);
 });
 
-test("bridge works without server, coalesces and respects community and uncurated settings", async () => {
-    const node: any = { id: 2, graph, outputs: [] }; reset([node]);
+test("bridge checks the server, coalesces and respects community and uncurated settings", async () => {
+    const node = sampler(); reset([node]);
     settings.set("drawthings.bridge_mode.enabled", true);
     let requests = 0;
     const official = model("Official"), community = model("Community"), uncurated = model("Uncurated");
     fetchApi = async (path) => {
         requests++;
+        if (path.endsWith("files_info")) return response(catalog([]));
         await new Promise((r) => setTimeout(r, 5));
         if (path.endsWith("bridge_models")) return response([official.file, community.file, uncurated.file]);
         return response({ officialModels: [official, model("Not on bridge", "flux1", { custom: 42 })], communityModels: [community], uncuratedModels: [uncurated], officialCnets: [official], communityCnets: [community], officialLoras: [official], communityLoras: [community], communityEmbeddings: [community] });
     };
     const items = await Promise.all([modelService.getMenuItems(node, "models"), modelService.getMenuItems(node, "loras")]);
-    assert.equal(requests, 2);
+    assert.equal(requests, 3);
     assert.deepEqual(items[0].map((m) => m.value.name), ["Official"]);
     settings.set("drawthings.bridge_mode.community", true);
     settings.set("drawthings.bridge_mode.uncurated", true);
     assert.deepEqual((await modelService.getMenuItems(node, "models")).map((m) => m.value.name), ["Community", "Official", "Uncurated"]);
     assert.equal((await modelService.getMenuItems(node, "textualInversions"))[0].value.name, "Community");
-    fetchApi = async () => { throw new Error("bridge offline"); };
+    fetchApi = async (path) => {
+        if (path.endsWith("files_info")) return response(catalog([]));
+        throw new Error("bridge offline");
+    };
     assert.deepEqual((await modelService.getMenuItems(node, "models")).map((m) => m.value.name), ["Community", "Official", "Uncurated"]);
-    assert.equal(requests, 2);
+    assert.equal(requests, 5);
+    fetchApi = async () => { throw new Error("server offline"); };
+    await assert.rejects(modelService.getMenuItems(node, "models"), /Couldn't connect/);
 });
 
 test("imports search every metadata source regardless of bridge visibility or availability", async () => {
@@ -558,7 +564,8 @@ test("arrow lookups keep selections on failures and ignore stale responses", asy
     const options = { e: {}, node, canvas: {} };
     fetchApi = async () => { throw new Error("offline"); };
     await widget.incrementValue(options);
-    assert.equal(widget.value, original);
+    assert.equal(widget.value, "Not connected");
+    widget.value = original;
     let finish: (response: any) => void;
     fetchApi = () => new Promise((resolve) => { finish = resolve; });
     const pending = widget.incrementValue(options);
@@ -566,4 +573,118 @@ test("arrow lookups keep selections on failures and ignore stale responses", asy
     finish!(response(catalog([model("Delayed")])));
     await pending;
     assert.equal(widget.value, original);
+});
+
+async function useSamplerPrototype(node: any) {
+    const { default: extension } = await import("../../web/src/dtModelNodes");
+    class Sampler {}
+    (Sampler as any).comfyClass = "DrawThingsSampler";
+    (extension.beforeRegisterNodeDef as any)(Sampler, {}, app);
+    Object.setPrototypeOf(node, Sampler.prototype);
+    node.comfyClass = "DrawThingsSampler";
+    delete node.saveSelectedModels;
+    delete node.getModelVersion;
+}
+
+test("sampler watches every server parameter and restores the saved model after reconnecting", async () => {
+    const { node, widget } = widgetNode();
+    await useSamplerPrototype(node);
+    delete node.getServer;
+    node.widgets.push(
+        { name: "server", value: "localhost" },
+        { name: "port", value: 7910 },
+        { name: "use_tls", value: false },
+    );
+    const original = widget.value = getMenuItem(model("Saved", "flux1", { custom: { keep: true } }));
+    let requests = 0;
+    fetchApi = async (_path, options) => {
+        requests++;
+        const body = options.body;
+        return body.get("server") === "localhost" && body.get("port") === "7910" && body.get("use_tls") === "false"
+            ? response(catalog([])) : { ok: false };
+    };
+    const settle = () => new Promise((resolve) => setImmediate(resolve));
+    for (const [name, invalid] of [["server", "offline"], ["port", 1], ["use_tls", true]] as const) {
+        const param = node.widgets.find((w: any) => w.name === name);
+        const valid = param.value;
+        param.value = invalid;
+        node.onWidgetChanged(name);
+        await settle();
+        assert.equal(widget.value, "Not connected");
+        assert.deepEqual(JSON.parse(JSON.stringify(node.lastSelectedModel.model)), JSON.parse(JSON.stringify(original)));
+        await widget.onClick({ e: {}, node, canvas: { ds: { scale: 1 } } });
+        const menu = menus.at(-1);
+        assert.deepEqual(menu.items.map((item: any) => item.content), ["Not connected", "Couldn't connect to server. Check server settings and retry"]);
+        for (const item of menu.items) menu.options.callback(item);
+        assert.equal(widget.value, "Not connected");
+        assert.deepEqual(JSON.parse(JSON.stringify(node.lastSelectedModel.model)), JSON.parse(JSON.stringify(original)));
+        param.value = valid;
+        node.onWidgetChanged(name);
+        await settle();
+        assert.deepEqual(JSON.parse(JSON.stringify(widget.value)), JSON.parse(JSON.stringify(original)));
+        assert.equal(String(widget.value), "Saved");
+    }
+    const before = requests;
+    node.onWidgetChanged("seed");
+    await settle();
+    assert.equal(requests, before);
+    node.onAdded();
+    await settle();
+    assert.equal(requests, before + 1);
+    node.onConfigure({ widget_values_keyed: {} });
+    await settle();
+    assert.equal(requests, before + 2);
+});
+
+test("every model menu blocks cached bridge models offline without changing other node selections", async () => {
+    for (const type of ["models", "loras", "controlNets", "upscalers", "textualInversions"]) {
+        const { node: server } = widgetNode();
+        await useSamplerPrototype(server);
+        const original = server.widgets[0].value = getMenuItem(model("Sampler saved"));
+        const child: any = { ...server, id: 2, isDtServerNode: false, widgets: [], outputs: [{ links: [1] }] };
+        child.addWidget = (_type: string, name: string, value: any, callback: any, options: any) => {
+            const widget = new ComboWidget({ type: "combo", name, value, callback, options, y: 0 }, child);
+            child.widgets.push(widget); return widget;
+        };
+        graph.nodes.push(child);
+        graph.getLink = () => ({ target_id: 1 });
+        const widget: any = DtModelTypeHandler(child, type, ["DT_MODEL", { model_type: type }], app).widget;
+        const selected = widget.value = type === "textualInversions" ? "..." : getMenuItem(model("Child saved"));
+        settings.set("drawthings.bridge_mode.enabled", true);
+        fetchApi = async () => { throw new Error("offline"); };
+        await widget.onClick({ e: {}, node: child, canvas: { ds: { scale: 1 } } });
+        const menu = menus.at(-1);
+        assert.deepEqual(menu.items.map((item: any) => item.content), ["Not connected", "Couldn't connect to server. Check server settings and retry"]);
+        for (const item of menu.items) menu.options.callback(item);
+        assert.equal(widget.value, selected);
+        assert.equal(server.widgets[0].value, "Not connected");
+        assert.equal(server.lastSelectedModel.model, original);
+        fetchApi = async () => response(catalog([model("Back online")]));
+        await widget.onClick({ e: {}, node: child, canvas: { ds: { scale: 1 } } });
+        assert.equal(menus.at(-1).items[0], type === "textualInversions" ? "..." : "(None selected)");
+        assert.equal(server.widgets[0].value.value.file, original.value.file);
+        assert.equal(widget.value, selected);
+    }
+});
+
+test("late server checks cannot overwrite a newer connection state", async () => {
+    const { node, widget } = widgetNode();
+    await useSamplerPrototype(node);
+    const original = widget.value = getMenuItem(model("Saved"));
+    let tls = false;
+    node.getServer = () => ({ server: "race", port: 7911, useTls: tls });
+    let finish: (value: any) => void;
+    fetchApi = () => new Promise((resolve) => { finish = resolve; });
+    const old = updateServerConnection(node);
+    tls = true;
+    fetchApi = async () => ({ ok: false });
+    await assert.rejects(updateServerConnection(node));
+    assert.equal(widget.value, "Not connected");
+    finish!(response(catalog([])));
+    await old;
+    assert.equal(widget.value, "Not connected");
+    assert.deepEqual(JSON.parse(JSON.stringify(node.lastSelectedModel.model)), JSON.parse(JSON.stringify(original)));
+    fetchApi = async () => response(catalog([]));
+    await updateServerConnection(node);
+    assert.equal(widget.value.value.file, original.value.file);
 });

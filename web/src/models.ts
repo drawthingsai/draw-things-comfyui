@@ -116,6 +116,47 @@ function settingsKey() {
     ]);
 }
 
+class ConnectionError extends Error {
+    constructor() { super("Couldn't connect to server. Check server settings and retry"); }
+}
+
+const connectionRequests = new WeakMap<DTModelNode, number>();
+
+// Check the live server even when a successful local or bridge catalog is cached.
+export async function updateServerConnection(node: DTModelNode): Promise<ModelInfo> {
+    const address = node.getServer?.();
+    const key = JSON.stringify(address);
+    const request = (connectionRequests.get(node) ?? 0) + 1;
+    connectionRequests.set(node, request);
+    const graph = node.graph;
+    const current = () => connectionRequests.get(node) === request
+        && JSON.stringify(node.getServer?.()) === key && node.graph === graph
+        && (!graph || graph.getNodeById(node.id) === node);
+    const update = (connected: boolean) => {
+        if (!current() || !node.isDtServerNode) return;
+        const widgets = (node.widgets ?? []).filter((w) => (w.options as any)?.modelType === "models");
+        if (!connected) {
+            if (widgets.some((widget) => widget.value !== "Not connected")) node.saveSelectedModels?.();
+            for (const widget of widgets) widget.value = "Not connected";
+        } else {
+            for (const widget of widgets) {
+                if (widget.value === "Not connected")
+                    widget.value = restoreModelLabel(node._lastSelectedModel?.[widget.name] ?? "(None selected)");
+            }
+        }
+        node.setDirtyCanvas?.(true, true);
+    };
+    try {
+        if (!address) throw new ConnectionError();
+        const models = await getModels(address.server, address.port, address.useTls);
+        update(true);
+        return models;
+    } catch {
+        update(false);
+        throw new ConnectionError();
+    }
+}
+
 class ModelService {
     getCachedModels(node: DTModelNode): ModelInfo[] {
         if (getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled"))
@@ -147,22 +188,19 @@ class ModelService {
     }
 
     async getMenuItems(node: DTModelNode, type: string, filterVersions = true) {
-        const { servers, versions } = this.context(node);
+        const { servers } = this.context(node);
         const shouldFilterVersions = filterVersions && type !== "upscalers";
         const useBridgeCatalog = type !== "upscalers"
             && getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled");
-        if (!useBridgeCatalog && !servers.length) throw new Error("Connect to a sampler node to list available models");
+        if (!servers.length) throw new ConnectionError();
+        const responses = await Promise.allSettled(servers.map(updateServerConnection));
+        const available = responses.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+        if (!available.length) throw new ConnectionError();
+        // A successful check may have just restored the sampler's model/version.
+        const { versions } = this.context(node);
         let catalogs: ModelInfo[];
         if (useBridgeCatalog) catalogs = [await getBridgeModels()];
-        else {
-            const responses = await Promise.allSettled(servers.map(async (server) => {
-                const address = server.getServer?.();
-                if (!address) throw new Error("Check server and click to retry");
-                return getModels(address.server, address.port, address.useTls);
-            }));
-            catalogs = responses.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
-            if (!catalogs.length) throw (responses.find((result) => result.status === "rejected") as PromiseRejectedResult).reason;
-        }
+        else catalogs = available;
         const models = new Map<string, Model>();
         for (const catalog of catalogs)
             for (const model of catalog?.[type] ?? []) if (!models.has(model.file)) models.set(model.file, model);
@@ -262,12 +300,13 @@ export function DtModelTypeHandler(node: DTModelNode, inputName: string, inputDa
         const open = (items: any[]) => new LiteGraph.ContextMenu(items, {
             scale: Math.max(1, canvas.ds.scale), event: e, className: "dark",
             callback: (item: any) => {
-                if (item?.disabled || !current()) return;
+                if (item?.disabled || item === "Not connected" || !current()) return;
                 widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), { e, node: clickedNode, canvas });
             },
         });
         menu = open([{ content: "Loading models…", disabled: true }]);
         let items: any[];
+        let disconnected = false;
         try {
             items = await getItems();
             if (isPrompt) {
@@ -277,11 +316,15 @@ export function DtModelTypeHandler(node: DTModelNode, inputName: string, inputDa
             }
             if (!items.length) items.push({ content: "No models available", disabled: true });
         } catch (error) {
-            items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+            disconnected = error instanceof ConnectionError;
+            items = disconnected ? [
+                { content: "Not connected", disabled: true },
+                { content: error.message, disabled: true },
+            ] : [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
         }
         if (!current() || !menu.root?.isConnected) { menu.close(); return; }
         menu.close();
-        open([isPrompt ? "..." : "(None selected)", ...items]);
+        open(disconnected ? items : [isPrompt ? "..." : "(None selected)", ...items]);
     };
     return { widget };
 }

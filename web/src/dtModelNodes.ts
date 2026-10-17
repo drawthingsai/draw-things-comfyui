@@ -1,4 +1,4 @@
-import { findServerNodes, restoreModelSelections } from "./models.js";
+import { findServerNodes, restoreModelSelections, updateServerConnection } from "./models.js";
 import { updateProto } from "./util.js";
 import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
 import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
@@ -117,6 +117,19 @@ interface DTServerNode extends DTModelNode {
 }
 
 const dtServerNodeProto: any = {
+	onAdded(this: DTServerNode) {
+		void updateServerConnection(this).catch(() => {});
+	},
+	onConfigure(this: DTServerNode) {
+		// The core sampler hook may apply keyed server values later in this call.
+		queueMicrotask(() => {
+			if (this.graph) void updateServerConnection(this).catch(() => {});
+		});
+	},
+	onWidgetChanged(this: DTServerNode, name: string) {
+		if (["server", "port", "use_tls"].includes(name))
+			void updateServerConnection(this).catch(() => {});
+	},
 	getServer(this: DTServerNode) {
 		const server = this.widgets?.find((w) => w.name === "server")?.value;
 		const port = this.widgets?.find((w) => w.name === "port")?.value;
@@ -125,10 +138,10 @@ const dtServerNodeProto: any = {
 	},
 
 	getModelVersion(this: DTServerNode) {
-		return (
-			this.widgets?.find((w) => (w.options as any)?.modelType === "models")
-				?.value as any
-		)?.value?.version;
+		const widget = this.widgets?.find((w) => (w.options as any)?.modelType === "models");
+		const selection = widget?.value === "Not connected"
+			? this._lastSelectedModel?.[widget.name] : widget?.value;
+		return (selection as any)?.value?.version;
 	},
 
 };

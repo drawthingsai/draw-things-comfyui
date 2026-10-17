@@ -67,7 +67,7 @@ class DrawThingsSampler:
                 "height": ("INT", { "default": 512, "min": 128, "max": 8192, "step": 64},),
                 # upscaler
                 "steps": ("INT", { "default": 20, "min": 1, "max": 150, "tooltip": "The number of steps used in the denoising process." },),
-                "num_frames": ("INT", { "default": 14, "min": 1, "max": 257, "step": 1, "tooltip": "The total number of frames to be generated. This value will be rounded up to the next valid value for the selected model."}), 
+                "num_frames": ("INT", { "default": 14, "min": 1, "max": 257, "step": 1, "tooltip": "The total number of frames to be generated. This value will be rounded up to the next valid value for the selected model."}),
                 "cfg": ("FLOAT", { "default": 4.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality." },),
                 "cfg_zero_star": ("BOOLEAN", { "default": False }),
                 "cfg_zero_star_init_steps": ("INT", { "default": 0, "min": 0, "max": 50, "step": 1}),
@@ -489,8 +489,8 @@ class DrawThingsLoRA:
     @classmethod
     def INPUT_TYPES(cls):
         # fmt: off
-        first_model_widget =  ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used." })
-        model_widget = ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used.", "hidden": True, "default": None })
+        first_model_widget =  ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used.", "default": "(None selected)" })
+        model_widget = ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used.", "hidden": True, "default": "(None selected)" })
         first_weight_widget = ("FLOAT", { "default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."})
         weight_widget = ("FLOAT", { "default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative.", "hidden": True})
         first_mode_widget = (DrawThingsLists.lora_mode, { "default": "All", "tooltip": "When using a refiner, LoRA can be applied to either the base model, refiner, or both. If not using a refiner, this setting will be ignored."})

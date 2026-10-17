@@ -396,6 +396,43 @@ function settingsKey() {
     !!setting.get("drawthings.bridge_mode.uncurated")
   ]);
 }
+var ConnectionError = class extends Error {
+  constructor() {
+    super("Couldn't connect to server. Check server settings and retry");
+  }
+};
+var connectionRequests = /* @__PURE__ */ new WeakMap();
+async function updateServerConnection(node) {
+  const address = node.getServer?.();
+  const key = JSON.stringify(address);
+  const request = (connectionRequests.get(node) ?? 0) + 1;
+  connectionRequests.set(node, request);
+  const graph = node.graph;
+  const current = () => connectionRequests.get(node) === request && JSON.stringify(node.getServer?.()) === key && node.graph === graph && (!graph || graph.getNodeById(node.id) === node);
+  const update = (connected) => {
+    if (!current() || !node.isDtServerNode) return;
+    const widgets = (node.widgets ?? []).filter((w) => w.options?.modelType === "models");
+    if (!connected) {
+      if (widgets.some((widget) => widget.value !== "Not connected")) node.saveSelectedModels?.();
+      for (const widget of widgets) widget.value = "Not connected";
+    } else {
+      for (const widget of widgets) {
+        if (widget.value === "Not connected")
+          widget.value = restoreModelLabel(node._lastSelectedModel?.[widget.name] ?? "(None selected)");
+      }
+    }
+    node.setDirtyCanvas?.(true, true);
+  };
+  try {
+    if (!address) throw new ConnectionError();
+    const models = await getModels(address.server, address.port, address.useTls);
+    update(true);
+    return models;
+  } catch {
+    update(false);
+    throw new ConnectionError();
+  }
+}
 var ModelService = class {
   getCachedModels(node) {
     if (getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled"))
@@ -425,21 +462,17 @@ var ModelService = class {
     return JSON.stringify([settingsKey(), servers.map((n) => n.getServer?.()), versions]);
   }
   async getMenuItems(node, type, filterVersions = true) {
-    const { servers, versions } = this.context(node);
+    const { servers } = this.context(node);
     const shouldFilterVersions = filterVersions && type !== "upscalers";
     const useBridgeCatalog = type !== "upscalers" && getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled");
-    if (!useBridgeCatalog && !servers.length) throw new Error("Connect to a sampler node to list available models");
+    if (!servers.length) throw new ConnectionError();
+    const responses = await Promise.allSettled(servers.map(updateServerConnection));
+    const available = responses.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+    if (!available.length) throw new ConnectionError();
+    const { versions } = this.context(node);
     let catalogs;
     if (useBridgeCatalog) catalogs = [await getBridgeModels()];
-    else {
-      const responses = await Promise.allSettled(servers.map(async (server) => {
-        const address = server.getServer?.();
-        if (!address) throw new Error("Check server and click to retry");
-        return getModels(address.server, address.port, address.useTls);
-      }));
-      catalogs = responses.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
-      if (!catalogs.length) throw responses.find((result) => result.status === "rejected").reason;
-    }
+    else catalogs = available;
     const models = /* @__PURE__ */ new Map();
     for (const catalog of catalogs)
       for (const model of catalog?.[type] ?? []) if (!models.has(model.file)) models.set(model.file, model);
@@ -541,12 +574,13 @@ function DtModelTypeHandler(node, inputName, inputData, app4) {
       event: e,
       className: "dark",
       callback: (item) => {
-        if (item?.disabled || !current()) return;
+        if (item?.disabled || item === "Not connected" || !current()) return;
         widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), { e, node: clickedNode, canvas });
       }
     });
     menu = open([{ content: "Loading models\u2026", disabled: true }]);
     let items;
+    let disconnected = false;
     try {
       items = await getItems();
       if (isPrompt) {
@@ -556,14 +590,18 @@ function DtModelTypeHandler(node, inputName, inputData, app4) {
       }
       if (!items.length) items.push({ content: "No models available", disabled: true });
     } catch (error) {
-      items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+      disconnected = error instanceof ConnectionError;
+      items = disconnected ? [
+        { content: "Not connected", disabled: true },
+        { content: error.message, disabled: true }
+      ] : [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
     }
     if (!current() || !menu.root?.isConnected) {
       menu.close();
       return;
     }
     menu.close();
-    open([isPrompt ? "..." : "(None selected)", ...items]);
+    open(disconnected ? items : [isPrompt ? "..." : "(None selected)", ...items]);
   };
   return { widget };
 }
@@ -1490,7 +1528,8 @@ var samplerWidgetsProto = {
 };
 
 // web/src/lora.ts
-function DtButtonsTypeHandler(node, inputName, inputData, app4) {
+var DEFAULT_LORA = "(None selected)";
+function DtButtonsTypeHandler(node, _inputName, _inputData, _app) {
   const { container, buttons } = createButtons([
     {
       label: "Show Mode",
@@ -1517,7 +1556,7 @@ function DtButtonsTypeHandler(node, inputName, inputData, app4) {
   const options = {
     hideOnZoom: false,
     getValue: () => void 0,
-    setValue: (value) => {
+    setValue: (_value) => {
     },
     getMinHeight: () => 36,
     getMaxHeight: () => 36,
@@ -1530,7 +1569,7 @@ function DtButtonsTypeHandler(node, inputName, inputData, app4) {
   return { widget };
 }
 var loraProto = {
-  onNodeCreated(graph) {
+  onNodeCreated(_graph) {
     this.loraCount = 1;
     this.showMode = false;
   },
@@ -1563,6 +1602,9 @@ var loraProto = {
       }
       const imageInput = this.inputs.findIndex((input) => input.name === "control_image");
       if (imageInput !== -1) this.removeInput(imageInput);
+    }
+    for (const widget of this.widgets ?? []) {
+      if ("model_type" in widget && !widget.value) widget.value = DEFAULT_LORA;
     }
     delete this.widget_values_keyed;
     restoreModelSelections(this);
@@ -1617,20 +1659,20 @@ var loraProto = {
         showWidget(this, this.widgets[weightIndex].name, true);
         showWidget(this, this.widgets[modeIndex].name, this.showMode);
         if (!this.widgets[modelIndex].value) {
-          this.widgets[modelIndex].value = "(None selected)";
+          this.widgets[modelIndex].value = DEFAULT_LORA;
         }
       } else {
         showWidget(this, this.widgets[modelIndex].name, false);
         showWidget(this, this.widgets[weightIndex].name, false);
         showWidget(this, this.widgets[modeIndex].name, false);
-        this.widgets[modelIndex].value = null;
+        this.widgets[modelIndex].value = DEFAULT_LORA;
       }
     }
   }
 };
 var extension2 = {
   name: "loraNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app4) {
+  beforeRegisterNodeDef(nodeType, _nodeData, _app) {
     if (nodeType.comfyClass === "DrawThingsLoRA") {
       updateProto(nodeType, loraProto);
     }
@@ -2187,6 +2229,21 @@ var dtModelNodeProto = {
   }
 };
 var dtServerNodeProto = {
+  onAdded() {
+    void updateServerConnection(this).catch(() => {
+    });
+  },
+  onConfigure() {
+    queueMicrotask(() => {
+      if (this.graph) void updateServerConnection(this).catch(() => {
+      });
+    });
+  },
+  onWidgetChanged(name) {
+    if (["server", "port", "use_tls"].includes(name))
+      void updateServerConnection(this).catch(() => {
+      });
+  },
   getServer() {
     const server = this.widgets?.find((w) => w.name === "server")?.value;
     const port = this.widgets?.find((w) => w.name === "port")?.value;
@@ -2194,7 +2251,9 @@ var dtServerNodeProto = {
     return { server, port, useTls };
   },
   getModelVersion() {
-    return this.widgets?.find((w) => w.options?.modelType === "models")?.value?.value?.version;
+    const widget = this.widgets?.find((w) => w.options?.modelType === "models");
+    const selection = widget?.value === "Not connected" ? this._lastSelectedModel?.[widget.name] : widget?.value;
+    return selection?.value?.version;
   }
 };
 

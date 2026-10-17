@@ -120,6 +120,9 @@ test("hires, tiled diffusion, tiled decoding widgets", async ({
 });
 
 test("flux settings widgets", async ({ page, comfy }) => {
+	await comfy.updateSetting("drawthings.bridge_mode.enabled", true);
+	await comfy.updateSetting("drawthings.bridge_mode.community", false);
+	await comfy.updateSetting("drawthings.bridge_mode.uncurated", false);
 	await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
 	const node = await getNodeRef(page, "DrawThingsSampler");
@@ -175,7 +178,9 @@ test("flux settings widgets", async ({ page, comfy }) => {
 });
 
 test("qwen settings widgets", async ({ page, comfy }) => {
-	comfy.addUrlQuery("dtgrpctesthack", "true");
+	await comfy.updateSetting("drawthings.bridge_mode.enabled", true);
+	await comfy.updateSetting("drawthings.bridge_mode.community", false);
+	await comfy.updateSetting("drawthings.bridge_mode.uncurated", false);
 	await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
 	const node = await getNodeRef(page, "DrawThingsSampler");
@@ -309,6 +314,9 @@ test("version specific settings appear when loaded with disconnected server", as
 	comfy,
 }) => {
 	// this is mostly copied from flux test above
+	await comfy.updateSetting("drawthings.bridge_mode.enabled", true);
+	await comfy.updateSetting("drawthings.bridge_mode.community", false);
+	await comfy.updateSetting("drawthings.bridge_mode.uncurated", false);
 	await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
 	const sampler = await getNodeRef(page, "DrawThingsSampler");
