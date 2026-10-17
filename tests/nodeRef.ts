@@ -397,6 +397,7 @@ export class NodeRef {
     }
 
     async addOutputNode(outputName: string, nodeName: string) {
+        const nodeIds = await this.page.evaluate(() => app.graph.nodes.map((node) => node.id));
         const { view, pos, outputBox, size } = await this.page.evaluate(
             ([nodeId, outputName]) => {
                 const view: [number, number, number, number] =
@@ -449,6 +450,26 @@ export class NodeRef {
         await this.page.keyboard.type(nodeName);
 
         await this.page.getByRole("option").filter({ hasText: nodeName }).click();
+        await this.page.waitForFunction((ids) => app.graph.nodes.some((node) => !ids.includes(node.id)), nodeIds);
+        // Current ComfyUI requires a canvas click to place a node chosen in search.
+        // Otherwise the next widget click only finishes placement.
+        if (await this.page.evaluate(() => app.canvas.state?.ghostNodeId != null)) {
+            await this.page.locator("#graph-canvas").click({
+                position: { x: size.width / 2, y: size.height / 2 },
+            });
+            await this.page.waitForFunction(() => app.canvas.state?.ghostNodeId == null);
+        }
+        // Search can place the new node over the source, intercepting widget clicks.
+        await this.page.evaluate(([sourceId, ids]) => {
+            const source = app.graph.getNodeById(sourceId);
+            const added = app.graph.nodes.filter((node) => !ids.includes(node.id));
+            let x = source.pos[0] + source.size[0] + 80;
+            for (const node of added) {
+                node.pos = [x, source.pos[1]];
+                x += node.size[0] + 80;
+            }
+            app.graph.setDirtyCanvas(true, true);
+        }, [this.id, nodeIds] as const);
     }
 
     async openContextMenu() {

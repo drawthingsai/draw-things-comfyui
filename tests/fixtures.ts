@@ -177,12 +177,13 @@ export class ComfyPage {
 	}
 
 	async exportWorkflow() {
-		await this.page.locator("#graph-canvas").press("Control+e");
-		await this.page.getByRole("textbox").click();
-		await this.page.getByRole("textbox").press("ControlOrMeta+a");
-		await this.page.getByRole("textbox").fill("workflow");
+		await this.page.getByRole("button", { name: "Graph mode, workflow actions" }).click();
+		await this.page.getByRole("menu", { name: "Workflow actions" })
+			.getByRole("menuitem", { name: /Export$/ }).click();
+		const dialog = this.page.getByRole("dialog", { name: "Export Workflow", exact: true });
+		await dialog.getByRole("textbox", { name: "Enter the filename:" }).fill("workflow");
 		const downloadPromise = this.page.waitForEvent("download");
-		await this.page.getByRole("button", { name: "Confirm" }).click();
+		await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
 		const download = await downloadPromise;
 
 		const tempDir = await this.getTempDir();
