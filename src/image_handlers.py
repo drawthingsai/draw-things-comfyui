@@ -72,701 +72,344 @@ def convert_response_image(response_image: bytes):
     }
 
 
+# Draw Things ImageConverter.swift cgImages, revision e2c7fa474ce3bddfe34ad20bdde75f425344800e:
+# Libraries/LocalImageGenerator/Sources/ImageConverter.swift#L1278
+# https://github.com/drawthingsai/draw-things-community
+# Each registered version has an explicit latent format.
+# Rows are R/G/B, followed by their biases; normalized groups use [-1, 1].
+_PREVIEW_MINIMAX = (
+    np.array([
+        [-0.018555, +0.150164, +0.027367, -0.000793, -0.048556, +0.011740, +0.061517, +0.035321,
+         -0.017426, +0.531539, -0.024968, -0.032549, +0.022609, -0.084001, -0.018830, +0.020777,
+         -0.008390, -0.013281, +0.000260, +0.105471, +0.016529, -0.014015, -0.033787, +0.004224],
+        [0.024344, +0.137244, -0.050369, -0.164622, +0.013970, +0.014172, +0.061212, +0.086879,
+         +0.002997, +0.548819, -0.040234, -0.029096, +0.020286, -0.038131, +0.010412, +0.011196,
+         -0.012201, -0.002924, +0.001833, +0.100482, +0.015213, -0.017438, -0.009984, +0.017284],
+        [-0.017536, +0.129221, -0.208606, -0.323161, -0.074286, -0.006906, +0.110025, +0.110059,
+         +0.035356, +0.624404, -0.034302, -0.017221, +0.050661, -0.020805, +0.061120, -0.030994,
+         -0.025687, +0.006331, -0.011038, +0.132106, +0.009999, -0.019134, -0.019725, +0.027196],
+    ], dtype=np.float64),
+    np.array([+0.057426, -0.022078, -0.071449], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_SD = (
+    np.array([
+        [49.5210, +29.0283, -23.9673, -39.4981],
+        [41.1373, +42.4951, +24.7349, -50.8279],
+        [40.2919, +18.9304, +30.0236, -81.9976],
+    ], dtype=np.float64),
+    np.array([+99.9368, +99.8421, +99.5384], dtype=np.float64),
+    1.0,
+)
+
+_PREVIEW_SD3 = (
+    np.array([
+        [-0.0922, +0.0311, +0.1994, +0.0856, +0.0587, -0.0006, +0.0978, -0.0042,
+         -0.0194, -0.0488, +0.0922, -0.0278, +0.0332, -0.0069, -0.0596, -0.1448],
+        [-0.0175, +0.0633, +0.0927, +0.0339, +0.0272, +0.1104, +0.0306, +0.1038,
+         +0.0020, +0.0130, +0.0988, +0.0524, +0.0456, -0.0030, -0.0465, -0.1463],
+        [0.0749, +0.0954, +0.0458, +0.0902, -0.0496, +0.0309, +0.0427, +0.1358,
+         +0.0669, -0.0268, +0.0951, -0.0542, +0.0895, -0.0810, -0.0293, -0.1189],
+    ], dtype=np.float64),
+    np.array([+0.2394, +0.2135, +0.1925], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_FLUX1 = (
+    np.array([
+        [-0.0346, +0.0034, +0.0275, -0.0174, +0.0859, +0.0004, +0.0405, -0.0236,
+         -0.0245, +0.1008, -0.0515, +0.0428, +0.0817, -0.1264, -0.0280, -0.1262],
+        [0.0244, +0.0210, -0.0668, +0.0160, +0.0721, +0.0383, +0.0861, -0.0185,
+         +0.0250, +0.0755, +0.0201, -0.0012, +0.0765, -0.0522, -0.0881, -0.0982],
+        [0.0681, +0.0687, -0.0433, +0.0617, +0.0329, +0.0115, +0.0915, -0.0259,
+         +0.1180, -0.0421, +0.0011, -0.0036, +0.0749, -0.1103, -0.0499, -0.0778],
+    ], dtype=np.float64),
+    np.array([-0.0329, -0.0718, -0.0851], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_FLUX2 = (
+    np.array([
+        [0.0058, +0.0495, -0.0099, +0.2144, +0.0166, +0.0157, -0.0398, -0.0052,
+         -0.3527, -0.0301, -0.0107, +0.0746, +0.0156, -0.0034, +0.0032, -0.0939,
+         +0.0018, +0.0284, -0.0024, +0.1207, +0.0128, +0.0137, +0.0095, +0.0000,
+         -0.0465, +0.0095, +0.0290, +0.0220, -0.0332, -0.0085, -0.0076, -0.0111],
+        [0.0113, +0.0443, +0.0096, +0.3009, -0.0039, +0.0103, +0.0902, +0.0095,
+         -0.2712, -0.0356, +0.0078, +0.0090, +0.0169, -0.0040, +0.0181, -0.0008,
+         +0.0043, +0.0056, -0.0022, -0.0026, +0.0101, -0.0072, +0.0092, -0.0077,
+         -0.0204, +0.0012, -0.0034, +0.0169, -0.0457, +0.0389, +0.0003, -0.0460],
+        [0.0073, +0.0836, +0.0644, +0.3652, -0.0054, -0.0160, -0.0235, +0.0109,
+         -0.1666, -0.0180, +0.0013, -0.0941, +0.0070, -0.0114, +0.0080, +0.0186,
+         +0.0104, -0.0127, -0.0030, +0.0065, +0.0142, -0.0007, -0.0059, -0.0049,
+         -0.0312, -0.0066, +0.0025, -0.0048, -0.0468, +0.0609, -0.0043, -0.0614],
+    ], dtype=np.float64),
+    np.array([-0.0329, -0.0718, -0.0851], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_QWEN21 = (
+    np.array([
+        [-0.0158, +0.0030, +0.0637, +0.0360, +0.0159, +0.0132, +0.0191, -0.0146,
+         +0.0187, -0.1059, -0.0195, -0.0295, +0.0191, -0.0144, +0.0389, -0.0153,
+         +0.0339, -0.0136, -0.0340, -0.0133, +0.0109, -0.0010, +0.0301, -0.0281,
+         -0.0725, -0.0036, +0.0087, -0.0260, -0.0039, -0.0026, +0.0088, -0.0087,
+         -0.0027, -0.0064, +0.0594, +0.0103, -0.0091, +0.0178, -0.0063, +0.0452,
+         +0.0149, +0.1484, -0.0120, +0.0181, +0.0132, +0.0291, +0.0066, -0.1153,
+         +0.0258, +0.0375, -0.0142, +0.0339, +0.0346, +0.0369, -0.0052, -0.0279,
+         +0.0036, -0.0441, -0.0001, -0.0222, +0.0039, -0.0094, -0.0066, +0.0220],
+        [-0.0115, +0.0120, +0.0470, +0.0661, +0.0181, +0.0326, +0.0261, -0.0276,
+         -0.0024, -0.0090, -0.0226, +0.0024, -0.0393, -0.0166, +0.0430, -0.0336,
+         +0.0122, -0.0078, -0.0282, -0.0176, -0.0087, +0.0044, +0.0053, -0.0205,
+         +0.0002, +0.0158, +0.0040, +0.0183, -0.0035, +0.0172, +0.0078, -0.0310,
+         +0.0018, +0.0292, +0.1049, -0.0103, +0.0025, +0.0243, -0.0012, +0.0246,
+         +0.0270, +0.0801, +0.0040, +0.0051, +0.0050, +0.0020, -0.0410, -0.0629,
+         +0.0378, +0.1139, -0.0126, +0.0153, +0.0211, -0.0431, -0.0092, +0.0410,
+         +0.0017, -0.0367, -0.0092, -0.0183, +0.0053, -0.0075, -0.0088, +0.0074],
+        [-0.0174, +0.0027, -0.0127, -0.0030, +0.0082, +0.0169, +0.0136, -0.0361,
+         -0.0072, +0.0350, -0.0138, -0.0215, -0.0001, -0.0272, +0.0445, +0.0031,
+         +0.0220, -0.0120, -0.0245, -0.0133, +0.0096, +0.0016, +0.0361, -0.0032,
+         +0.0160, +0.0807, -0.0053, -0.0077, -0.0107, +0.0237, +0.0078, -0.0122,
+         +0.0094, -0.0256, +0.1180, -0.0026, -0.0015, +0.0292, +0.0202, +0.0143,
+         +0.0052, +0.0804, +0.0010, -0.0021, +0.0019, +0.0092, -0.1314, -0.0802,
+         +0.0298, +0.0468, -0.0276, +0.0138, +0.0267, -0.0993, +0.0056, -0.0357,
+         -0.0083, -0.0454, -0.0001, -0.0051, -0.0184, -0.0143, -0.0063, +0.0100],
+    ], dtype=np.float64),
+    np.array([-0.1228, -0.1869, -0.3083], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_HUNYUAN = (
+    np.array([
+        [-0.0395, +0.0696, +0.0135, +0.0108, -0.0209, -0.0804, -0.0991, -0.0646,
+         -0.0696, -0.0799, +0.1166, +0.1165, -0.2315, -0.0270, -0.0616, +0.0249],
+        [-0.0331, +0.0795, -0.0945, -0.0250, +0.0032, -0.0254, +0.0271, -0.0422,
+         -0.0595, -0.0208, +0.1627, +0.0432, -0.1920, +0.0401, -0.0997, -0.0469],
+        [0.0445, +0.0518, -0.0282, -0.0765, +0.0224, -0.0639, -0.0669, -0.0400,
+         -0.0894, -0.0375, +0.0962, +0.0407, -0.1355, -0.0821, -0.0727, -0.1703],
+    ], dtype=np.float64),
+    np.array([+0.0249, -0.0192, -0.0761], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_QWEN = (
+    np.array([
+        [-0.1299, +0.0671, +0.3568, +0.0372, +0.0313, +0.0296, -0.3477, +0.0166,
+         -0.0412, -0.1293, +0.0680, +0.0032, -0.1251, +0.0060, +0.3477, +0.1984],
+        [-0.1692, +0.0406, +0.2548, +0.2344, +0.0189, -0.0956, -0.4059, +0.1902,
+         +0.0267, +0.0740, +0.3019, +0.0581, +0.0927, -0.0633, +0.2275, +0.0913],
+        [0.2932, +0.0442, +0.1747, +0.1420, -0.0328, -0.0665, -0.2925, +0.1975,
+         -0.1364, +0.1636, +0.1128, +0.0639, +0.1699, +0.0005, +0.2950, +0.1861],
+    ], dtype=np.float64),
+    np.array([-0.1835, -0.0868, -0.336], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_WAN22 = (
+    np.array([
+        [0.0119, -0.1062, +0.0140, -0.0813, +0.0656, +0.0264, +0.0295, -0.0244,
+         +0.0443, -0.0465, +0.0359, -0.0776, +0.0564, +0.0006, -0.0319, -0.0268,
+         +0.0539, -0.0359, -0.0285, +0.1041, -0.0086, +0.0390, +0.0069, +0.0006,
+         +0.0313, -0.1454, +0.0714, -0.0304, +0.0401, -0.0758, +0.0568, -0.0055,
+         +0.0239, -0.0663, -0.0416, +0.0166, -0.0211, +0.1833, -0.0368, -0.3441,
+         -0.0479, -0.0660, -0.0101, -0.0690, -0.0145, +0.0421, +0.0504, -0.0837],
+        [0.0103, -0.0504, +0.0409, -0.0677, +0.0851, +0.0463, +0.0326, -0.0270,
+         -0.0102, -0.0090, +0.0236, +0.0854, +0.0264, +0.0594, -0.0542, +0.0024,
+         +0.0265, -0.0312, -0.1032, +0.0537, -0.0374, +0.0670, +0.0144, -0.0167,
+         -0.0574, -0.0902, +0.0827, -0.0574, +0.0384, -0.0297, +0.1307, -0.0310,
+         -0.0305, -0.0673, -0.0047, +0.0112, +0.0011, +0.1466, +0.0370, -0.3543,
+         -0.0489, -0.0153, +0.0068, -0.0452, +0.0041, +0.0451, -0.0483, +0.0168],
+        [0.0046, +0.0165, +0.0491, +0.0607, +0.0808, +0.0912, +0.0590, +0.0025,
+         +0.0288, -0.0205, +0.0082, +0.1048, +0.0561, +0.0418, -0.0637, +0.0260,
+         +0.0358, -0.0287, -0.1237, +0.0622, -0.0051, +0.2863, +0.0082, +0.0079,
+         -0.0232, -0.0481, +0.0447, -0.0196, +0.0204, -0.0014, +0.1372, -0.0380,
+         +0.0325, -0.0140, -0.0023, -0.0093, +0.0331, +0.2250, +0.0295, -0.2008,
+         -0.0420, +0.0800, +0.0156, -0.0927, +0.0015, +0.0373, -0.0356, +0.0055],
+    ], dtype=np.float64),
+    np.array([0.0, 0.0, 0.0], dtype=np.float64),
+    127.5,
+)
+
+_PREVIEW_SDXL = (
+    np.array([
+        [47.195, -29.114, +11.883, -38.063],
+        [53.237, -1.4623, +12.991, -28.043],
+        [58.182, +4.3734, -3.3735, -26.722],
+    ], dtype=np.float64),
+    np.array([+141.64, +127.46, +114.5], dtype=np.float64),
+    1.0,
+)
+
+_PREVIEW_WURST = (
+    np.array([
+        [10.175, -20.807, -27.834, -2.0577],
+        [21.07, -4.3022, -11.258, -18.8],
+        [7.8454, -2.3713, -0.45565, -41.648],
+    ], dtype=np.float64),
+    np.array([+143.39, +131.53, +120.76], dtype=np.float64),
+    1.0,
+)
+
+# Version matching is deliberately exact: similar names need not share a latent format.
+_PREVIEW_CONVERTERS = {
+    "v1": ((4,), _PREVIEW_SD),
+    "v2": ((4,), _PREVIEW_SD),
+    "svd_i2v": ((4,), _PREVIEW_SD),
+    "sdxl_base_v0.9": ((4,), _PREVIEW_SDXL),
+    "sdxl_refiner_v0.9": ((4,), _PREVIEW_SDXL),
+    "ssd_1b": ((4,), _PREVIEW_SDXL),
+    "pixart": ((4,), _PREVIEW_SDXL),
+    "auraflow": ((4,), _PREVIEW_SDXL),
+    "sd3": ((16,), _PREVIEW_SD3),
+    "sd3_large": ((16,), _PREVIEW_SD3),
+    "flux1": ((16,), _PREVIEW_FLUX1),
+    "hidream_i1": ((16,), _PREVIEW_FLUX1),
+    "z_image": ((16,), _PREVIEW_FLUX1),
+    "seedvr2_3b": ((16,), _PREVIEW_FLUX1),
+    "seedvr2_7b": ((16,), _PREVIEW_FLUX1),
+    "ernie_image": ((32,), _PREVIEW_FLUX2),
+    "flux2": ((32,), _PREVIEW_FLUX2),
+    "flux2_4b": ((32,), _PREVIEW_FLUX2),
+    "flux2_9b": ((32,), _PREVIEW_FLUX2),
+    "flux3_5b": ((32,), _PREVIEW_FLUX2),
+    "ideogram_4": ((32,), _PREVIEW_FLUX2),
+    "qwen_image": ((16,), _PREVIEW_QWEN),
+    "wan_v2.1_1.3b": ((16,), _PREVIEW_QWEN),
+    "wan_v2.1_14b": ((16,), _PREVIEW_QWEN),
+    "cosmos2.5_2b": ((16,), _PREVIEW_QWEN),
+    "krea_2": ((16,), _PREVIEW_QWEN),
+    "longcat_video_avatar_v1.5": ((16,), _PREVIEW_QWEN),
+    "qwen_image_2.1": ((64,), _PREVIEW_QWEN21),
+    "hunyuan_video": ((16,), _PREVIEW_HUNYUAN),
+    "wan_v2.2_5b": ((48,), _PREVIEW_WAN22),
+    "minimax_h3": ((24,), _PREVIEW_MINIMAX),
+    "kandinsky2.1": ((4,), "kandinsky"),
+    "hidream_o1": ((3072,), "patches"),
+    "wurstchen_v3.0_stage_b": ((3, 4), "wurst"),
+    "wurstchen_v3.0_stage_c": ((3, 4), "wurst"),
+}
+
+
+def _preview_affine(latent, converter):
+    weights, bias, scale = converter
+    rgb = (latent @ weights.T + bias) * scale
+    if scale == 127.5:
+        rgb += 127.5
+    return rgb
+
+
+def _preview_kandinsky(latent):
+    lab = latent @ np.array([
+        [-0.051509, -0.028686, -0.0068242],
+        [0.039954, -0.0061331, 0.0068562],
+        [0.039893, -0.016837, -0.03415],
+        [-0.087302, 0.016139, 0.00056286],
+    ]) + [0.88591, 0.0018263, 0.0096209]
+    lms = lab @ np.array([
+        [1, 1, 1],
+        [0.3963377774, -0.1055613458, -0.0894841775],
+        [0.2158037573, -0.0638541728, -1.2914855480],
+    ])
+    linear_rgb = (lms * lms * lms) @ np.array([
+        [4.0767416621, -1.2684380046, -0.0041960863],
+        [-3.3077115913, 2.6097574011, -0.7034186147],
+        [0.2309699292, -0.3413193965, 1.7076147010],
+    ])
+    # Mirror the pinned Swift linearsRGBTosRGB, including its inverse-style
+    # transfer curve. Changing this to the usual sRGB encoding changes previews.
+    rgb = linear_rgb / 12.92
+    high = linear_rgb >= 0.04045
+    rgb[high] = ((linear_rgb[high] + 0.055) / 1.055) ** 2.4
+    return rgb * 255
+
+
+def _preview_minimax_audio_height(frames, width):
+    if frames not in (1, 2) and (frames < 7 or (frames - 2) % 5 != 0):
+        return None
+    video_frames = 1 if frames == 1 else (frames - 2) // 5 * 17 + 5
+    # Positive half-away rounding, as used by Swift Double.rounded().
+    audio_rows = 2 * int(np.floor(video_frames / 24 * 40 + 0.5))
+    row_size = frames * width * 24
+    height = (audio_rows * 32 + row_size - 1) // row_size
+    while height * row_size % 32:
+        height += 1
+    return height
+
+
 def decode_preview(preview, version):
+    """Decode the first latent frame as RGBA, or ignore unsupported/bad previews.
+
+    These inexpensive tensor previews follow Draw Things ImageConverter.cgImages;
+    LTX-2 / LTX-2.3 require learned decoders and are intentionally unsupported.
+    """
     if type(version) is not str:
         return None
-
-    int_buffer = np.frombuffer(preview, dtype=np.uint32, count=17)
-    image_height, image_width, channels = int_buffer[6:9]
-
-    if channels not in [3, 4, 16, 32]:
+    version = version.lower()
+    spec = _PREVIEW_CONVERTERS.get(version)
+    if spec is None:
         return None
 
-    fp16 = get_image_data(preview)
+    # Preview decoding is optional and must never abort image generation.
+    try:
+        header = np.frombuffer(preview, dtype="<u4", count=17)
+        if (header[0] not in (0, 1012247)
+                or header[1] != CCV_TENSOR_CPU_MEMORY
+                or header[2] != CCV_TENSOR_FORMAT_NHWC
+                or header[3] != CCV_16F or np.any(header[9:])):
+            return None
+        frames, height, width, channels = map(int, header[5:9])
+        allowed_channels, converter = spec
+        if (frames <= 0 or not 0 < height <= MAX_RESOLUTION
+                or not 0 < width <= MAX_RESOLUTION or channels not in allowed_channels):
+            return None
+        if converter == "patches" and max(height, width) * 32 > MAX_RESOLUTION:
+            return None
 
-    image = None
-    version = version.lower()
-
-    if version in ["v1", "v2", "svdi2v"]:
-        bytes_array = np.zeros((image_height, image_width, channels), dtype=np.uint8)
-        for i in range(image_height * image_width):
-            v0, v1, v2, v3 = fp16[i * 4 : i * 4 + 4]
-            r = 49.5210 * v0 + 29.0283 * v1 - 23.9673 * v2 - 39.4981 * v3 + 99.9368
-            g = 41.1373 * v0 + 42.4951 * v1 + 24.7349 * v2 - 50.8279 * v3 + 99.8421
-            b = 40.2919 * v0 + 18.9304 * v1 + 30.0236 * v2 - 81.9976 * v3 + 99.5384
-
-            bytes_array[i // image_width, i % image_width] = [
-                clamp(r),
-                clamp(g),
-                clamp(b),
-                255,
-            ]
-        image = Image.fromarray(bytes_array, "RGBA")
-
-    if version[:3] == "sd3":
-        bytes_array = bytearray(image_width * image_height * 4)
-        for i in range(image_height * image_width):
-            v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 = fp16[
-                i * 16 : (i + 1) * 16
-            ]
-            r = (
-                -0.0922 * v0
-                + 0.0311 * v1
-                + 0.1994 * v2
-                + 0.0856 * v3
-                + 0.0587 * v4
-                - 0.0006 * v5
-                + 0.0978 * v6
-                - 0.0042 * v7
-                - 0.0194 * v8
-                - 0.0488 * v9
-                + 0.0922 * v10
-                - 0.0278 * v11
-                + 0.0332 * v12
-                - 0.0069 * v13
-                - 0.0596 * v14
-                - 0.1448 * v15
-                + 0.2394
-            ) * 127.5 + 127.5
-            g = (
-                -0.0175 * v0
-                + 0.0633 * v1
-                + 0.0927 * v2
-                + 0.0339 * v3
-                + 0.0272 * v4
-                + 0.1104 * v5
-                + 0.0306 * v6
-                + 0.1038 * v7
-                + 0.0020 * v8
-                + 0.0130 * v9
-                + 0.0988 * v10
-                + 0.0524 * v11
-                + 0.0456 * v12
-                - 0.0030 * v13
-                - 0.0465 * v14
-                - 0.1463 * v15
-                + 0.2135
-            ) * 127.5 + 127.5
-            b = (
-                0.0749 * v0
-                + 0.0954 * v1
-                + 0.0458 * v2
-                + 0.0902 * v3
-                - 0.0496 * v4
-                + 0.0309 * v5
-                + 0.0427 * v6
-                + 0.1358 * v7
-                + 0.0669 * v8
-                - 0.0268 * v9
-                + 0.0951 * v10
-                - 0.0542 * v11
-                + 0.0895 * v12
-                - 0.0810 * v13
-                - 0.0293 * v14
-                - 0.1189 * v15
-                + 0.1925
-            ) * 127.5 + 127.5
-
-            bytes_array[i * 4] = clamp(r)
-            bytes_array[i * 4 + 1] = clamp(g)
-            bytes_array[i * 4 + 2] = clamp(b)
-            bytes_array[i * 4 + 3] = 255
-        image = Image.frombytes("RGBA", (image_width, image_height), bytes(bytes_array))
-
-    if version[:4] == "sdxl" or version in ["ssd1b", "pixart", "auraflow"]:
-        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
-        for i in range(image_height * image_width):
-            v0, v1, v2, v3 = fp16[i * 4 : (i + 1) * 4]
-            r = 47.195 * v0 - 29.114 * v1 + 11.883 * v2 - 38.063 * v3 + 141.64
-            g = 53.237 * v0 - 1.4623 * v1 + 12.991 * v2 - 28.043 * v3 + 127.46
-            b = 58.182 * v0 + 4.3734 * v1 - 3.3735 * v2 - 26.722 * v3 + 114.5
-
-            bytes_array[i * 4] = clamp(r)
-            bytes_array[i * 4 + 1] = clamp(g)
-            bytes_array[i * 4 + 2] = clamp(b)
-            bytes_array[i * 4 + 3] = 255
-        image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
-
-    if (
-        version.startswith("flux")
-        or version.startswith("hidream")
-        or version.startswith("zimage")
-    ):
-        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
-        for i in range(image_height * image_width):
-            v = fp16[i * 16 : i * 16 + 16]
-            r = (
-                -0.0346 * v[0]
-                + 0.0034 * v[1]
-                + 0.0275 * v[2]
-                - 0.0174 * v[3]
-                + 0.0859 * v[4]
-                + 0.0004 * v[5]
-                + 0.0405 * v[6]
-                - 0.0236 * v[7]
-                - 0.0245 * v[8]
-                + 0.1008 * v[9]
-                - 0.0515 * v[10]
-                + 0.0428 * v[11]
-                + 0.0817 * v[12]
-                - 0.1264 * v[13]
-                - 0.0280 * v[14]
-                - 0.1262 * v[15]
-                - 0.0329
-            ) * 127.5 + 127.5
-            g = (
-                0.0244 * v[0]
-                + 0.0210 * v[1]
-                - 0.0668 * v[2]
-                + 0.0160 * v[3]
-                + 0.0721 * v[4]
-                + 0.0383 * v[5]
-                + 0.0861 * v[6]
-                - 0.0185 * v[7]
-                + 0.0250 * v[8]
-                + 0.0755 * v[9]
-                + 0.0201 * v[10]
-                - 0.0012 * v[11]
-                + 0.0765 * v[12]
-                - 0.0522 * v[13]
-                - 0.0881 * v[14]
-                - 0.0982 * v[15]
-                - 0.0718
-            ) * 127.5 + 127.5
-            b = (
-                0.0681 * v[0]
-                + 0.0687 * v[1]
-                - 0.0433 * v[2]
-                + 0.0617 * v[3]
-                + 0.0329 * v[4]
-                + 0.0115 * v[5]
-                + 0.0915 * v[6]
-                - 0.0259 * v[7]
-                + 0.1180 * v[8]
-                - 0.0421 * v[9]
-                + 0.0011 * v[10]
-                - 0.0036 * v[11]
-                + 0.0749 * v[12]
-                - 0.1103 * v[13]
-                - 0.0499 * v[14]
-                - 0.0778 * v[15]
-                - 0.0851
-            ) * 127.5 + 127.5
-
-            bytes_array[i * 4] = clamp(r)
-            bytes_array[i * 4 + 1] = clamp(g)
-            bytes_array[i * 4 + 2] = clamp(b)
-            bytes_array[i * 4 + 3] = 255
-        image = Image.fromarray(
-            bytes_array.reshape((image_height, image_width, 4)), "RGBA"
-        )
-
-    if version[:6] == "wan2.1" or version[:4] == "qwen":
-        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
-        for i in range(image_height * image_width):
-            v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 = fp16[
-                i * 16 : (i + 1) * 16
-            ]
-            r = (
-                -0.1299 * v0
-                + 0.0671 * v1
-                + 0.3568 * v2
-                + 0.0372 * v3
-                + 0.0313 * v4
-                + 0.0296 * v5
-                - 0.3477 * v6
-                + 0.0166 * v7
-                - 0.0412 * v8
-                - 0.1293 * v9
-                + 0.0680 * v10
-                + 0.0032 * v11
-                - 0.1251 * v12
-                + 0.0060 * v13
-                + 0.3477 * v14
-                + 0.1984 * v15
-                - 0.1835
-            ) * 127.5 + 127.5
-            g = (
-                -0.1692 * v0
-                + 0.0406 * v1
-                + 0.2548 * v2
-                + 0.2344 * v3
-                + 0.0189 * v4
-                - 0.0956 * v5
-                - 0.4059 * v6
-                + 0.1902 * v7
-                + 0.0267 * v8
-                + 0.0740 * v9
-                + 0.3019 * v10
-                + 0.0581 * v11
-                + 0.0927 * v12
-                - 0.0633 * v13
-                + 0.2275 * v14
-                + 0.0913 * v15
-                - 0.0868
-            ) * 127.5 + 127.5
-            b = (
-                0.2932 * v0
-                + 0.0442 * v1
-                + 0.1747 * v2
-                + 0.1420 * v3
-                - 0.0328 * v4
-                - 0.0665 * v5
-                - 0.2925 * v6
-                + 0.1975 * v7
-                - 0.1364 * v8
-                + 0.1636 * v9
-                + 0.1128 * v10
-                + 0.0639 * v11
-                + 0.1699 * v12
-                + 0.0005 * v13
-                + 0.2950 * v14
-                + 0.1861 * v15
-                - 0.336
-            ) * 127.5 + 127.5
-
-            bytes_array[i * 4] = clamp(r)
-            bytes_array[i * 4 + 1] = clamp(g)
-            bytes_array[i * 4 + 2] = clamp(b)
-            bytes_array[i * 4 + 3] = 255
-        image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
-
-    if version[:6] == "wan2.2":
-        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
-
-        for i in range(image_height * image_width):
-            v = fp16[i * 48 : (i + 1) * 48]
-            (
-                v0,
-                v1,
-                v2,
-                v3,
-                v4,
-                v5,
-                v6,
-                v7,
-                v8,
-                v9,
-                v10,
-                v11,
-                v12,
-                v13,
-                v14,
-                v15,
-                v16,
-                v17,
-                v18,
-                v19,
-                v20,
-                v21,
-                v22,
-                v23,
-                v24,
-                v25,
-                v26,
-                v27,
-                v28,
-                v29,
-                v30,
-                v31,
-                v32,
-                v33,
-                v34,
-                v35,
-                v36,
-                v37,
-                v38,
-                v39,
-                v40,
-                v41,
-                v42,
-                v43,
-                v44,
-                v45,
-                v46,
-                v47,
-            ) = v
-
-            r = (
-                0.0119 * v0
-                - 0.1062 * v1
-                + 0.0140 * v2
-                - 0.0813 * v3
-                + 0.0656 * v4
-                + 0.0264 * v5
-                + 0.0295 * v6
-                - 0.0244 * v7
-                + 0.0443 * v8
-                - 0.0465 * v9
-                + 0.0359 * v10
-                - 0.0776 * v11
-                + 0.0564 * v12
-                + 0.0006 * v13
-                - 0.0319 * v14
-                - 0.0268 * v15
-                + 0.0539 * v16
-                - 0.0359 * v17
-                - 0.0285 * v18
-                + 0.1041 * v19
-                - 0.0086 * v20
-                + 0.0390 * v21
-                + 0.0069 * v22
-                + 0.0006 * v23
-                + 0.0313 * v24
-                - 0.1454 * v25
-                + 0.0714 * v26
-                - 0.0304 * v27
-                + 0.0401 * v28
-                - 0.0758 * v29
-                + 0.0568 * v30
-                - 0.0055 * v31
-                + 0.0239 * v32
-                - 0.0663 * v33
-                - 0.0416 * v34
-                + 0.0166 * v35
-                - 0.0211 * v36
-                + 0.1833 * v37
-                - 0.0368 * v38
-                - 0.3441 * v39
-                - 0.0479 * v40
-                - 0.0660 * v41
-                - 0.0101 * v42
-                - 0.0690 * v43
-                - 0.0145 * v44
-                + 0.0421 * v45
-                + 0.0504 * v46
-                - 0.0837 * v47
-            ) * 127.5 + 127.5
-
-            g = (
-                0.0103 * v0
-                - 0.0504 * v1
-                + 0.0409 * v2
-                - 0.0677 * v3
-                + 0.0851 * v4
-                + 0.0463 * v5
-                + 0.0326 * v6
-                - 0.0270 * v7
-                - 0.0102 * v8
-                - 0.0090 * v9
-                + 0.0236 * v10
-                + 0.0854 * v11
-                + 0.0264 * v12
-                + 0.0594 * v13
-                - 0.0542 * v14
-                + 0.0024 * v15
-                + 0.0265 * v16
-                - 0.0312 * v17
-                - 0.1032 * v18
-                + 0.0537 * v19
-                - 0.0374 * v20
-                + 0.0670 * v21
-                + 0.0144 * v22
-                - 0.0167 * v23
-                - 0.0574 * v24
-                - 0.0902 * v25
-                + 0.0827 * v26
-                - 0.0574 * v27
-                + 0.0384 * v28
-                - 0.0297 * v29
-                + 0.1307 * v30
-                - 0.0310 * v31
-                - 0.0305 * v32
-                - 0.0673 * v33
-                - 0.0047 * v34
-                + 0.0112 * v35
-                + 0.0011 * v36
-                + 0.1466 * v37
-                + 0.0370 * v38
-                - 0.3543 * v39
-                - 0.0489 * v40
-                - 0.0153 * v41
-                + 0.0068 * v42
-                - 0.0452 * v43
-                + 0.0041 * v44
-                + 0.0451 * v45
-                - 0.0483 * v46
-                + 0.0168 * v47
-            ) * 127.5 + 127.5
-
-            b = (
-                0.0046 * v0
-                + 0.0165 * v1
-                + 0.0491 * v2
-                + 0.0607 * v3
-                + 0.0808 * v4
-                + 0.0912 * v5
-                + 0.0590 * v6
-                + 0.0025 * v7
-                + 0.0288 * v8
-                - 0.0205 * v9
-                + 0.0082 * v10
-                + 0.1048 * v11
-                + 0.0561 * v12
-                + 0.0418 * v13
-                - 0.0637 * v14
-                + 0.0260 * v15
-                + 0.0358 * v16
-                - 0.0287 * v17
-                - 0.1237 * v18
-                + 0.0622 * v19
-                - 0.0051 * v20
-                + 0.2863 * v21
-                + 0.0082 * v22
-                + 0.0079 * v23
-                - 0.0232 * v24
-                - 0.0481 * v25
-                + 0.0447 * v26
-                - 0.0196 * v27
-                + 0.0204 * v28
-                - 0.0014 * v29
-                + 0.1372 * v30
-                - 0.0380 * v31
-                + 0.0325 * v32
-                - 0.0140 * v33
-                - 0.0023 * v34
-                - 0.0093 * v35
-                + 0.0331 * v36
-                + 0.2250 * v37
-                + 0.0295 * v38
-                - 0.2008 * v39
-                - 0.0420 * v40
-                + 0.0800 * v41
-                + 0.0156 * v42
-                - 0.0927 * v43
-                + 0.0015 * v44
-                + 0.0373 * v45
-                - 0.0356 * v46
-                + 0.0055 * v47
-            ) * 127.5 + 127.5
-
-            bytes_array[i * 4] = clamp(r)
-            bytes_array[i * 4 + 1] = clamp(g)
-            bytes_array[i * 4 + 2] = clamp(b)
-            bytes_array[i * 4 + 3] = 255
-
-        image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
-
-    if version == "hunyuanvideo":
-        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
-        for i in range(image_height * image_width):
-            v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 = fp16[
-                i * 16 : (i + 1) * 16
-            ]
-            r = (
-                -0.0395 * v0
-                + 0.0696 * v1
-                + 0.0135 * v2
-                + 0.0108 * v3
-                - 0.0209 * v4
-                - 0.0804 * v5
-                - 0.0991 * v6
-                - 0.0646 * v7
-                - 0.0696 * v8
-                - 0.0799 * v9
-                + 0.1166 * v10
-                + 0.1165 * v11
-                - 0.2315 * v12
-                - 0.0270 * v13
-                - 0.0616 * v14
-                + 0.0249 * v15
-                + 0.0249
-            ) * 127.5 + 127.5
-            g = (
-                -0.0331 * v0
-                + 0.0795 * v1
-                - 0.0945 * v2
-                - 0.0250 * v3
-                + 0.0032 * v4
-                - 0.0254 * v5
-                + 0.0271 * v6
-                - 0.0422 * v7
-                - 0.0595 * v8
-                - 0.0208 * v9
-                + 0.1627 * v10
-                + 0.0432 * v11
-                - 0.1920 * v12
-                + 0.0401 * v13
-                - 0.0997 * v14
-                - 0.0469 * v15
-                - 0.0192
-            ) * 127.5 + 127.5
-            b = (
-                0.0445 * v0
-                + 0.0518 * v1
-                - 0.0282 * v2
-                - 0.0765 * v3
-                + 0.0224 * v4
-                - 0.0639 * v5
-                - 0.0669 * v6
-                - 0.0400 * v7
-                - 0.0894 * v8
-                - 0.0375 * v9
-                + 0.0962 * v10
-                + 0.0407 * v11
-                - 0.1355 * v12
-                - 0.0821 * v13
-                - 0.0727 * v14
-                - 0.1703 * v15
-                - 0.0761
-            ) * 127.5 + 127.5
-
-            bytes_array[i * 4] = clamp(r)
-            bytes_array[i * 4 + 1] = clamp(g)
-            bytes_array[i * 4 + 2] = clamp(b)
-            bytes_array[i * 4 + 3] = 255
-        image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
-
-    if version[:5] == "wurst":
-        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
-        if channels == 3:
-            for i in range(image_height * image_width):
-                r, g, b = fp16[i * 3], fp16[i * 3 + 1], fp16[i * 3 + 2]
-                bytes_array[i * 4] = clamp(r)
-                bytes_array[i * 4 + 1] = clamp(g)
-                bytes_array[i * 4 + 2] = clamp(b)
-                bytes_array[i * 4 + 3] = 255
+        expected = frames * height * width * channels
+        payload = preview[68:]
+        if header[0] == 1012247:
+            latent = np.asarray(fpzip.decompress(payload, order="C"))
+            if latent.size != expected:
+                return None
+            # Match the transport's Float16 conversion, including overflow.
+            with np.errstate(over="ignore", invalid="ignore"):
+                latent = latent.astype(np.float16).reshape(frames, height, width, channels)
         else:
-            for i in range(image_height * image_width):
-                v0, v1, v2, v3 = (
-                    fp16[i * 4],
-                    fp16[i * 4 + 1],
-                    fp16[i * 4 + 2],
-                    fp16[i * 4 + 3],
-                )
-                r = 10.175 * v0 - 20.807 * v1 - 27.834 * v2 - 2.0577 * v3 + 143.39
-                g = 21.07 * v0 - 4.3022 * v1 - 11.258 * v2 - 18.8 * v3 + 131.53
-                b = 7.8454 * v0 - 2.3713 * v1 - 0.45565 * v2 - 41.648 * v3 + 120.76
+            if len(payload) != expected * 2:
+                return None
+            latent = np.frombuffer(payload, dtype="<f2").reshape(frames, height, width, channels)
 
-                bytes_array[i * 4] = clamp(r)
-                bytes_array[i * 4 + 1] = clamp(g)
-                bytes_array[i * 4 + 2] = clamp(b)
-                bytes_array[i * 4 + 3] = 255
-        image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
-
-    if version[:5] == "flux2":
-        bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
-        for i in range(image_height * image_width):
-            v = fp16[i * 32 : i * 32 + 32]
-            r = (
-                0.0058 * v[0]
-                + 0.0495 * v[1]
-                - 0.0099 * v[2]
-                + 0.2144 * v[3]
-                + 0.0166 * v[4]
-                + 0.0157 * v[5]
-                - 0.0398 * v[6]
-                - 0.0052 * v[7]
-                - 0.3527 * v[8]
-                - 0.0301 * v[9]
-                - 0.0107 * v[10]
-                + 0.0746 * v[11]
-                + 0.0156 * v[12]
-                - 0.0034 * v[13]
-                + 0.0032 * v[14]
-                - 0.0939 * v[15]
-                + 0.0018 * v[16]
-                + 0.0284 * v[17]
-                - 0.0024 * v[18]
-                + 0.1207 * v[19]
-                + 0.0128 * v[20]
-                + 0.0137 * v[21]
-                + 0.0095 * v[22]
-                + 0.0000 * v[23]
-                - 0.0465 * v[24]
-                + 0.0095 * v[25]
-                + 0.0290 * v[26]
-                + 0.0220 * v[27]
-                - 0.0332 * v[28]
-                - 0.0085 * v[29]
-                - 0.0076 * v[30]
-                - 0.0111 * v[31]
-                - 0.0329
-            ) * 127.5 + 127.5
-
-            g = (
-                0.0113 * v[0]
-                + 0.0443 * v[1]
-                + 0.0096 * v[2]
-                + 0.3009 * v[3]
-                - 0.0039 * v[4]
-                + 0.0103 * v[5]
-                + 0.0902 * v[6]
-                + 0.0095 * v[7]
-                - 0.2712 * v[8]
-                - 0.0356 * v[9]
-                + 0.0078 * v[10]
-                + 0.0090 * v[11]
-                + 0.0169 * v[12]
-                - 0.0040 * v[13]
-                + 0.0181 * v[14]
-                - 0.0008 * v[15]
-                + 0.0043 * v[16]
-                + 0.0056 * v[17]
-                - 0.0022 * v[18]
-                - 0.0026 * v[19]
-                + 0.0101 * v[20]
-                - 0.0072 * v[21]
-                + 0.0092 * v[22]
-                - 0.0077 * v[23]
-                - 0.0204 * v[24]
-                + 0.0012 * v[25]
-                - 0.0034 * v[26]
-                + 0.0169 * v[27]
-                - 0.0457 * v[28]
-                + 0.0389 * v[29]
-                + 0.0003 * v[30]
-                - 0.0460 * v[31]
-                - 0.0718
-            ) * 127.5 + 127.5
-
-            b = (
-                0.0073 * v[0]
-                + 0.0836 * v[1]
-                + 0.0644 * v[2]
-                + 0.3652 * v[3]
-                - 0.0054 * v[4]
-                - 0.0160 * v[5]
-                - 0.0235 * v[6]
-                + 0.0109 * v[7]
-                - 0.1666 * v[8]
-                - 0.0180 * v[9]
-                + 0.0013 * v[10]
-                - 0.0941 * v[11]
-                + 0.0070 * v[12]
-                - 0.0114 * v[13]
-                + 0.0080 * v[14]
-                + 0.0186 * v[15]
-                + 0.0104 * v[16]
-                - 0.0127 * v[17]
-                - 0.0030 * v[18]
-                + 0.0065 * v[19]
-                + 0.0142 * v[20]
-                - 0.0007 * v[21]
-                - 0.0059 * v[22]
-                - 0.0049 * v[23]
-                - 0.0312 * v[24]
-                - 0.0066 * v[25]
-                + 0.0025 * v[26]
-                - 0.0048 * v[27]
-                - 0.0468 * v[28]
-                + 0.0609 * v[29]
-                - 0.0043 * v[30]
-                - 0.0614 * v[31]
-                - 0.0851
-            ) * 127.5 + 127.5
-
-            bytes_array[i * 4] = clamp(r)
-            bytes_array[i * 4 + 1] = clamp(g)
-            bytes_array[i * 4 + 2] = clamp(b)
-            bytes_array[i * 4 + 3] = 255
-
-        image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
-
-    if version.startswith("ltx2"):
-        pass
-
-    return image
+        # Audio packing depends on the full temporal dimension, before frame 0.
+        if version == "minimax_h3":
+            audio_height = _preview_minimax_audio_height(frames, width)
+            if audio_height is None or audio_height >= height:
+                return None
+            height -= audio_height
+        latent = latent[0, :height].astype(np.float64)
+        with np.errstate(over="ignore", invalid="ignore"):
+            if converter == "patches":
+                rgb = latent.reshape(height, width, 3, 32, 32)
+                rgb = rgb.transpose(0, 3, 1, 4, 2).reshape(height * 32, width * 32, 3)
+                rgb = (rgb + 1) * 127.5
+            elif converter == "kandinsky":
+                rgb = _preview_kandinsky(latent)
+            elif converter == "wurst":
+                if channels == 3:
+                    rgb = latent * 255
+                    rgb = np.copysign(np.floor(np.abs(rgb) + 0.5), rgb)
+                else:
+                    rgb = _preview_affine(latent, _PREVIEW_WURST)
+            else:
+                rgb = _preview_affine(latent, converter)
+            # Swift maps all nonfinite results to zero and truncates finite bytes.
+            rgb = np.where(np.isfinite(rgb), rgb, 0)
+            rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+        rgba = np.empty((*rgb.shape[:2], 4), dtype=np.uint8)
+        rgba[..., :3] = rgb
+        rgba[..., 3] = 255
+        return Image.fromarray(rgba, "RGBA")
+    except Exception:
+        return None
 
 
 def resize_crop(image, width, height):
