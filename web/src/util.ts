@@ -1,5 +1,5 @@
-import type { ComfyApp } from '@comfyorg/comfyui-frontend-types';
-import { LiteGraph, type LGraphNode } from '@comfyorg/litegraph';
+import type { ComfyApp, ComfyApi } from '@comfyorg/comfyui-frontend-types';
+import { LGraphCanvas, LiteGraph, type LGraphNode } from '@comfyorg/litegraph';
 
 type MethodKeys<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -18,7 +18,7 @@ export function setCallback<T extends object, K extends MethodKeys<T>>(
     type Orig = NonNullable<T[K] extends (...a: any[]) => any ? T[K] : never>;
     const original = target[callbackName] as Orig | undefined;
 
-    (target as any)[callbackName] = function (
+    (target as any)[callbackName] = function(
         this: any,
         ...args: Parameters<Orig>
     ) {
@@ -54,7 +54,7 @@ export function updateProto<B extends HasPrototype>(
             const original = proto[key] as (...args: any[]) => any;
             const added = val as (...args: any[]) => any;
 
-            proto[key] = function (this: any, ...args: any[]) {
+            proto[key] = function(this: any, ...args: any[]) {
                 const r = original.apply(this, args);
                 try {
                     added.apply(this, args);
@@ -118,18 +118,24 @@ export function findWidgetByName(node: LGraphNode, name: string) {
     return node.widgets?.find((w) => w.name === name)
 }
 
-export function mk<T extends Function>(fn: T): T {
-    return fn;
-}
-
 export function getApp(): ComfyApp {
-    // @ts-ignore
+    // @ts-expect-error
     return window.comfyAPI.app.app
 };
 
+export function getApi(): ComfyApi {
+    // @ts-expect-error
+    return window.comfyAPI.api.api
+}
+
 export function getLiteGraph(): typeof LiteGraph {
-    // @ts-ignore
+    // @ts-expect-error
     return window.LiteGraph
+}
+
+export function getLGraphCanvas(): typeof LGraphCanvas {
+    // @ts-expect-error
+    return window.LGraphCanvas
 }
 
 /**

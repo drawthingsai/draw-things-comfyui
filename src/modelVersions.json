@@ -1,0 +1,246 @@
+[
+    {
+        "version": "auraflow",
+        "name": "AuraFlow",
+        "tag": "AF",
+        "features": ["cfgZero"]
+    },
+    {
+        "version": "flux1",
+        "name": "FLUX.1",
+        "tag": "F1",
+        "features": [
+            "cfgZero",
+            "resolutionDependentShift",
+            "zeroNegativePrompt",
+            "separateClipL",
+            "guidanceEmbed",
+            "teaCache"
+        ]
+    },
+    {
+        "version": "flux2",
+        "name": "FLUX.2",
+        "tag": "F2",
+        "features": ["cfgZero", "guidanceEmbed", "resolutionDependentShift"]
+    },
+    {
+        "version": "flux2_4b",
+        "name": "FLUX.2 [4B]",
+        "tag": "F2",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "flux2_9b",
+        "name": "FLUX.2 [9B]",
+        "tag": "F2",
+        "features": ["resolutionDependentShift", "cfgZero"]
+    },
+    {
+        "version": "hidream_i1",
+        "name": "HiDream-I1",
+        "tag": "HiD",
+        "features": [
+            "cfgZero",
+            "resolutionDependentShift",
+            "zeroNegativePrompt",
+            "separateClipL",
+            "guidanceEmbed",
+            "separateOpenClipG",
+            "separateT5Text"
+        ]
+    },
+    {
+        "version": "hunyuan_video",
+        "name": "HunyuanVideo",
+        "tag": "Hun",
+        "features": ["cfgZero", "numFrames", "compressionArtifacts", "teaCache", "guidanceEmbed"],
+        "numFramesStep": 4
+    },
+    {
+        "version": "kandinsky2.1",
+        "name": "Kandinsky 2.1",
+        "tag": "Kan",
+        "features": ["deprecated"]
+    },
+    {
+        "version": "ltx2",
+        "name": "LTX-2",
+        "tag": "LTX2",
+        "features": ["cfgZero", "numFrames", "compressionArtifacts"],
+        "numFramesStep": 8
+    },
+    {
+        "version": "ltx2.3",
+        "name": "LTX-2.3",
+        "tag": "LTX2.3",
+        "features": ["numFrames"],
+        "aliases": ["ltx2_3"],
+        "numFramesStep": 8
+    },
+    {
+        "version": "pixart",
+        "name": "PixArt",
+        "tag": "Pix",
+        "features": ["zeroNegativePrompt"]
+    },
+    {
+        "version": "qwen_image",
+        "name": "Qwen-Image",
+        "tag": "Qwen",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "sd3",
+        "name": "Stable Diffusion 3",
+        "tag": "SD3",
+        "features": [
+            "cfgZero",
+            "resolutionDependentShift",
+            "zeroNegativePrompt",
+            "separateClipL",
+            "t5TextEncoder",
+            "separateOpenClipG"
+        ]
+    },
+    {
+        "version": "sd3_large",
+        "name": "Stable Diffusion 3 Large",
+        "tag": "SD3L",
+        "features": [
+            "cfgZero",
+            "resolutionDependentShift",
+            "zeroNegativePrompt",
+            "separateClipL",
+            "separateOpenClipG",
+            "t5TextEncoder"
+        ]
+    },
+    {
+        "version": "sdxl_base_v0.9",
+        "name": "Stable Diffusion XL 0.9 Base",
+        "tag": "SDXL",
+        "features": ["zeroNegativePrompt", "sdxlSize"]
+    },
+    {
+        "version": "sdxl_refiner_v0.9",
+        "name": "Stable Diffusion XL 0.9 Refiner",
+        "tag": "SDXL",
+        "features": ["zeroNegativePrompt", "sdxlSize"]
+    },
+    {
+        "version": "ssd_1b",
+        "name": "Segmind Stable Diffusion 1B",
+        "tag": "SSD",
+        "features": ["zeroNegativePrompt"]
+    },
+    {
+        "version": "svd_i2v",
+        "name": "Stable Video Diffusion Image-to-Video",
+        "tag": "SVD",
+        "features": ["numFrames", "svdOptions"],
+        "numFramesStep": 1
+    },
+    {
+        "version": "v1",
+        "name": "Stable Diffusion",
+        "tag": "SD",
+        "features": []
+    },
+    {
+        "version": "v2",
+        "name": "Stable Diffusion 2",
+        "tag": "SD2",
+        "features": []
+    },
+    {
+        "version": "wan_v2.1_1.3b",
+        "name": "Wan 2.1 [1.3B]",
+        "tag": "Wan",
+        "features": ["numFrames", "cfgZero", "causalInference", "compressionArtifacts", "teaCache"],
+        "numFramesStep": 4
+    },
+    {
+        "version": "wan_v2.1_14b",
+        "name": "Wan 2.1 [14B]",
+        "tag": "Wan",
+        "features": ["numFrames", "compressionArtifacts", "cfgZero", "causalInference", "teaCache"],
+        "numFramesStep": 4
+    },
+    {
+        "version": "wan_v2.2_5b",
+        "name": "Wan 2.2 [5B]",
+        "tag": "Wan",
+        "features": ["numFrames", "cfgZero", "causalInference", "compressionArtifacts"],
+        "numFramesStep": 4
+    },
+    {
+        "version": "wurstchen_v3.0_stage_c",
+        "name": "Würstchen 3.0 Stage C",
+        "tag": "Wur",
+        "features": ["deprecated"]
+    },
+    {
+        "version": "z_image",
+        "name": "Z-Image",
+        "tag": "Z Image",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "ernie_image",
+        "name": "ERNIE Image",
+        "tag": "Ernie",
+        "features": ["cfgZero"]
+    },
+    {
+        "version": "cosmos2.5_2b",
+        "name": "Cosmos 2.5 [2B]",
+        "tag": "Cosmos2.5",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "ideogram_4",
+        "name": "Ideogram 4",
+        "tag": "Ideogram4",
+        "features": ["cfgZero", "resolutionDependentShift", "zeroNegativePrompt"]
+    },
+    {
+        "version": "krea_2",
+        "name": "Krea 2",
+        "tag": "Krea2",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "minimax_h3",
+        "name": "MiniMax Hailuo 3",
+        "tag": "MiniMax",
+        "features": [
+            "cfgZero",
+            "resolutionDependentShift",
+            "numFrames",
+            "audioShift",
+            "compressionArtifacts",
+            "solAttention",
+            "teaCache"
+        ],
+        "numFramesStep": 4
+    },
+    {
+        "version": "qwen_image_2.1",
+        "name": "Qwen-Image 2.1",
+        "tag": "Qwen 2.1",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "seedvr2_3b",
+        "name": "SeedVR2 3B",
+        "tag": "SeedVR2 3b",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "seedvr2_7b",
+        "name": "SeedVR2 7B",
+        "tag": "SeedVR2 7b",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    }
+]

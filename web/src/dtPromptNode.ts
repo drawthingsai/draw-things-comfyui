@@ -1,11 +1,11 @@
-import { getApp, updateProto } from "./util.js";
-import type { LGraphNode, IWidget, LLink, INodeOutputSlot, IContextMenuItem, LGraphCanvas } from "@comfyorg/litegraph";
-import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
+import type { IContextMenuItem, INodeOutputSlot, IWidget, LGraphCanvas, LGraphNode, LLink } from "@comfyorg/litegraph";
+import type { ComfyExtension } from "./types.js";
+import { getApp, getLGraphCanvas, updateProto } from "./util.js";
 
 type PromptNode = LGraphNode;
 
 const promptProto: any = {
-    onWidgetChanged(this: PromptNode, name: string, value: any, old_Value: any, widget: IWidget) {
+    onWidgetChanged(this: PromptNode, name: string, value: any, _oldValue: any, widget: IWidget) {
         if (name === "insert_textual_inversion") {
             const keyword = value?.value?.keyword;
             if (!keyword) return;
@@ -26,7 +26,7 @@ const promptProto: any = {
         }
     },
 
-    onConnectionsChange(this: PromptNode, type: number, index: number, isConnected: boolean, link_info: LLink, inputOrOutput: INodeOutputSlot) {
+    onConnectionsChange(this: PromptNode, _type: number, _index: number, _isConnected: boolean, _link_info: LLink, _inputOrOutput: INodeOutputSlot) {
         if (getApp().extensionManager.setting.get("drawthings.node.color_prompts") === false) return;
 
         let isPositive = false;
@@ -44,15 +44,17 @@ const promptProto: any = {
             }
         }
 
+        const LGraphCanvas = getLGraphCanvas();
+
         if (isPositive && isNegative) {
-            this.color = window.LGraphCanvas.node_colors.purple.color;
-            this.bgcolor = window.LGraphCanvas.node_colors.purple.bgcolor;
+            this.color = LGraphCanvas.node_colors.purple.color;
+            this.bgcolor = LGraphCanvas.node_colors.purple.bgcolor;
         } else if (isPositive) {
-            this.color = window.LGraphCanvas.node_colors.green.color;
-            this.bgcolor = window.LGraphCanvas.node_colors.green.bgcolor;
+            this.color = LGraphCanvas.node_colors.green.color;
+            this.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
         } else if (isNegative) {
-            this.color = window.LGraphCanvas.node_colors.red.color;
-            this.bgcolor = window.LGraphCanvas.node_colors.red.bgcolor;
+            this.color = LGraphCanvas.node_colors.red.color;
+            this.bgcolor = LGraphCanvas.node_colors.red.bgcolor;
         } else {
             this.color = undefined;
             this.bgcolor = undefined;
@@ -60,23 +62,23 @@ const promptProto: any = {
     },
 
     onNodeCreated(this: PromptNode) {
-        const output = this.outputs?.find((output) => output.name == "PROMPT");
+        const output = this.outputs?.find((output) => output.name === "PROMPT");
         if (output) {
-            (output as any).color_on = (output as any).color_off = getApp().canvas.default_connection_color_byType["CONDITIONING"];
+            (output as any).color_on = (output as any).color_off = getApp().canvas.default_connection_color_byType.CONDITIONING;
         }
     },
 
-    getExtraMenuOptions(this: PromptNode, canvas: LGraphCanvas, options: IContextMenuItem[]) {
+    getExtraMenuOptions(this: PromptNode, _canvas: LGraphCanvas, options: IContextMenuItem[]) {
         const app = getApp();
         const promptColors = app.extensionManager.setting.get("drawthings.node.color_prompts")
         options.push(
             ...[
                 null,
                 {
-                    content: (promptColors ? "✓ " : "") + "Change colors when connections change",
+                    content: `${promptColors ? "✓ " : ""}Change colors when connections change`,
                     callback: async () => {
                         try {
-                            await app.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
+                            app.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
                         } catch (error) {
                             console.error(`Error changing setting: ${error}`);
                         }

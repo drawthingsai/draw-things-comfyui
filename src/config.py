@@ -1,9 +1,19 @@
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 
 from .generated.config_generated import ControlT, LoRAT, GenerationConfigurationT
 from .data_types import Config, ControlNetInfo, DrawThingsLists
+
+
+with Path(__file__).with_name("modelVersions.json").open(encoding="utf-8") as file:
+    _MODEL_VERSIONS = {
+        version: model
+        for model in json.load(file)
+        for version in [model["version"], *model.get("aliases", [])]
+    }
 
 
 def round_by_64(x):
@@ -28,84 +38,53 @@ def all_in(list, *args):
 class ModelVersion:
     def __init__(self, version):
         self.version = version
+        model = _MODEL_VERSIONS.get(version, {})
+        self.features = model.get("features", [])
+        self._num_frames_step = model.get("numFramesStep", 4)
+
+    @property
+    def cfg_zero(self):
+        return "cfgZero" in self.features
 
     @property
     def res_dpt_shift(self):
-        return self.version in [
-            "flux1",
-            "sd3",
-            "hidream_i1",
-            "qwen_image",
-            "z_image",
-            "flux2",
-            "flux2_4b",
-            "flux2_9b",
-        ]
+        return "resolutionDependentShift" in self.features
 
     @property
     def video(self):
-        return self.version in [
-            "hunyuan_video",
-            "wan_v2.1_1.3b",
-            "wan_v2.1_14b",
-            "svd_i2v",
-            "ltx2",
-            "ltx2_3",
-            "ltx2.3",
-        ]
+        return "numFrames" in self.features
 
     @property
     def num_frames_step(self):
-        if self.version in ["svd_i2v"]:
-            return 1
-        if self.version in ["ltx2", "ltx2_3", "ltx2.3"]:
-            return 8
-        return 4
+        return self._num_frames_step
 
     @property
     def tea_cache(self):
-        return self.version in [
-            "flux1",
-            "hidream_i1",
-            "wan_v2.1_1.3b",
-            "wan_v2.1_14b",
-            "hunyuan_video",
-        ]
+        return "teaCache" in self.features
 
     @property
     def speed_up(self):
-        return self.version in [
-            "flux1",
-            "hidream_i1",
-            "hunyuan_video",
-            "qwen_image",
-            "flux2",
-            "flux2_4b",
-            "flux2_9b",
-        ]
+        return "guidanceEmbed" in self.features
 
     @property
     def clip_l(self):
-        return self.version in ["flux1", "hidream_i1", "sd3"]
+        return "separateClipL" in self.features
 
     @property
     def open_clip_g(self):
-        return self.version in ["sd3"]
+        return "separateOpenClipG" in self.features
 
     @property
     def svd(self):
-        return self.version in ["svd_i2v"]
+        return "svdOptions" in self.features
 
     @property
     def causal_inference(self):
-        return self.version in ["wan_v2.1_1.3b", "wan_v2.1_14b"]
+        return "causalInference" in self.features
 
     @property
     def sdxl(self):
-        return self.version in [
-            "sdxl_base_v0.9",
-            "sdxl_refiner_v0.9",
-        ]
+        return "sdxlSize" in self.features
 
 
 class CNetType:
@@ -295,9 +274,9 @@ def apply_common(config: Config, configT: GenerationConfigurationT):
 
 def apply_conditional(config: Config, configT: GenerationConfigurationT):
     model = ModelVersion(config.get("version"))
-    if config.get("cfg_zero_star"):
+    if model.cfg_zero and config.get("cfg_zero_star"):
         configT.cfgZeroStar = True
-        configT.cfgZeroInitSteps = config.get("cfg_zero_star_init_steps")
+        configT.cfgZeroInitSteps = config.get("cfg_zero_star_init_steps") or 0
 
     if config.get("sampler_name") == "TCD":
         if "stochastic_sampling_gamma" in config:
@@ -404,5 +383,3 @@ def apply_conditional(config: Config, configT: GenerationConfigurationT):
             configT.originalImageWidth = config["width"]
             configT.targetImageWidth = config["width"]
             configT.negativeOriginalImageWidth = config["width"] // 2
-
-    # stochastic_sampling_gamma

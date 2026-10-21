@@ -1,7 +1,7 @@
+import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 import { findServerNodes, restoreModelSelections, updateServerConnection } from "./models.js";
+import type { ComfyExtension } from "./types.js";
 import { updateProto } from "./util.js";
-import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
-import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
 
 export const dtModelNodeTypes = [
 	"DrawThingsSampler",
@@ -16,7 +16,7 @@ export const dtServerNodeTypes = ["DrawThingsSampler"];
 const extension: ComfyExtension = {
 	name: "modelNodes",
 
-	beforeRegisterNodeDef: (nodeType, nodeData, app) => {
+	beforeRegisterNodeDef: (nodeType, _nodeData, _app) => {
 		if (dtModelNodeTypes.includes((nodeType as any).comfyClass)) {
 			updateProto(nodeType, dtModelNodeProto);
 			if (dtServerNodeTypes.includes((nodeType as any).comfyClass)) {
@@ -143,5 +143,4 @@ const dtServerNodeProto: any = {
 			? this._lastSelectedModel?.[widget.name] : widget?.value;
 		return (selection as any)?.value?.version;
 	},
-
 };

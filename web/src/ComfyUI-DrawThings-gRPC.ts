@@ -1,16 +1,15 @@
-import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
 import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 import { importConfig } from "./configImport.js";
 import { findPropertyPython } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
-import type { DTSampler } from "./types.js";
+import type { ComfyExtension, DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
-import { getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
+import { getApi, getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
 export const nodePackVersion = "1.13.0";
 
-export default {
+const extension: ComfyExtension = {
     name: "core",
 
     getCustomWidgets() {
@@ -80,7 +79,9 @@ export default {
             }
         }
     ]
-} satisfies ComfyExtension;
+};
+
+export default extension
 
 export const samplerProto: Partial<DTSampler> = {
     async onNodeCreated(this: DTSampler & LGraphNode) {
@@ -304,7 +305,7 @@ export const samplerProto: Partial<DTSampler> = {
 };
 
 async function syncSettings(patch?: { show_preview?: boolean; blank_on_error?: boolean }) {
-    const api = window.comfyAPI.api.api;
+    const api = getApi();
     const app = getApp();
 
     const showPreview = patch?.show_preview ?? app.extensionManager.setting.get("drawthings.node.show_preview");

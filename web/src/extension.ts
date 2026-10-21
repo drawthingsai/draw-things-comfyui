@@ -4,7 +4,8 @@ import dtModelNodes from "./dtModelNodes.js"
 import dtPrompt from "./dtPromptNode.js"
 import loraNode from "./lora.js"
 import dtWidgets from "./widgets.js"
-import type { ComfyApp, ComfyExtension } from "@comfyorg/comfyui-frontend-types";
+import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
+import type { ComfyExtension } from "./types.js";
 
 // @ts-ignore
 import { app } from "../../scripts/app.js";
@@ -89,7 +90,8 @@ export function injectStyle() {
     const style = document.createElement("style");
     style.id = ruleId
     style.addEventListener("load", (e) => {
-        style.sheet.insertRule(rule, style.sheet.cssRules.length);
+        const sheet = style.sheet;
+        if (sheet) sheet.insertRule(rule, sheet.cssRules.length);
     })
     document.head.appendChild(style);
 }

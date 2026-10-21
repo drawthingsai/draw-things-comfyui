@@ -1,8 +1,10 @@
 import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 import type { ComboWidget, IWidget, LGraph, LGraphNode } from "@comfyorg/litegraph";
-import { modelVersions } from "./modelVersions";
+import modelVersions from "../../src/modelVersions.json";
 import { combinedModelsResponseKeys, type CombinedModelsResponse } from "./modelsTypes";
-import { getApp, getLiteGraph } from "./util";
+import { getApi, getApp, getLiteGraph } from "./util";
+
+type ComfyWidgetConstructor = ComfyApp["widgets"][string];
 
 export interface DTModelNode extends LGraphNode {
     isDtServerNode?: boolean;
@@ -243,7 +245,10 @@ export function setModelValue(node: DTModelNode, widget: IWidget, selection: any
     (widget as ComboWidget).setValue(restoreModelLabel(selection), { node, canvas, e: undefined } as any);
 }
 
-export function DtModelTypeHandler(node: DTModelNode, inputName: string, inputData: any, app: ComfyApp) {
+export const DtModelTypeHandler: ComfyWidgetConstructor = (comfyNode, inputName, inputData) => {
+    // ComfyUI bundles separate LiteGraph declarations with different private members.
+    // Adapt node and widget types only at this boundary; they share the runtime instance.
+    const node = comfyNode as unknown as DTModelNode;
     const LiteGraph = getLiteGraph();
     const type: string = inputData[1].model_type;
     const isPrompt = type === "textualInversions";
@@ -316,25 +321,29 @@ export function DtModelTypeHandler(node: DTModelNode, inputName: string, inputDa
             }
             if (!items.length) items.push({ content: "No models available", disabled: true });
         } catch (error) {
-            disconnected = error instanceof ConnectionError;
-            items = disconnected ? [
-                { content: "Not connected", disabled: true },
-                { content: error.message, disabled: true },
-            ] : [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+            if (error instanceof ConnectionError) {
+                disconnected = true;
+                items = [
+                    { content: "Not connected", disabled: true },
+                    { content: error.message, disabled: true },
+                ];
+            } else {
+                items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+            }
         }
         if (!current() || !menu.root?.isConnected) { menu.close(); return; }
         menu.close();
         open(disconnected ? items : [isPrompt ? "..." : "(None selected)", ...items]);
     };
-    return { widget };
-}
+    return { widget: widget as unknown as ReturnType<ComfyWidgetConstructor>["widget"] };
+};
 
 export async function getFiles(server: string, port: number | string, useTls: boolean) {
     const body = new FormData();
     body.append("server", server);
     body.append("port", String(port));
     body.append("use_tls", String(useTls));
-    return window.comfyAPI.api.api.fetchApi("/dt_grpc/files_info", { method: "POST", body });
+    return getApi().fetchApi("/dt_grpc/files_info", { method: "POST", body });
 }
 
 const modelInfoStore = new Map<string, ModelInfo>();
@@ -365,7 +374,7 @@ let combinedCache: CombinedModelsResponse | undefined;
 async function getCombinedModels(): Promise<CombinedModelsResponse> {
     if (combinedCache) return combinedCache;
     if (!combinedLoad) combinedLoad = (async () => {
-        const response = await window.comfyAPI.api.api.fetchApi("/dt_grpc/combined_models");
+        const response = await getApi().fetchApi("/dt_grpc/combined_models");
         if (!response.ok) throw new Error("Couldn't retrieve model metadata");
         const combined: CombinedModelsResponse = await response.json();
         combinedCache = combined;
@@ -389,7 +398,7 @@ function allModelsCatalog(combined: CombinedModelsResponse): ModelInfo {
 async function getBridgeModels(): Promise<ModelInfo> {
     if (bridgeCache) return bridgeCatalog(bridgeCache);
     if (!bridgeLoad) bridgeLoad = (async () => {
-        const api = window.comfyAPI.api.api;
+        const api = getApi();
         const [filesResponse, combined] = await Promise.all([
             api.fetchApi("/dt_grpc/bridge_models"), getCombinedModels(),
         ]);
@@ -422,7 +431,7 @@ function bridgeCatalog(combined: CombinedModelsResponse): ModelInfo {
 }
 
 function getVersionAbbrev(version: string) {
-    return modelVersions.find((model) => model.version === version)?.tag ?? version;
+    return modelVersions.find((model) => model.version === version || model.aliases?.includes(version))?.tag ?? version;
 }
 
 function testHack(models: ModelInfo) {

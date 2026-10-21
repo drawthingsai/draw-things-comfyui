@@ -1,7 +1,7 @@
-import { app as app$1 } from '../../scripts/app.js';
+import { app } from '../../scripts/app.js';
 
-// web/src/modelVersions.ts
-var modelVersions = [
+// src/modelVersions.json
+var modelVersions_default = [
   {
     version: "auraflow",
     name: "AuraFlow",
@@ -57,7 +57,8 @@ var modelVersions = [
     version: "hunyuan_video",
     name: "HunyuanVideo",
     tag: "Hun",
-    features: ["cfgZero", "numFrames", "compressionArtifacts", "teaCache", "guidanceEmbed"]
+    features: ["cfgZero", "numFrames", "compressionArtifacts", "teaCache", "guidanceEmbed"],
+    numFramesStep: 4
   },
   {
     version: "kandinsky2.1",
@@ -69,13 +70,16 @@ var modelVersions = [
     version: "ltx2",
     name: "LTX-2",
     tag: "LTX2",
-    features: ["cfgZero", "numFrames", "compressionArtifacts"]
+    features: ["cfgZero", "numFrames", "compressionArtifacts"],
+    numFramesStep: 8
   },
   {
     version: "ltx2.3",
     name: "LTX-2.3",
     tag: "LTX2.3",
-    features: []
+    features: ["numFrames"],
+    aliases: ["ltx2_3"],
+    numFramesStep: 8
   },
   {
     version: "pixart",
@@ -137,7 +141,8 @@ var modelVersions = [
     version: "svd_i2v",
     name: "Stable Video Diffusion Image-to-Video",
     tag: "SVD",
-    features: ["numFrames", "svdOptions"]
+    features: ["numFrames", "svdOptions"],
+    numFramesStep: 1
   },
   {
     version: "v1",
@@ -155,31 +160,22 @@ var modelVersions = [
     version: "wan_v2.1_1.3b",
     name: "Wan 2.1 [1.3B]",
     tag: "Wan",
-    features: [
-      "numFrames",
-      "cfgZero",
-      "causalInference",
-      "compressionArtifacts",
-      "teaCache"
-    ]
+    features: ["numFrames", "cfgZero", "causalInference", "compressionArtifacts", "teaCache"],
+    numFramesStep: 4
   },
   {
     version: "wan_v2.1_14b",
     name: "Wan 2.1 [14B]",
     tag: "Wan",
-    features: [
-      "numFrames",
-      "compressionArtifacts",
-      "cfgZero",
-      "causalInference",
-      "teaCache"
-    ]
+    features: ["numFrames", "compressionArtifacts", "cfgZero", "causalInference", "teaCache"],
+    numFramesStep: 4
   },
   {
     version: "wan_v2.2_5b",
     name: "Wan 2.2 [5B]",
     tag: "Wan",
-    features: ["numFrames", "cfgZero", "causalInference", "compressionArtifacts"]
+    features: ["numFrames", "cfgZero", "causalInference", "compressionArtifacts"],
+    numFramesStep: 4
   },
   {
     version: "wurstchen_v3.0_stage_c",
@@ -221,7 +217,16 @@ var modelVersions = [
     version: "minimax_h3",
     name: "MiniMax Hailuo 3",
     tag: "MiniMax",
-    features: ["cfgZero", "resolutionDependentShift", "numFrames", "audioShift", "compressionArtifacts", "solAttention", "teaCache"]
+    features: [
+      "cfgZero",
+      "resolutionDependentShift",
+      "numFrames",
+      "audioShift",
+      "compressionArtifacts",
+      "solAttention",
+      "teaCache"
+    ],
+    numFramesStep: 4
   },
   {
     version: "qwen_image_2.1",
@@ -294,8 +299,14 @@ function findWidgetByName(node, name) {
 function getApp() {
   return window.comfyAPI.app.app;
 }
+function getApi() {
+  return window.comfyAPI.api.api;
+}
 function getLiteGraph() {
   return window.LiteGraph;
+}
+function getLGraphCanvas() {
+  return window.LGraphCanvas;
 }
 function plainWidgetValues(node) {
   const keyed = {};
@@ -515,7 +526,8 @@ function setModelValue(node, widget, selection) {
   const canvas = getApp().canvas;
   widget.setValue(restoreModelLabel(selection), { node, canvas, e: void 0 });
 }
-function DtModelTypeHandler(node, inputName, inputData, app4) {
+var DtModelTypeHandler = (comfyNode, inputName, inputData) => {
+  const node = comfyNode;
   const LiteGraph = getLiteGraph();
   const type = inputData[1].model_type;
   const isPrompt = type === "textualInversions";
@@ -590,11 +602,15 @@ function DtModelTypeHandler(node, inputName, inputData, app4) {
       }
       if (!items.length) items.push({ content: "No models available", disabled: true });
     } catch (error) {
-      disconnected = error instanceof ConnectionError;
-      items = disconnected ? [
-        { content: "Not connected", disabled: true },
-        { content: error.message, disabled: true }
-      ] : [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+      if (error instanceof ConnectionError) {
+        disconnected = true;
+        items = [
+          { content: "Not connected", disabled: true },
+          { content: error.message, disabled: true }
+        ];
+      } else {
+        items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+      }
     }
     if (!current() || !menu.root?.isConnected) {
       menu.close();
@@ -604,13 +620,13 @@ function DtModelTypeHandler(node, inputName, inputData, app4) {
     open(disconnected ? items : [isPrompt ? "..." : "(None selected)", ...items]);
   };
   return { widget };
-}
+};
 async function getFiles(server, port, useTls) {
   const body = new FormData();
   body.append("server", server);
   body.append("port", String(port));
   body.append("use_tls", String(useTls));
-  return window.comfyAPI.api.api.fetchApi("/dt_grpc/files_info", { method: "POST", body });
+  return getApi().fetchApi("/dt_grpc/files_info", { method: "POST", body });
 }
 var modelInfoStore = /* @__PURE__ */ new Map();
 var modelInfoLoads = /* @__PURE__ */ new Map();
@@ -642,7 +658,7 @@ var combinedCache;
 async function getCombinedModels() {
   if (combinedCache) return combinedCache;
   if (!combinedLoad) combinedLoad = (async () => {
-    const response = await window.comfyAPI.api.api.fetchApi("/dt_grpc/combined_models");
+    const response = await getApi().fetchApi("/dt_grpc/combined_models");
     if (!response.ok) throw new Error("Couldn't retrieve model metadata");
     const combined = await response.json();
     combinedCache = combined;
@@ -667,7 +683,7 @@ function allModelsCatalog(combined) {
 async function getBridgeModels() {
   if (bridgeCache) return bridgeCatalog(bridgeCache);
   if (!bridgeLoad) bridgeLoad = (async () => {
-    const api = window.comfyAPI.api.api;
+    const api = getApi();
     const [filesResponse, combined2] = await Promise.all([
       api.fetchApi("/dt_grpc/bridge_models"),
       getCombinedModels()
@@ -703,7 +719,7 @@ function bridgeCatalog(combined) {
   };
 }
 function getVersionAbbrev(version) {
-  return modelVersions.find((model) => model.version === version)?.tag ?? version;
+  return modelVersions_default.find((model) => model.version === version || model.aliases?.includes(version))?.tag ?? version;
 }
 function testHack(models) {
   try {
@@ -1291,7 +1307,6 @@ function getLoraSlotWidgets(node, loraIndex) {
 }
 
 // web/src/widgets.ts
-var app = window.comfyAPI.app.app;
 var basicWidgets = [
   "server",
   "port",
@@ -1387,20 +1402,24 @@ function showWidget(node, widgetName, show = false, suffix = "") {
   widget.computeSize = show ? origProps[widget.name].origComputeSize : () => [0, -4];
   widget.computedHeight = show ? origProps[widget.name].origComputedHeight : 0;
   widget.hidden = !show;
-  widget.linkedWidgets?.forEach((w) => showWidget(node, w, show, ":" + widget.name));
+  widget.linkedWidgets?.forEach((w) => {
+    showWidget(node, w, show, `:${widget.name}`);
+  });
   const minHeight = node.computeSize()[1];
   if (minHeight > node.size[1]) node.setSize([node.size[0], minHeight]);
-  if (app.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
+  if (getApp().extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
     node.setSize([node.size[0], minHeight]);
-  setTimeout(() => app.canvas.setDirty(true, true), 10);
+  setTimeout(() => getApp().canvas.setDirty(true, true), 10);
 }
 function showWidgets(node, show, ...widgetNames) {
-  widgetNames.forEach((w) => showWidget(node, w, show));
+  widgetNames.forEach((w) => {
+    showWidget(node, w, show);
+  });
 }
 function updateSamplerWidgets(node) {
   const selectedModel = findWidgetByName(node, "model")?.value;
   const version = selectedModel?.value?.version ?? node?._lastSelectedModel?.model?.value?.version;
-  const features = modelVersions.find((model) => model.version === version)?.features ?? [];
+  const features = modelVersions_default.find((model) => model.version === version || model.aliases?.includes(version))?.features ?? [];
   const settings = findWidgetByName(node, "settings")?.value;
   const isBasic = settings === "Basic" || settings === "All";
   const isAdvanced = settings === "Advanced" || settings === "All";
@@ -1481,14 +1500,14 @@ var extension = {
       category: ["Draw Things", "Nodes", "Keep node shrunk"],
       onChange: (newVal, oldVal) => {
         if (oldVal === false && newVal === true) {
-          app.graph.nodes.filter((n) => n.type === "DrawThingsSampler").forEach((n) => {
+          getApp().graph.nodes.filter((n) => n.type === "DrawThingsSampler").forEach((n) => {
             setTimeout(() => n.updateDynamicWidgets(), 10);
           });
         }
       }
     }
   ],
-  async beforeRegisterNodeDef(nodeType, nodeData, app4) {
+  async beforeRegisterNodeDef(nodeType, nodeData, app3) {
     if (nodeType.comfyClass === "DrawThingsSampler") {
       updateProto(nodeType, samplerWidgetsProto);
     }
@@ -1502,17 +1521,17 @@ var samplerWidgetsProto = {
   onNodeCreated() {
     this.updateDynamicWidgets();
   },
-  onConfigure(data) {
+  onConfigure(_data) {
     this.updateDynamicWidgets();
   },
   onInputAdded(input) {
     if (input.widget) updateInput(input, this);
   },
-  onWidgetChanged(name, value, old_Value, widget) {
+  onWidgetChanged(name, _value, _old_Value, _widget) {
     this.updateDynamicWidgets();
     if (name === "res_dpt_shift") {
       const version = this.getModelVersion();
-      const features = modelVersions.find((model) => model.version === version)?.features ?? [];
+      const features = modelVersions_default.find((model) => model.version === version || model.aliases?.includes(version))?.features ?? [];
       const resDPTShiftAvailable = features.includes("resolutionDependentShift");
       const resDptShiftEnabled = resDPTShiftAvailable && findWidgetByName(this, "res_dpt_shift")?.value;
       if (resDptShiftEnabled) {
@@ -1710,7 +1729,7 @@ async function checkVersion() {
   const latestAnnouncement = announcements[announcements.length - 1];
   if (!announced.includes(latestAnnouncement.version)) {
     await saveAnnounced(latestAnnouncement.version);
-    app$1.extensionManager.toast.add({
+    app.extensionManager.toast.add({
       summary: latestAnnouncement.title,
       detail: latestAnnouncement.detail,
       severity: "success",
@@ -1727,11 +1746,11 @@ async function saveAnnounced(version) {
   if (!data?.announced || !Array.isArray(data?.announced))
     data.announced = [];
   data.announced.push(version);
-  await app$1.api.storeUserData(dataPath, data);
+  await app.api.storeUserData(dataPath, data);
 }
 async function getUserData() {
   try {
-    const response = await app$1.api.getUserData(dataPath);
+    const response = await app.api.getUserData(dataPath);
     if (response.status === 200) {
       const data2 = await response.json();
       return data2;
@@ -1807,7 +1826,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
 var nodePackVersion = "1.13.0";
-var ComfyUI_DrawThings_gRPC_default = {
+var extension3 = {
   name: "core",
   getCustomWidgets() {
     return {
@@ -1830,11 +1849,11 @@ var ComfyUI_DrawThings_gRPC_default = {
       updateProto(nodeType, samplerProto);
     }
   },
-  async setup(app4) {
+  async setup(app3) {
     await syncSettings();
-    setCallback(app4.api, "interrupt", async (_e) => {
-      if (app4.rootGraph?.nodes.some((n) => n.type === "DrawThingsSampler")) {
-        await app4.api.fetchApi(`/dt_grpc/interrupt`, {
+    setCallback(app3.api, "interrupt", async (_e) => {
+      if (app3.rootGraph?.nodes.some((n) => n.type === "DrawThingsSampler")) {
+        await app3.api.fetchApi(`/dt_grpc/interrupt`, {
           method: "POST"
         });
       }
@@ -1864,19 +1883,20 @@ var ComfyUI_DrawThings_gRPC_default = {
     }
   ]
 };
+var ComfyUI_DrawThings_gRPC_default = extension3;
 var samplerProto = {
   async onNodeCreated() {
-    const app4 = getApp();
+    const app3 = getApp();
     const inputPos = this.inputs?.find(
       (inputPos2) => inputPos2.name === "positive"
     );
     const inputNeg = this.inputs?.find(
       (inputNeg2) => inputNeg2.name === "negative"
     );
-    if (!app4.canvas || !inputPos || !inputNeg) return;
-    inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app4.canvas.default_connection_color_byType.CONDITIONING;
-    app4.canvas.default_connection_color_byType.DT_LORA = app4.canvas.default_connection_color_byType.MODEL;
-    app4.canvas.default_connection_color_byType.DT_CNET = app4.canvas.default_connection_color_byType.CONTROL_NET;
+    if (!app3.canvas || !inputPos || !inputNeg) return;
+    inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app3.canvas.default_connection_color_byType.CONDITIONING;
+    app3.canvas.default_connection_color_byType.DT_LORA = app3.canvas.default_connection_color_byType.MODEL;
+    app3.canvas.default_connection_color_byType.DT_CNET = app3.canvas.default_connection_color_byType.CONTROL_NET;
     setTimeout(() => checkVersion(), 2e3);
   },
   onSerialize(serialised) {
@@ -1951,20 +1971,20 @@ ${list.join("\n")}`;
     return inputs;
   },
   getExtraMenuOptions(_canvas, options) {
-    const app4 = getApp();
-    const showPreview = app4.extensionManager.setting.get(
+    const app3 = getApp();
+    const showPreview = app3.extensionManager.setting.get(
       "drawthings.node.show_preview"
     );
-    const keepNodeShrunk = app4.extensionManager.setting.get(
+    const keepNodeShrunk = app3.extensionManager.setting.get(
       "drawthings.node.keep_shrunk"
     );
-    const bridgeMode = app4.extensionManager.setting.get(
+    const bridgeMode = app3.extensionManager.setting.get(
       "drawthings.bridge_mode.enabled"
     );
-    const bridgeCommunity = app4.extensionManager.setting.get(
+    const bridgeCommunity = app3.extensionManager.setting.get(
       "drawthings.bridge_mode.community"
     );
-    const bridgeUncurated = app4.extensionManager.setting.get(
+    const bridgeUncurated = app3.extensionManager.setting.get(
       "drawthings.bridge_mode.uncurated"
     );
     options.push(null);
@@ -1992,7 +2012,7 @@ ${list.join("\n")}`;
     options.push({
       content: (showPreview ? "\u2713 " : "") + "Show preview while generating",
       callback: () => {
-        app4.extensionManager.setting.set(
+        app3.extensionManager.setting.set(
           "drawthings.node.show_preview",
           !showPreview
         );
@@ -2001,7 +2021,7 @@ ${list.join("\n")}`;
     options.push({
       content: (keepNodeShrunk ? "\u2713 " : "") + "Keep node shrunk when widgets change",
       callback: () => {
-        app4.extensionManager.setting.set(
+        app3.extensionManager.setting.set(
           "drawthings.node.keep_shrunk",
           !keepNodeShrunk
         );
@@ -2011,7 +2031,7 @@ ${list.join("\n")}`;
     options.push({
       content: `${bridgeMode ? "\u2713 " : ""}Use bridge mode`,
       callback: () => {
-        app4.extensionManager.setting.set(
+        app3.extensionManager.setting.set(
           "drawthings.bridge_mode.enabled",
           !bridgeMode
         );
@@ -2021,7 +2041,7 @@ ${list.join("\n")}`;
       options.push({
         content: `${bridgeCommunity ? "\u2713 " : ""}Show community models`,
         callback: () => {
-          app4.extensionManager.setting.set(
+          app3.extensionManager.setting.set(
             "drawthings.bridge_mode.community",
             !bridgeCommunity
           );
@@ -2030,7 +2050,7 @@ ${list.join("\n")}`;
       options.push({
         content: `${bridgeUncurated ? "\u2713 " : ""}Show uncurated models`,
         callback: () => {
-          app4.extensionManager.setting.set(
+          app3.extensionManager.setting.set(
             "drawthings.bridge_mode.uncurated",
             !bridgeUncurated
           );
@@ -2042,10 +2062,10 @@ ${list.join("\n")}`;
   }
 };
 async function syncSettings(patch) {
-  const api = window.comfyAPI.api.api;
-  const app4 = getApp();
-  const showPreview = patch?.show_preview ?? app4.extensionManager.setting.get("drawthings.node.show_preview");
-  const blankOnError = patch?.blank_on_error ?? app4.extensionManager.setting.get("drawthings.node.blank_on_error");
+  const api = getApi();
+  const app3 = getApp();
+  const showPreview = patch?.show_preview ?? app3.extensionManager.setting.get("drawthings.node.show_preview");
+  const blankOnError = patch?.blank_on_error ?? app3.extensionManager.setting.get("drawthings.node.blank_on_error");
   const body = new FormData();
   body.append("show_preview", String(showPreview));
   body.append("blank_on_error", String(blankOnError));
@@ -2130,15 +2150,15 @@ var controlNetProto = {
     this.updateDynamicWidgets();
   }
 };
-var extension3 = {
+var extension4 = {
   name: "controlNetNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app4) {
+  beforeRegisterNodeDef(nodeType, nodeData, app3) {
     if (nodeType.comfyClass === "DrawThingsControlNet") {
       updateProto(nodeType, controlNetProto);
     }
   }
 };
-var controlnet_default = extension3;
+var controlnet_default = extension4;
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
@@ -2153,9 +2173,9 @@ var dtModelNodeTypes = [
   "DrawThingsPrompt"
 ];
 var dtServerNodeTypes = ["DrawThingsSampler"];
-var extension4 = {
+var extension5 = {
   name: "modelNodes",
-  beforeRegisterNodeDef: (nodeType, nodeData, app4) => {
+  beforeRegisterNodeDef: (nodeType, _nodeData, _app) => {
     if (dtModelNodeTypes.includes(nodeType.comfyClass)) {
       updateProto(nodeType, dtModelNodeProto);
       if (dtServerNodeTypes.includes(nodeType.comfyClass)) {
@@ -2193,7 +2213,7 @@ var extension4 = {
     }
   ]
 };
-var dtModelNodes_default = extension4;
+var dtModelNodes_default = extension5;
 var dtModelNodeProto = {
   saveSelectedModels() {
     const modelWidgets = this.widgets?.filter((w) => w.options?.modelType) || [];
@@ -2264,7 +2284,7 @@ var dtServerNodeProto = {
 
 // web/src/dtPromptNode.ts
 var promptProto = {
-  onWidgetChanged(name, value, old_Value, widget) {
+  onWidgetChanged(name, value, _oldValue, widget) {
     if (name === "insert_textual_inversion") {
       const keyword = value?.value?.keyword;
       if (!keyword) return;
@@ -2281,7 +2301,7 @@ var promptProto = {
       widget.value = "...";
     }
   },
-  onConnectionsChange(type, index, isConnected, link_info, inputOrOutput) {
+  onConnectionsChange(_type, _index, _isConnected, _link_info, _inputOrOutput) {
     if (getApp().extensionManager.setting.get("drawthings.node.color_prompts") === false) return;
     let isPositive = false;
     let isNegative = false;
@@ -2296,37 +2316,38 @@ var promptProto = {
         if (input?.name === "negative") isNegative = true;
       }
     }
+    const LGraphCanvas = getLGraphCanvas();
     if (isPositive && isNegative) {
-      this.color = window.LGraphCanvas.node_colors.purple.color;
-      this.bgcolor = window.LGraphCanvas.node_colors.purple.bgcolor;
+      this.color = LGraphCanvas.node_colors.purple.color;
+      this.bgcolor = LGraphCanvas.node_colors.purple.bgcolor;
     } else if (isPositive) {
-      this.color = window.LGraphCanvas.node_colors.green.color;
-      this.bgcolor = window.LGraphCanvas.node_colors.green.bgcolor;
+      this.color = LGraphCanvas.node_colors.green.color;
+      this.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
     } else if (isNegative) {
-      this.color = window.LGraphCanvas.node_colors.red.color;
-      this.bgcolor = window.LGraphCanvas.node_colors.red.bgcolor;
+      this.color = LGraphCanvas.node_colors.red.color;
+      this.bgcolor = LGraphCanvas.node_colors.red.bgcolor;
     } else {
       this.color = void 0;
       this.bgcolor = void 0;
     }
   },
   onNodeCreated() {
-    const output = this.outputs?.find((output2) => output2.name == "PROMPT");
+    const output = this.outputs?.find((output2) => output2.name === "PROMPT");
     if (output) {
-      output.color_on = output.color_off = getApp().canvas.default_connection_color_byType["CONDITIONING"];
+      output.color_on = output.color_off = getApp().canvas.default_connection_color_byType.CONDITIONING;
     }
   },
-  getExtraMenuOptions(canvas, options) {
-    const app4 = getApp();
-    const promptColors = app4.extensionManager.setting.get("drawthings.node.color_prompts");
+  getExtraMenuOptions(_canvas, options) {
+    const app3 = getApp();
+    const promptColors = app3.extensionManager.setting.get("drawthings.node.color_prompts");
     options.push(
       ...[
         null,
         {
-          content: (promptColors ? "\u2713 " : "") + "Change colors when connections change",
+          content: `${promptColors ? "\u2713 " : ""}Change colors when connections change`,
           callback: async () => {
             try {
-              await app4.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
+              app3.extensionManager.setting.set("drawthings.node.color_prompts", !promptColors);
             } catch (error) {
               console.error(`Error changing setting: ${error}`);
             }
@@ -2337,9 +2358,9 @@ var promptProto = {
     );
   }
 };
-var extension5 = {
+var extension6 = {
   name: "promptNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app4) {
+  beforeRegisterNodeDef(nodeType, nodeData, app3) {
     if (nodeType.comfyClass === "DrawThingsPrompt") {
       updateProto(nodeType, promptProto);
     }
@@ -2361,7 +2382,7 @@ var extension5 = {
     }
   ]
 };
-var dtPromptNode_default = extension5;
+var dtPromptNode_default = extension6;
 var modules = [
   ComfyUI_DrawThings_gRPC_default,
   dtPromptNode_default,
@@ -2371,7 +2392,7 @@ var modules = [
   lora_default,
   controlnet_default
 ];
-app$1.registerExtension({
+app.registerExtension({
   name: "Draw Things for ComfyUI",
   getCustomWidgets(...args) {
     return ComfyUI_DrawThings_gRPC_default.getCustomWidgets ? ComfyUI_DrawThings_gRPC_default.getCustomWidgets.apply(ComfyUI_DrawThings_gRPC_default, args) : {};
@@ -2439,7 +2460,8 @@ function injectStyle() {
   const style = document.createElement("style");
   style.id = ruleId;
   style.addEventListener("load", (e) => {
-    style.sheet.insertRule(rule, style.sheet.cssRules.length);
+    const sheet = style.sheet;
+    if (sheet) sheet.insertRule(rule, sheet.cssRules.length);
   });
   document.head.appendChild(style);
 }

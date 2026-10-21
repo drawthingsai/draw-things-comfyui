@@ -1,5 +1,6 @@
 include LICENSE
 include README.md
+include src/modelVersions.json
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

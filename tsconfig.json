@@ -19,6 +19,5 @@
     },
     "include": [
         "./web/src/**/*",
-        "./web/src/types.d.ts"
     ]
 }

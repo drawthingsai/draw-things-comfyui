@@ -18,6 +18,15 @@ function sampler(id = 1, port = 7859, version: string | undefined = "v1"): any {
 }
 function reset(nodes: any[]) { graph.nodes = nodes; settings.clear(); }
 
+test("shared model metadata labels canonical versions and aliases", () => {
+    for (const [version, tag] of [
+        ["v1", "SD"], ["sd3_large", "SD3L"], ["minimax_h3", "MiniMax"],
+        ["ltx2.3", "LTX2.3"], ["ltx2_3", "LTX2.3"], ["unknown", "unknown"],
+    ]) {
+        assert.equal(getMenuItem(model("Example", version)).content, `Example (${tag})`);
+    }
+});
+
 test("menu query sorts copies and unions downstream versions without dropping metadata", async () => {
     const a = sampler(), b = sampler(2, 7860, "flux1");
     const node: any = { id: 3, graph, outputs: [{ links: [1, 2] }] };

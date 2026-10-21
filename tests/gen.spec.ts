@@ -10,6 +10,8 @@ import fse from "fs-extra";
 import { compareVectors, imageToVectorBase64 } from "./util";
 import { vecs } from "./vector";
 
+test.skip(() => !process.env.RUN_GEN_TESTS)
+
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 

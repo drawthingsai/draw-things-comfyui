@@ -92,6 +92,8 @@ class Config(TypedDict, total=False):
     seed_mode: str
     steps: int
     cfg: float
+    cfg_zero_star: bool
+    cfg_zero_star_init_steps: int
     strength: float
     sampler_name: str
     batch_count: int
@@ -178,7 +180,7 @@ class Config(TypedDict, total=False):
     # stage_2_steps: int
     # stage_2_cfg: int
     # stage_2_shift: int
-    stochastic_sampling_gamma: int
+    stochastic_sampling_gamma: float
     # t5_text_encoder: int
     # separate_t5: int
     # t5_text: int

@@ -1,11 +1,8 @@
+import type { INodeInputSlot, LGraphNode } from '@comfyorg/litegraph'
+import modelVersions from "../../src/modelVersions.json";
 import { calcShift } from "./configProperties.js"
-import { findWidgetByName, updateProto } from "./util.js"
-import type { INodeInputSlot, LGraphNode, IWidget } from '@comfyorg/litegraph'
-import type { ComfyApp, ComfyExtension } from "@comfyorg/comfyui-frontend-types";
-import { modelVersions } from "./modelVersions.js";
-
-// @ts-ignore
-const app = window.comfyAPI.app.app;
+import { findWidgetByName, getApp, updateProto } from "./util.js"
+import { ComfyExtension } from './types';
 
 const basicWidgets = [
     "server",
@@ -119,25 +116,25 @@ export function showWidget(node: LGraphNode, widgetName: string, show = false, s
         ; (widget as any).computedHeight = show ? origProps[widget.name].origComputedHeight : 0
         ; (widget as any).hidden = !show
 
-        ; (widget as any).linkedWidgets?.forEach((w: any) => showWidget(node, w, show, ":" + widget.name))
+        ; (widget as any).linkedWidgets?.forEach((w: any) => { showWidget(node, w, show, `:${widget.name}`) })
 
     const minHeight = node.computeSize()[1]
     if (minHeight > node.size[1]) node.setSize([node.size[0], minHeight])
 
-    if (app.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
+    if (getApp().extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
         node.setSize([node.size[0], minHeight])
 
-    setTimeout(() => app.canvas.setDirty(true, true), 10)
+    setTimeout(() => getApp().canvas.setDirty(true, true), 10)
 }
 
 function showWidgets(node: LGraphNode, show: boolean, ...widgetNames: string[]) {
-    widgetNames.forEach((w) => showWidget(node, w, show))
+    widgetNames.forEach((w) => { showWidget(node, w, show) })
 }
 
 function updateSamplerWidgets(node: any) {
     const selectedModel = findWidgetByName(node, "model")?.value
     const version = (selectedModel as any)?.value?.version ?? node?._lastSelectedModel?.model?.value?.version
-    const features = modelVersions.find((model) => model.version === version)?.features ?? [];
+    const features = modelVersions.find((model) => model.version === version || model.aliases?.includes(version))?.features ?? [];
 
     const settings = findWidgetByName(node, "settings")?.value
     const isBasic = settings === "Basic" || settings === "All"
@@ -240,7 +237,7 @@ const extension: ComfyExtension = {
             category: ["Draw Things", "Nodes", "Keep node shrunk"],
             onChange: (newVal: any, oldVal: any) => {
                 if (oldVal === false && newVal === true) {
-                    app.graph.nodes
+                    getApp().graph.nodes
                         .filter((n: any) => n.type === "DrawThingsSampler")
                         .forEach((n: any) => {
                             setTimeout(() => n.updateDynamicWidgets(), 10)
@@ -266,18 +263,18 @@ const samplerWidgetsProto = {
     onNodeCreated(this: any) {
         this.updateDynamicWidgets()
     },
-    onConfigure(this: any, data: any) {
+    onConfigure(this: any, _data: any) {
         this.updateDynamicWidgets()
     },
     onInputAdded(this: any, input: any) {
         if (input.widget) updateInput(input, this)
     },
-    onWidgetChanged(this: any, name: string, value: any, old_Value: any, widget: any) {
+    onWidgetChanged(this: any, name: string, _value: any, _old_Value: any, _widget: any) {
         this.updateDynamicWidgets()
 
         if (name === "res_dpt_shift") {
             const version = this.getModelVersion()
-            const features = modelVersions.find((model) => model.version === version)?.features ?? []
+            const features = modelVersions.find((model) => model.version === version || model.aliases?.includes(version))?.features ?? []
             const resDPTShiftAvailable = features.includes("resolutionDependentShift")
             const resDptShiftEnabled = resDPTShiftAvailable && findWidgetByName(this, "res_dpt_shift")?.value
 

@@ -5,7 +5,7 @@ import type {
 } from "@comfyorg/litegraph/dist/types/widgets";
 import { findPropertiesByNode, findPropertyJson } from "./configProperties.js";
 import { modelService, setModelValue } from "./models.js";
-import type { DTSampler } from "./types";
+import type { DTSampler } from "./types.js";
 import { getApp } from "./util.js";
 
 export async function importConfig(sampler: DTSampler) {
