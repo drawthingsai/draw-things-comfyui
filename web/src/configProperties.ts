@@ -145,8 +145,13 @@ export const propertyData: [fbs: string, comfy: string | null, nodeType: string 
     ['refiner_model', 'refiner_model', 'DrawThingsRefiner', 'refinerModel'],
     ['refiner_start', 'refiner_start', 'DrawThingsRefiner', 'refinerStart', 'int', 0.85, 0, 1, 0.01],
 
-    ["cfg_zero_star", "cfg_zero_star", "DrawThingsSampler", "cfgZeroStar", "bool", false],
-    ["cfg_zero_star_init_steps", "cfg_zero_star_init_steps", "DrawThingsSampler", "cfgZeroInitSteps", "int", 0, 0, "ref=steps", 1, "ifTrue=cfgZeroStar"],
+    ['cfg_zero_star', 'cfg_zero_star', 'DrawThingsSampler', 'cfgZeroStar', 'bool', false],
+    ['cfg_zero_star_init_steps', 'cfg_zero_star_init_steps', 'DrawThingsSampler', 'cfgZeroInitSteps', 'int', 0, 0, 'ref=steps', 1, 'ifTrue=cfgZeroStar'],
+
+    ['shift_for_audio', 'shift_for_audio', 'DrawThingsSampler', 'shiftForAudio', 'float', 3.0, 0.1, 12.0, 0.01],
+    ['uses_sol_attention', 'uses_sol_attention', 'DrawThingsSampler', 'usesSolAttention', 'bool', false],
+    ['sol_attention_start', 'sol_attention_start', 'DrawThingsSampler', 'solAttentionStart', 'int', 2, 0, 'ref=steps', 1, 'ifTrue=solAttention'],
+    ['sol_attention_tau', 'sol_attention_tau', 'DrawThingsSampler', 'solAttentionTau', 'float', 0.5, 0.0, 4.0, 0.05, 'ifTrue=solAttention'],
 ]
 // prettier-ignore-end
 
@@ -230,7 +235,7 @@ const importers: Record<string, ImportFunc> = {
             if (shiftWidget && width && height) shiftWidget.value = calcShift(width as number, height as number)
         }
     },
-    causal_inference: function (k, v, w, n, c) {
+    causal_inference: function(k, v, w, n, c) {
         if (Number.isFinite(v)) w.value = v * 4 - 3
         else w.value = 0 // Default value
     },

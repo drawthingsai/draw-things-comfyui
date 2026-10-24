@@ -27,6 +27,10 @@ def convert_response_audio(response_audio, version: str):
     # Add batch dim → [B, C, T]
     waveform = torch.from_numpy(arr).unsqueeze(0)
 
-    sample_rate = 48000 if version in ["ltx2_3", "ltx2.3"] else 24000
+    sample_rate = 24000
+    if version in ["ltx2_3", "ltx2.3"]:
+        sample_rate = 48000
+    if version in ["minimax_h3"]:
+        sample_rate = 32000
 
     return dict(waveform=waveform, sample_rate=sample_rate)

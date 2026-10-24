@@ -86,6 +86,14 @@ class ModelVersion:
     def sdxl(self):
         return "sdxlSize" in self.features
 
+    @property
+    def audio_shift(self):
+        return "audioShift" in self.features
+
+    @property
+    def sol_attention(self):
+        return "solAttention" in self.features
+
 
 class CNetType:
     sdxlTargetBlocks = {
@@ -383,3 +391,14 @@ def apply_conditional(config: Config, configT: GenerationConfigurationT):
             configT.originalImageWidth = config["width"]
             configT.targetImageWidth = config["width"]
             configT.negativeOriginalImageWidth = config["width"] // 2
+
+    if model.audio_shift:
+        if "shift_for_audio" in config:
+            configT.shiftForAudio = config["shift_for_audio"]
+
+    if model.sol_attention and config.get("uses_sol_attention"):
+        configT.usesSolAttention = True
+        if "sol_attention_start" in config:
+            configT.solAttentionStart = config["sol_attention_start"]
+        if "sol_attention_tau" in config:
+            configT.solAttentionTau = config["sol_attention_tau"]

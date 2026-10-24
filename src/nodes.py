@@ -78,6 +78,7 @@ class DrawThingsSampler:
                 # stochastic_sampling_gamma
                 "res_dpt_shift": ("BOOLEAN", { "default": True}),
                 "shift": ("FLOAT", { "default": 1.00, "min": 0.10, "max": 16.00, "step": 0.01, "round": 0.01 },),
+                "shift_for_audio": ("FLOAT", {"default": 3.0, "min": 0.1, "max": 12.0, "step": 0.01, "round": 0.01}),
                 "batch_size": ("INT", { "default": 1, "min": 1, "max": 4, "step": 1}),
                 # refiner
                 "fps": ("INT", { "default": 5, "min": 1, "max": 30, "step": 1}),
@@ -105,6 +106,9 @@ class DrawThingsSampler:
                 "diffusion_tile_width": ("INT", { "default": 512, "min": 128, "max": 2048, "step": 64},),
                 "diffusion_tile_height": ("INT", { "default": 512, "min": 128, "max": 2048, "step": 64},),
                 "diffusion_tile_overlap": ("INT", { "default": 64, "min": 64, "max": 1024, "step": 64},),
+                "uses_sol_attention": ("BOOLEAN", { "default": False}),
+                "sol_attention_start": ("INT", { "default": 2, "min": 0, "max": 150, "step": 1},),
+                "sol_attention_tau": ("FLOAT", { "default": 0.5, "min": 0.0, "max": 4.0, "step": 0.05},),
                 "tea_cache": ("BOOLEAN", { "default": False}),
                 "tea_cache_start": ("INT", { "default": 5, "min": 0, "max": 1000, "step": 1},),
                 "tea_cache_end": ("INT", { "default": 2, "min": -151, "max": 150, "step": 1, "tooltip": "A positive value corresponds to last step tea_cache should be appplied. Use a negative value to specify steps from the end+1. IE: -1 is the last step, -2 is the second to last step, and so on."},),

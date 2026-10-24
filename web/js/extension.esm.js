@@ -245,6 +245,18 @@ var modelVersions_default = [
     name: "SeedVR2 7B",
     tag: "SeedVR2 7b",
     features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "moss_image",
+    name: "MOSS Image",
+    tag: "MOSS",
+    features: ["cfgZero", "resolutionDependentShift"]
+  },
+  {
+    version: "flux3_5b",
+    name: "FLUX.3 [klein] 5.6B",
+    tag: "F3k",
+    features: ["cfgZero", "resolutionDependentShift"]
   }
 ];
 
@@ -861,7 +873,11 @@ var propertyData = [
   ["refiner_model", "refiner_model", "DrawThingsRefiner", "refinerModel"],
   ["refiner_start", "refiner_start", "DrawThingsRefiner", "refinerStart", "int", 0.85, 0, 1, 0.01],
   ["cfg_zero_star", "cfg_zero_star", "DrawThingsSampler", "cfgZeroStar", "bool", false],
-  ["cfg_zero_star_init_steps", "cfg_zero_star_init_steps", "DrawThingsSampler", "cfgZeroInitSteps", "int", 0, 0, "ref=steps", 1, "ifTrue=cfgZeroStar"]
+  ["cfg_zero_star_init_steps", "cfg_zero_star_init_steps", "DrawThingsSampler", "cfgZeroInitSteps", "int", 0, 0, "ref=steps", 1, "ifTrue=cfgZeroStar"],
+  ["shift_for_audio", "shift_for_audio", "DrawThingsSampler", "shiftForAudio", "float", 3, 0.1, 12, 0.01],
+  ["uses_sol_attention", "uses_sol_attention", "DrawThingsSampler", "usesSolAttention", "bool", false],
+  ["sol_attention_start", "sol_attention_start", "DrawThingsSampler", "solAttentionStart", "int", 2, 0, "ref=steps", 1, "ifTrue=solAttention"],
+  ["sol_attention_tau", "sol_attention_tau", "DrawThingsSampler", "solAttentionTau", "float", 0.5, 0, 4, 0.05, "ifTrue=solAttention"]
 ];
 function roundBy64(value) {
   return Math.round(value / 64) * 64;
@@ -1322,6 +1338,7 @@ var basicWidgets = [
   "sampler_name",
   "res_dpt_shift",
   "shift",
+  "shift_for_audio",
   "batch_size",
   "num_frames"
 ];
@@ -1360,6 +1377,9 @@ var advancedWidgets = [
   "diffusion_tile_width",
   "diffusion_tile_height",
   "diffusion_tile_overlap",
+  "uses_sol_attention",
+  "sol_attention_start",
+  "sol_attention_tau",
   "tea_cache",
   "tea_cache_start",
   "tea_cache_end",
@@ -1435,12 +1455,18 @@ function updateSamplerWidgets(node) {
     if (shiftWidget) shiftWidget.disabled = shiftDisabled;
     const isVideo = features.includes("numFrames");
     showWidget(node, "num_frames", isVideo);
+    const audioShift = features.includes("audioShift");
+    showWidget(node, "shift_for_audio", audioShift);
     const zeroCfgAvailable = features.includes("cfgZero");
     const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
     showWidget(node, "cfg_zero_star", zeroCfgAvailable);
     showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled);
   }
   if (isAdvanced) {
+    const solAttentionAvailable = features.includes("solAttention");
+    const solAttentionEnabled = solAttentionAvailable && findWidgetByName(node, "uses_sol_attention")?.value;
+    showWidget(node, "uses_sol_attention", solAttentionAvailable);
+    showWidgets(node, !!solAttentionEnabled, "sol_attention_start", "sol_attention_tau");
     const teaCacheAvailable = features.includes("teaCache");
     const teaCacheEnabled = teaCacheAvailable && findWidgetByName(node, "tea_cache")?.value;
     showWidget(node, "tea_cache", teaCacheAvailable);
@@ -1821,11 +1847,20 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
     version: "1.13.0",
     title: "Draw Things for ComfyUI 1.13.0",
     detail: "Had to make a variety of fixes and changes to get the node working again with the latest version of Comfy. Model widgets now load the model list on demand. Added missing model versions. Next update will include the new/missing config properties as well as fixes to preview for newer models."
+  },
+  {
+    version: "1.14.0",
+    title: "Draw Things for ComfyUI 1.14.0",
+    detail: [
+      "\u2022 Added MOSS and FLUX.3 klein to the models lists\n",
+      "\u2022 Added widgets for MiniMax props: shift_for_audio, uses_sol_attention, sol_attention_start and sol_attention_tau\n",
+      "\u2022 Updated workflow loading so missing values are replaced with defaults"
+    ].join("\n")
   }
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.13.0";
+var nodePackVersion = "1.14.0";
 var extension3 = {
   name: "core",
   getCustomWidgets() {
@@ -1912,6 +1947,16 @@ var samplerProto = {
         const widget = this.widgets?.find((w) => w.name === name);
         if (widget)
           widget.value = value;
+      }
+      const allWidgets = new Set(this.widgets?.map((w) => w.name));
+      const serialisedWidgets = new Set(Object.keys(serialised.widget_values_keyed));
+      const difference = new Set([...allWidgets].filter((item) => !serialisedWidgets.has(item)));
+      for (const prop of difference) {
+        const propDef = findPropertyPython(prop);
+        if (!propDef) continue;
+        const widget = this.widgets?.find((w) => w.name === prop);
+        if (!widget) continue;
+        widget.value = propDef.defaultValue;
       }
     }
     this.coerceWidgetValues();

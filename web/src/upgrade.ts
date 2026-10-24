@@ -107,6 +107,15 @@ const announcements = [
         version: "1.13.0",
         title: "Draw Things for ComfyUI 1.13.0",
         detail: "Had to make a variety of fixes and changes to get the node working again with the latest version of Comfy. Model widgets now load the model list on demand. Added missing model versions. Next update will include the new/missing config properties as well as fixes to preview for newer models."
+    },
+    {
+        version: "1.14.0",
+        title: "Draw Things for ComfyUI 1.14.0",
+        detail: [
+            "• Added MOSS and FLUX.3 klein to the models lists\n",
+            "• Added widgets for MiniMax props: shift_for_audio, uses_sol_attention, sol_attention_start and sol_attention_tau\n",
+            "• Updated workflow loading so missing values are replaced with defaults"
+        ].join("\n")
     }
 ]
 

@@ -19,6 +19,7 @@ const basicWidgets = [
     "sampler_name",
     "res_dpt_shift",
     "shift",
+    "shift_for_audio",
     "batch_size",
     "num_frames",
 ]
@@ -57,6 +58,9 @@ const advancedWidgets = [
     "diffusion_tile_width",
     "diffusion_tile_height",
     "diffusion_tile_overlap",
+    "uses_sol_attention",
+    "sol_attention_start",
+    "sol_attention_tau",
     "tea_cache",
     "tea_cache_start",
     "tea_cache_end",
@@ -156,6 +160,8 @@ function updateSamplerWidgets(node: any) {
 
         const isVideo = features.includes("numFrames")
         showWidget(node, "num_frames", isVideo)
+        const audioShift = features.includes("audioShift")
+        showWidget(node, "shift_for_audio", audioShift)
 
         const zeroCfgAvailable = features.includes("cfgZero")
         const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value
@@ -164,6 +170,11 @@ function updateSamplerWidgets(node: any) {
     }
 
     if (isAdvanced) {
+        const solAttentionAvailable = features.includes("solAttention")
+        const solAttentionEnabled = solAttentionAvailable && findWidgetByName(node, "uses_sol_attention")?.value
+        showWidget(node, "uses_sol_attention", solAttentionAvailable);
+        showWidgets(node, !!solAttentionEnabled, "sol_attention_start", "sol_attention_tau")
+
         const teaCacheAvailable = features.includes("teaCache")
         const teaCacheEnabled = teaCacheAvailable && findWidgetByName(node, "tea_cache")?.value
         showWidget(node, "tea_cache", teaCacheAvailable)

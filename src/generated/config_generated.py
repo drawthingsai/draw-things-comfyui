@@ -1075,8 +1075,43 @@ class GenerationConfiguration(object):
             return self._tab.Get(flatbuffers.number_types.Int8Flags, o + self._tab.Pos)
         return 0
 
+    # GenerationConfiguration
+    def ExpandPromptToJson(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(178))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
+
+    # GenerationConfiguration
+    def ShiftForAudio(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(180))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 3.0
+
+    # GenerationConfiguration
+    def UsesSolAttention(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(182))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
+
+    # GenerationConfiguration
+    def SolAttentionStart(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(184))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 2
+
+    # GenerationConfiguration
+    def SolAttentionTau(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(186))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.5
+
 def GenerationConfigurationStart(builder: flatbuffers.Builder):
-    builder.StartObject(87)
+    builder.StartObject(92)
 
 def GenerationConfigurationAddId(builder: flatbuffers.Builder, id: int):
     builder.PrependInt64Slot(0, id, 0)
@@ -1339,6 +1374,21 @@ def GenerationConfigurationAddCompressionArtifactsQuality(builder: flatbuffers.B
 def GenerationConfigurationAddColorCalibration(builder: flatbuffers.Builder, colorCalibration: int):
     builder.PrependInt8Slot(86, colorCalibration, 0)
 
+def GenerationConfigurationAddExpandPromptToJson(builder: flatbuffers.Builder, expandPromptToJson: bool):
+    builder.PrependBoolSlot(87, expandPromptToJson, 0)
+
+def GenerationConfigurationAddShiftForAudio(builder: flatbuffers.Builder, shiftForAudio: float):
+    builder.PrependFloat32Slot(88, shiftForAudio, 3.0)
+
+def GenerationConfigurationAddUsesSolAttention(builder: flatbuffers.Builder, usesSolAttention: bool):
+    builder.PrependBoolSlot(89, usesSolAttention, 0)
+
+def GenerationConfigurationAddSolAttentionStart(builder: flatbuffers.Builder, solAttentionStart: int):
+    builder.PrependInt32Slot(90, solAttentionStart, 2)
+
+def GenerationConfigurationAddSolAttentionTau(builder: flatbuffers.Builder, solAttentionTau: float):
+    builder.PrependFloat32Slot(91, solAttentionTau, 0.5)
+
 def GenerationConfigurationEnd(builder: flatbuffers.Builder) -> int:
     return builder.EndObject()
 
@@ -1438,6 +1488,11 @@ class GenerationConfigurationT(object):
         compressionArtifacts = 0,
         compressionArtifactsQuality = 43.1,
         colorCalibration = 0,
+        expandPromptToJson = False,
+        shiftForAudio = 3.0,
+        usesSolAttention = False,
+        solAttentionStart = 2,
+        solAttentionTau = 0.5,
     ):
         self.id = id  # type: int
         self.startWidth = startWidth  # type: int
@@ -1524,6 +1579,11 @@ class GenerationConfigurationT(object):
         self.compressionArtifacts = compressionArtifacts  # type: int
         self.compressionArtifactsQuality = compressionArtifactsQuality  # type: float
         self.colorCalibration = colorCalibration  # type: int
+        self.expandPromptToJson = expandPromptToJson  # type: bool
+        self.shiftForAudio = shiftForAudio  # type: float
+        self.usesSolAttention = usesSolAttention  # type: bool
+        self.solAttentionStart = solAttentionStart  # type: int
+        self.solAttentionTau = solAttentionTau  # type: float
 
     @classmethod
     def InitFromBuf(cls, buf, pos):
@@ -1645,6 +1705,11 @@ class GenerationConfigurationT(object):
         self.compressionArtifacts = generationConfiguration.CompressionArtifacts()
         self.compressionArtifactsQuality = generationConfiguration.CompressionArtifactsQuality()
         self.colorCalibration = generationConfiguration.ColorCalibration()
+        self.expandPromptToJson = generationConfiguration.ExpandPromptToJson()
+        self.shiftForAudio = generationConfiguration.ShiftForAudio()
+        self.usesSolAttention = generationConfiguration.UsesSolAttention()
+        self.solAttentionStart = generationConfiguration.SolAttentionStart()
+        self.solAttentionTau = generationConfiguration.SolAttentionTau()
 
     # GenerationConfigurationT
     def Pack(self, builder):
@@ -1776,6 +1841,11 @@ class GenerationConfigurationT(object):
         GenerationConfigurationAddCompressionArtifacts(builder, self.compressionArtifacts)
         GenerationConfigurationAddCompressionArtifactsQuality(builder, self.compressionArtifactsQuality)
         GenerationConfigurationAddColorCalibration(builder, self.colorCalibration)
+        GenerationConfigurationAddExpandPromptToJson(builder, self.expandPromptToJson)
+        GenerationConfigurationAddShiftForAudio(builder, self.shiftForAudio)
+        GenerationConfigurationAddUsesSolAttention(builder, self.usesSolAttention)
+        GenerationConfigurationAddSolAttentionStart(builder, self.solAttentionStart)
+        GenerationConfigurationAddSolAttentionTau(builder, self.solAttentionTau)
         generationConfiguration = GenerationConfigurationEnd(builder)
         return generationConfiguration
 

@@ -1,13 +1,13 @@
 import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 import { importConfig } from "./configImport.js";
-import { findPropertyPython } from "./configProperties.js";
+import { findPropertyPython, propertyData } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
 import type { ComfyExtension, DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
 import { getApi, getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.13.0";
+export const nodePackVersion = "1.14.0";
 
 const extension: ComfyExtension = {
     name: "core",
@@ -134,7 +134,20 @@ export const samplerProto: Partial<DTSampler> = {
                         | object
                         | undefined;
             }
+
+            const allWidgets = new Set(this.widgets?.map(w => w.name))
+            const serialisedWidgets = new Set(Object.keys(serialised.widget_values_keyed))
+            const difference = new Set([...allWidgets].filter((item) => !serialisedWidgets.has(item)))
+
+            for (const prop of difference) {
+                const propDef = findPropertyPython(prop)
+                if (!propDef) continue
+                const widget = this.widgets?.find(w => w.name === prop)
+                if (!widget) continue
+                widget.value = propDef.defaultValue
+            }
         }
+
 
         this.coerceWidgetValues();
         if ("widget_values_keyed" in this) delete this.widget_values_keyed;

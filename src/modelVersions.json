@@ -242,5 +242,17 @@
         "name": "SeedVR2 7B",
         "tag": "SeedVR2 7b",
         "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "moss_image",
+        "name": "MOSS Image",
+        "tag": "MOSS",
+        "features": ["cfgZero", "resolutionDependentShift"]
+    },
+    {
+        "version": "flux3_5b",
+        "name": "FLUX.3 [klein] 5.6B",
+        "tag": "F3k",
+        "features": ["cfgZero", "resolutionDependentShift"]
     }
 ]

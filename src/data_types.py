@@ -186,6 +186,11 @@ class Config(TypedDict, total=False):
     # t5_text: int
     # causal_inference_enabled: bool
 
+    shift_for_audio: float
+    uses_sol_attention: bool
+    sol_attention_start: int
+    sol_attention_tau: float
+
 
 class DrawThingsLists:
     dtserver = "localhost"
@@ -305,4 +310,3 @@ class DrawThingsLists:
         "Shuffle (Moodboard)": "shuffle",
         "Custom": "custom",
     }
-    
