@@ -4,8 +4,7 @@ import { NodeRef } from "./nodeRef";
 import fse from "fs-extra";
 import { join } from "path";
 
-if (!process.env.PLAYWRIGHT_TEST_URL)
-    throw new Error("PLAYWRIGHT_TEST_URL is not set");
+if (!process.env.PLAYWRIGHT_TEST_URL) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 export const DEFAULT_WORKFLOW_FOLDER = "./tests/workflows";
 
 export class ComfyPage {
@@ -39,7 +38,7 @@ export class ComfyPage {
         this.gotoCalled = true;
 
         const bannerClose = this.page.locator('xpath=//*[@id="graph-canvas-container"]/div[2]/div[1]/button');
-        await bannerClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => { });
+        await bannerClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => {});
         if (await bannerClose.isVisible()) await bannerClose.click();
     }
 

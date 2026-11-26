@@ -15,22 +15,17 @@ test("load workflow from previous version", async ({ comfy }) => {
     const toastLoc = comfy.page.locator(".p-toast-message-text");
     await expect(toastLoc).toContainText("Draw Things gRPC");
     await expect(toastLoc).toContainText(
-        "The Draw Things Sampler node contained invalid values - they have been corrected"
+        "The Draw Things Sampler node contained invalid values - they have been corrected",
     );
 
     // check properties
     const node = (await comfy.getNodeRef("DrawThingsSampler"))!;
     await node.centerNode();
     await node.selectWidgetOption("sampler_name", "TCD");
-    await expect(
-        await node.isWidgetVisible("stochastic_sampling_gamma")
-    ).toBeTruthy();
+    await expect(await node.isWidgetVisible("stochastic_sampling_gamma")).toBeTruthy();
 
     // assert workflow json file used the old prompt nodes
-    const workflowJson = await readFile(
-        join(workflowFolder, "old_version.json"),
-        "utf-8"
-    );
+    const workflowJson = await readFile(join(workflowFolder, "old_version.json"), "utf-8");
     expect(workflowJson).toContain("DrawThingsPositive");
     expect(workflowJson).toContain("DrawThingsNegative");
     expect(workflowJson).not.toContain("DrawThingsPrompt");
@@ -55,11 +50,7 @@ test("sampler widgets serialization", async ({ comfy }) => {
     await comfy.createNewWorkflow();
 
     // add sampler node
-    const node = await comfy.addNode(
-        ["DrawThings", "Draw Things Sampler"],
-        0,
-        0
-    );
+    const node = await comfy.addNode(["DrawThings", "Draw Things Sampler"], 0, 0);
     await node.centerNode();
 
     // change various widget values
@@ -116,8 +107,8 @@ test("updates notes", async ({ comfy, page }) => {
 
     // Wait for the sampler to read the saved data again after reload.
     expect(userData).toMatchObject({ announced: expect.any(Array) });
-    const readAfterReload = page.waitForResponse((response) =>
-        isAnnouncementData(new URL(response.url())) && response.request().method() === "GET"
+    const readAfterReload = page.waitForResponse(
+        (response) => isAnnouncementData(new URL(response.url())) && response.request().method() === "GET",
     );
     await page.reload();
     expect((await readAfterReload).status()).toBe(200);

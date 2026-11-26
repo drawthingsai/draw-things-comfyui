@@ -8,7 +8,16 @@ export type CombinedModelsResponse = {
     communityEmbeddings: Embedding[];
     uncuratedModels: Model[];
 };
-export const combinedModelsResponseKeys = ["officialModels", "officialCnets", "officialLoras", "communityModels", "communityCnets", "communityLoras", "communityEmbeddings", "uncuratedModels"] as const
+export const combinedModelsResponseKeys = [
+    "officialModels",
+    "officialCnets",
+    "officialLoras",
+    "communityModels",
+    "communityCnets",
+    "communityLoras",
+    "communityEmbeddings",
+    "uncuratedModels",
+] as const;
 
 export type Cnet = {
     version: string;
@@ -64,12 +73,7 @@ export type Embedding = {
     length: number;
 };
 
-export type EmbeddingVersion =
-    | "v2"
-    | "v1"
-    | "sdxl_base_v0.9"
-    | "wan_v2.1_1.3b"
-    | "wan_v2.1_14b";
+export type EmbeddingVersion = "v2" | "v1" | "sdxl_base_v0.9" | "wan_v2.1_1.3b" | "wan_v2.1_14b";
 
 export type Lora = {
     name: string;
@@ -205,11 +209,7 @@ export type V = {};
 
 export type T5Encoder = "t5_xxl_encoder_f16.ckpt" | "t5_xxl_encoder_q6p.ckpt";
 
-export type Type =
-    | "controlnet"
-    | "t2iadapter"
-    | "ipadapterfull"
-    | "ipadapterplus";
+export type Type = "controlnet" | "t2iadapter" | "ipadapterfull" | "ipadapterplus";
 
 export type RF = {
     _0: RF0;

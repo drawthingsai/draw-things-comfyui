@@ -14,7 +14,7 @@ const promptProto: any = {
             const textWidget = this.widgets?.find((w) => w.name === "prompt");
             const text = textWidget?.value ?? "";
 
-            if (typeof text === 'string' && textWidget) {
+            if (typeof text === "string" && textWidget) {
                 if (text.includes(tag)) {
                     textWidget.value = text.split(tag).join("");
                 } else {
@@ -26,7 +26,14 @@ const promptProto: any = {
         }
     },
 
-    onConnectionsChange(this: PromptNode, _type: number, _index: number, _isConnected: boolean, _link_info: LLink, _inputOrOutput: INodeOutputSlot) {
+    onConnectionsChange(
+        this: PromptNode,
+        _type: number,
+        _index: number,
+        _isConnected: boolean,
+        _link_info: LLink,
+        _inputOrOutput: INodeOutputSlot,
+    ) {
         if (getApp().extensionManager.setting.get("drawthings.node.color_prompts") === false) return;
 
         let isPositive = false;
@@ -64,15 +71,16 @@ const promptProto: any = {
     onNodeCreated(this: PromptNode) {
         const output = this.outputs?.find((output) => output.name === "PROMPT");
         if (output) {
-            (output as any).color_on = (output as any).color_off = getApp().canvas.default_connection_color_byType.CONDITIONING;
+            (output as any).color_on = (output as any).color_off =
+                getApp().canvas.default_connection_color_byType.CONDITIONING;
         }
     },
 
     getExtraMenuOptions(this: PromptNode, _canvas: LGraphCanvas, options: IContextMenuItem[]) {
         const app = getApp();
-        const promptColors = app.extensionManager.setting.get("drawthings.node.color_prompts")
+        const promptColors = app.extensionManager.setting.get("drawthings.node.color_prompts");
         options.push(
-            ...[
+            ...([
                 null,
                 {
                     content: `${promptColors ? "✓ " : ""}Change colors when connections change`,
@@ -85,7 +93,7 @@ const promptProto: any = {
                     },
                 },
                 null,
-            ] as any
+            ] as any),
         );
     },
 };
@@ -108,11 +116,11 @@ const extension: ComfyExtension = {
             category: ["Draw Things", "Nodes", "Change prompt"],
             onChange: (newVal: boolean, oldVal: boolean) => {
                 if (oldVal === false && newVal === true) {
-                    getApp().graph.nodes
-                        .filter((n) => n.type === "DrawThingsPrompt")
+                    getApp()
+                        .graph.nodes.filter((n) => n.type === "DrawThingsPrompt")
                         .forEach((n) => {
-                            setTimeout(() => (n as any).onConnectionsChange(), 10)
-                        })
+                            setTimeout(() => (n as any).onConnectionsChange(), 10);
+                        });
                 }
             },
         },

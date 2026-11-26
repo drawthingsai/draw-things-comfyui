@@ -3,7 +3,14 @@ import { test } from "./fixtures";
 import { expect } from "@playwright/test";
 
 const models = [
-    { name: "Alpha", file: "alpha.ckpt", version: "v1", modifier: "none", text_encoder: "alpha_clip.ckpt", default_scale: 12 },
+    {
+        name: "Alpha",
+        file: "alpha.ckpt",
+        version: "v1",
+        modifier: "none",
+        text_encoder: "alpha_clip.ckpt",
+        default_scale: 12,
+    },
     { name: "Beta", file: "beta.ckpt", version: "flux1", keyword: "beta" },
 ];
 const catalog = { models, loras: models, controlNets: models, upscalers: models, textualInversions: models };
@@ -35,8 +42,19 @@ test("model menus are fresh without changing static options or saved selections"
     await page.route("**/dt_grpc/files_info", (route) => route.fulfill({ status: 503 }));
     expect(await sampler.getWidgetMenuItems("model")).toEqual(disconnectedMenu);
     expect(await sampler.getWidgetValue("model")).toBe("Not connected");
-    expect(await page.evaluate(() => window.app.graph.nodes.find((n) => n.type === "DrawThingsSampler").lastSelectedModel.model)).toEqual(selected);
-    expect(await page.evaluate(() => window.app.graph.nodes.find((n) => n.type === "DrawThingsSampler").widgets.find((w) => w.name === "model").options.values)).toEqual(["(None selected)"]);
+    expect(
+        await page.evaluate(
+            () => window.app.graph.nodes.find((n) => n.type === "DrawThingsSampler").lastSelectedModel.model,
+        ),
+    ).toEqual(selected);
+    expect(
+        await page.evaluate(
+            () =>
+                window.app.graph.nodes
+                    .find((n) => n.type === "DrawThingsSampler")
+                    .widgets.find((w) => w.name === "model").options.values,
+        ),
+    ).toEqual(["(None selected)"]);
     await page.route("**/dt_grpc/files_info", (route) => route.fulfill({ json: catalog }));
     expect(await sampler.getWidgetOptions("model")).toEqual(["(None selected)", "Alpha (SD)", "Beta (F1)"]);
     expect(await sampler.getWidgetValue("model")).toEqual(selected);
@@ -91,7 +109,10 @@ test("bridge model catalog is fetched once across repeated menu opens", async ({
     expect(requests.combined).toBe(1);
 });
 
-test("TLS changes update only the sampler selection and every model menu is inert while offline", async ({ page, comfy }) => {
+test("TLS changes update only the sampler selection and every model menu is inert while offline", async ({
+    page,
+    comfy,
+}) => {
     const sampler = (await comfy.getNodeRef("DrawThingsSampler"))!;
     await sampler.selectWidgetOption("model", "Alpha (SD)");
     const selected = await sampler.getWidgetValue("model");
@@ -101,20 +122,22 @@ test("TLS changes update only the sampler selection and every model menu is iner
         const body = await new Response(request.postData(), {
             headers: { "Content-Type": request.headers()["content-type"] },
         }).formData();
-        await route.fulfill(body.get("use_tls") === String(validTls)
-            ? { json: catalog } : { status: 503 });
+        await route.fulfill(body.get("use_tls") === String(validTls) ? { json: catalog } : { status: 503 });
     });
-    const otherWidgets = await Promise.all([
-        ["DrawThingsLoRA", "lora"],
-        ["DrawThingsControlNet", "control_name"],
-        ["DrawThingsRefiner", "refiner_model"],
-        ["DrawThingsUpscaler", "upscaler_model"],
-        ["DrawThingsPrompt", "insert_textual_inversion"],
-    ].map(async ([type, widget]) => {
-        const node = (await comfy.getNodeRef(type))!;
-        return { node, widget, value: await node.getWidgetValue(widget) };
-    }));
-    const savedModels = () => page.evaluate(() => window.app.graph.nodes.find((n) => n.type === "DrawThingsSampler").lastSelectedModel);
+    const otherWidgets = await Promise.all(
+        [
+            ["DrawThingsLoRA", "lora"],
+            ["DrawThingsControlNet", "control_name"],
+            ["DrawThingsRefiner", "refiner_model"],
+            ["DrawThingsUpscaler", "upscaler_model"],
+            ["DrawThingsPrompt", "insert_textual_inversion"],
+        ].map(async ([type, widget]) => {
+            const node = (await comfy.getNodeRef(type))!;
+            return { node, widget, value: await node.getWidgetValue(widget) };
+        }),
+    );
+    const savedModels = () =>
+        page.evaluate(() => window.app.graph.nodes.find((n) => n.type === "DrawThingsSampler").lastSelectedModel);
 
     await sampler.clickWidget("use_tls");
     // Assert the watcher reacts before opening any model menu.
@@ -122,7 +145,8 @@ test("TLS changes update only the sampler selection and every model menu is iner
     const saved = await savedModels();
     expect(saved.model).toEqual(selected);
     for (const { node, widget, value } of [
-        { node: sampler, widget: "model", value: "Not connected" }, ...otherWidgets,
+        { node: sampler, widget: "model", value: "Not connected" },
+        ...otherWidgets,
     ]) {
         expect(await node.getWidgetMenuItems(widget)).toEqual(disconnectedMenu);
         await node.clickWidget(widget);

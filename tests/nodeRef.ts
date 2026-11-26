@@ -27,12 +27,7 @@ export async function getNodeRef(
     return new NodeRef(nodeId, page);
 }
 
-export async function addNode(
-    page: Page,
-    path: string[],
-    x: number,
-    y: number,
-) {
+export async function addNode(page: Page, path: string[], x: number, y: number) {
     await centerOnPoint(page, x, y);
     await page.waitForTimeout(200);
     const canvasSize = await page.locator("#graph-canvas").boundingBox();
@@ -71,8 +66,7 @@ export class NodeRef {
                 const node = app.graph.getNodeById(nodeId);
                 await window.graph.primaryCanvas.centerOnNode(node);
                 await new Promise((resolve) => setTimeout(resolve, 200));
-                const view: [number, number, number, number] =
-                    window.app.canvas.visible_area;
+                const view: [number, number, number, number] = window.app.canvas.visible_area;
                 const pos: [number, number, number, number] = node._posSize;
                 const widget = node.widgets.find((w) => w.name === name);
                 if (!widget) {
@@ -108,9 +102,7 @@ export class NodeRef {
         const widgetY = pos[1] + widgetPos + 10;
         const [clickX, clickY] = getPos([widgetX, widgetY]);
 
-        await this.page
-            .locator("#graph-canvas")
-            .click({ position: { x: clickX, y: clickY } });
+        await this.page.locator("#graph-canvas").click({ position: { x: clickX, y: clickY } });
     }
 
     async isWidgetVisible(name: string);
@@ -149,9 +141,7 @@ export class NodeRef {
             async ([nodeId, delay]) => {
                 await new Promise((resolve) => setTimeout(resolve, delay));
                 const node = app.graph.getNodeById(nodeId);
-                const widgetNames = node.widgets
-                    .filter((w) => !w.hidden)
-                    .map((w) => w.name);
+                const widgetNames = node.widgets.filter((w) => !w.hidden).map((w) => w.name);
                 return widgetNames;
             },
             [this.id, this.delay],
@@ -243,8 +233,7 @@ export class NodeRef {
     async disconnectInput(inputName: string) {
         const { view, pos, inputBox, size } = await this.page.evaluate(
             ([nodeId, inputName]) => {
-                const view: [number, number, number, number] =
-                    window.app.canvas.visible_area;
+                const view: [number, number, number, number] = window.app.canvas.visible_area;
                 const node = app.graph.getNodeById(nodeId);
                 const pos: [number, number, number, number] = node._posSize;
                 const input = node.inputs.find((o) => o.name === inputName);
@@ -281,13 +270,9 @@ export class NodeRef {
         const outputY = inputBox[1] + inputBox[3] / 2;
         const [clickX, clickY] = getPos([inputX, outputY]);
 
-        await this.page
-            .locator("#graph-canvas")
-            .click({ position: { x: clickX, y: clickY }, button: "right" });
+        await this.page.locator("#graph-canvas").click({ position: { x: clickX, y: clickY }, button: "right" });
 
-        const item = await this.page
-            .getByRole("menuitem", { name: "Disconnect Links" })
-            .first();
+        const item = await this.page.getByRole("menuitem", { name: "Disconnect Links" }).first();
         await item.scrollIntoViewIfNeeded();
         await item.click({ position: { x: 2, y: 2 } });
         await this.page.waitForTimeout(this.delay);
@@ -297,8 +282,7 @@ export class NodeRef {
         await this.clickWidget(name);
         const menu = this.page.locator(".litecontextmenu").last();
         await menu.waitFor({ state: "visible" });
-        await this.page.getByRole("menuitem", { name: "Loading models…", exact: true })
-            .waitFor({ state: "hidden" });
+        await this.page.getByRole("menuitem", { name: "Loading models…", exact: true }).waitFor({ state: "hidden" });
         // Model widgets replace the loading menu rather than updating its entries.
         await menu.waitFor({ state: "visible" });
         await menu.locator(".litemenu-entry").first().waitFor({ state: "visible" });
@@ -315,19 +299,27 @@ export class NodeRef {
     async getWidgetMenuItems(name: string): Promise<{ content: string; disabled: boolean }[]> {
         const menu = await this.openWidgetMenu(name);
         try {
-            return await menu.locator(".litemenu-entry").evaluateAll((entries) =>
-                entries.map((entry) => ({ content: entry.textContent ?? "", disabled: entry.classList.contains("disabled") })),
-            );
+            return await menu
+                .locator(".litemenu-entry")
+                .evaluateAll((entries) =>
+                    entries.map((entry) => ({
+                        content: entry.textContent ?? "",
+                        disabled: entry.classList.contains("disabled"),
+                    })),
+                );
         } finally {
             await this.closeMenu();
         }
     }
 
     async getWidgetOptions(widget: string): Promise<(string | null)[]> {
-        const dynamic = await this.page.evaluate(([id, name]) => {
-            const node = app.graph.getNodeById(id);
-            return !!node.widgets.find((w) => w.name === name)?.options?.modelType;
-        }, [this.id, widget]);
+        const dynamic = await this.page.evaluate(
+            ([id, name]) => {
+                const node = app.graph.getNodeById(id);
+                return !!node.widgets.find((w) => w.name === name)?.options?.modelType;
+            },
+            [this.id, widget],
+        );
         if (dynamic) return (await this.getWidgetMenuItems(widget)).map((item) => item.content);
         const options = (await this.page.evaluate(
             ([nodeId, name]) => {
@@ -341,18 +333,19 @@ export class NodeRef {
 
         return options.map((o) => {
             if (typeof o === "string") return o;
-            if (o && typeof o === "object" && "content" in o)
-                return o?.content as string;
+            if (o && typeof o === "object" && "content" in o) return o?.content as string;
             return String(o) || null;
         });
     }
 
-
     async widgetHasOption(widget: string, option: string, useApi = false) {
-        const dynamic = await this.page.evaluate(([id, name]) => {
-            const node = app.graph.getNodeById(id);
-            return !!node.widgets.find((w) => w.name === name)?.options?.modelType;
-        }, [this.id, widget]);
+        const dynamic = await this.page.evaluate(
+            ([id, name]) => {
+                const node = app.graph.getNodeById(id);
+                return !!node.widgets.find((w) => w.name === name)?.options?.modelType;
+            },
+            [this.id, widget],
+        );
         if (dynamic) return (await this.getWidgetOptions(widget)).includes(option);
         if (useApi) {
             const result = await this.page.evaluate(
@@ -360,8 +353,7 @@ export class NodeRef {
                     const node = app.graph.getNodeById(nodeId);
                     const widget = node?.widgets?.find((w) => w.name === name);
                     if (!widget) throw new Error(`Widget not found: ${name}`);
-                    if (!widget.options || !Array.isArray(widget.options.values))
-                        throw new Error("wrong widget type");
+                    if (!widget.options || !Array.isArray(widget.options.values)) throw new Error("wrong widget type");
                     const values = widget.options.values.map((v) => v.content);
                     return values.includes(option);
                 },
@@ -376,9 +368,9 @@ export class NodeRef {
     }
 
     async widgetMenuHasItem(widgetName: string, itemName: string, exact = false) {
-        const items = await this.getWidgetMenuItems(widgetName)
-        if (exact) return items.some(item => item.content === itemName)
-        return items.some(item => item.content?.includes(itemName))
+        const items = await this.getWidgetMenuItems(widgetName);
+        if (exact) return items.some((item) => item.content === itemName);
+        return items.some((item) => item.content?.includes(itemName));
     }
 
     async centerNode() {
@@ -400,8 +392,7 @@ export class NodeRef {
         const nodeIds = await this.page.evaluate(() => app.graph.nodes.map((node) => node.id));
         const { view, pos, outputBox, size } = await this.page.evaluate(
             ([nodeId, outputName]) => {
-                const view: [number, number, number, number] =
-                    window.app.canvas.visible_area;
+                const view: [number, number, number, number] = window.app.canvas.visible_area;
                 const node = app.graph.getNodeById(nodeId);
                 const pos: [number, number, number, number] = node._posSize;
                 const output = node.outputs.find((o) => o.name === outputName);
@@ -438,13 +429,9 @@ export class NodeRef {
         const outputY = outputBox[1] + outputBox[3] / 2;
         const [clickX, clickY] = getPos([outputX, outputY]);
 
-        await this.page
-            .locator("#graph-canvas")
-            .hover({ position: { x: clickX, y: clickY } });
+        await this.page.locator("#graph-canvas").hover({ position: { x: clickX, y: clickY } });
         await this.page.mouse.down();
-        await this.page
-            .locator("#graph-canvas")
-            .hover({ position: { x: clickX + 50, y: clickY } });
+        await this.page.locator("#graph-canvas").hover({ position: { x: clickX + 50, y: clickY } });
         await this.page.mouse.up();
         await this.page.getByRole("menuitem", { name: "Search" }).click();
         await this.page.keyboard.type(nodeName);
@@ -460,16 +447,19 @@ export class NodeRef {
             await this.page.waitForFunction(() => app.canvas.state?.ghostNodeId == null);
         }
         // Search can place the new node over the source, intercepting widget clicks.
-        await this.page.evaluate(([sourceId, ids]) => {
-            const source = app.graph.getNodeById(sourceId);
-            const added = app.graph.nodes.filter((node) => !ids.includes(node.id));
-            let x = source.pos[0] + source.size[0] + 80;
-            for (const node of added) {
-                node.pos = [x, source.pos[1]];
-                x += node.size[0] + 80;
-            }
-            app.graph.setDirtyCanvas(true, true);
-        }, [this.id, nodeIds] as const);
+        await this.page.evaluate(
+            ([sourceId, ids]) => {
+                const source = app.graph.getNodeById(sourceId);
+                const added = app.graph.nodes.filter((node) => !ids.includes(node.id));
+                let x = source.pos[0] + source.size[0] + 80;
+                for (const node of added) {
+                    node.pos = [x, source.pos[1]];
+                    x += node.size[0] + 80;
+                }
+                app.graph.setDirtyCanvas(true, true);
+            },
+            [this.id, nodeIds] as const,
+        );
     }
 
     async openContextMenu() {
@@ -483,8 +473,7 @@ export class NodeRef {
                 graphCanvas.ds.offset[1] += node.size[1] / 2 - clickInset;
                 graphCanvas.setDirty(true, true);
                 await new Promise((resolve) => setTimeout(resolve, 200));
-                const view: [number, number, number, number] =
-                    window.app.canvas.visible_area;
+                const view: [number, number, number, number] = window.app.canvas.visible_area;
                 const pos: [number, number, number, number] = node._posSize;
 
                 const canvas = window.app.canvas.canvas.getBoundingClientRect();
@@ -533,9 +522,7 @@ export class NodeRef {
 
     async selectContextMenuOption(option: string | RegExp) {
         await this.openContextMenu();
-        const item = await this.page
-            .getByRole("menuitem", { name: option })
-            .first();
+        const item = await this.page.getByRole("menuitem", { name: option }).first();
         await item.scrollIntoViewIfNeeded();
         await item.click({ position: { x: 2, y: 2 } });
         await this.page.waitForTimeout(this.delay);

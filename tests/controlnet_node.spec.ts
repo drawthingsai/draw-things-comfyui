@@ -14,13 +14,19 @@ for (const format of ["keyed", "legacy positional"]) {
         let workflowPath = join(workflowFolder, "inpaint_cnet.json");
         if (format === "legacy positional") {
             const workflow = await fse.readJSON(workflowPath);
-            const cnetNodeJson = workflow.nodes.find(n => n.type === "DrawThingsControlNet");
+            const cnetNodeJson = workflow.nodes.find((n) => n.type === "DrawThingsControlNet");
             expect(cnetNodeJson).toBeDefined();
             // Recreate the eight-widget format that predates keyed serialization.
             cnetNodeJson.widgets_values = [
-                "control_name", "control_input_type", "control_mode", "control_weight",
-                "control_start", "control_end", "global_average_pooling", "invert_image",
-            ].map(name => cnetNodeJson.widget_values_keyed[name]);
+                "control_name",
+                "control_input_type",
+                "control_mode",
+                "control_weight",
+                "control_start",
+                "control_end",
+                "global_average_pooling",
+                "invert_image",
+            ].map((name) => cnetNodeJson.widget_values_keyed[name]);
             delete cnetNodeJson.widget_values_keyed;
             delete cnetNodeJson.nodePackVersion;
             delete cnetNodeJson._lastSelectedModel;
@@ -58,21 +64,14 @@ test("Widget values serialization", async ({ page, comfy }) => {
 
     // create a new workflow, add a cnet node
     await comfy.createNewWorkflow();
-    const node = await comfy.addNode(
-        ["DrawThings", "Draw Things Control Net"],
-        0,
-        0
-    );
+    const node = await comfy.addNode(["DrawThings", "Draw Things Control Net"], 0, 0);
     await node.centerNode();
 
     // we need a sampler node for models to appear
     await node.addOutputNode("CONTROL_NET", "Draw Things Sampler");
     await page.waitForTimeout(2000);
 
-    await node.selectWidgetOption(
-        "control_name",
-        "Inpainting (SD v1.x, ControlNet 1.1) (SD)"
-    );
+    await node.selectWidgetOption("control_name", "Inpainting (SD v1.x, ControlNet 1.1) (SD)");
     await node.setWidgetValue("control_weight", 0.8);
     await node.setWidgetValue("control_start", 0.2);
     await node.setWidgetValue("control_end", 0.9);
@@ -81,9 +80,7 @@ test("Widget values serialization", async ({ page, comfy }) => {
     const workflow = await comfy.exportWorkflow();
 
     // assert correct values
-    const cnetNodeJson = workflow.nodes.find(
-        (n) => n.type === "DrawThingsControlNet"
-    );
+    const cnetNodeJson = workflow.nodes.find((n) => n.type === "DrawThingsControlNet");
     expect(cnetNodeJson).toBeDefined();
     expect(cnetNodeJson).toHaveProperty("nodePackVersion");
 
@@ -116,13 +113,15 @@ test("Widget values serialization", async ({ page, comfy }) => {
     expect(await restoredNode?.getWidgetValue("control_start")).toBeCloseTo(0.2, 5);
     expect(await restoredNode?.getWidgetValue("control_end")).toBeCloseTo(0.9, 5);
     expect(await restoredNode?.isWidgetVisible("control_input_type")).toBe(false);
-    expect(await page.evaluate(() => {
-        const node = app.graph.nodes.find(n => n.type === "DrawThingsControlNet");
-        return node.widgets.find(w => w.name === "control_name").value.toString();
-    })).toBe(expectedModel.value.name);
+    expect(
+        await page.evaluate(() => {
+            const node = app.graph.nodes.find((n) => n.type === "DrawThingsControlNet");
+            return node.widgets.find((w) => w.name === "control_name").value.toString();
+        }),
+    ).toBe(expectedModel.value.name);
 
     const roundtrip = await comfy.exportWorkflow();
-    const restoredJson = roundtrip.nodes.find(n => n.type === "DrawThingsControlNet");
+    const restoredJson = roundtrip.nodes.find((n) => n.type === "DrawThingsControlNet");
     expect(restoredJson.widget_values_keyed).toEqual(values);
     expect(restoredJson._lastSelectedModel).toEqual(cnetNodeJson._lastSelectedModel);
 });
@@ -130,11 +129,7 @@ test("Widget values serialization", async ({ page, comfy }) => {
 test("controlnet dynamic widgets", async ({ page, comfy }) => {
     // create a new workflow, add a cnet node
     await comfy.createNewWorkflow();
-    const node = await comfy.addNode(
-        ["DrawThings", "Draw Things Control Net"],
-        0,
-        0
-    );
+    const node = await comfy.addNode(["DrawThings", "Draw Things Control Net"], 0, 0);
     await node.centerNode();
 
     // we need a sampler node for models to appear
@@ -147,7 +142,7 @@ test("controlnet dynamic widgets", async ({ page, comfy }) => {
             "global_average_pooling",
             "target_blocks",
             "down_sampling_rate",
-        ])
+        ]),
     ).toMatchObject([false, false, false, false]);
 
     // control_input_type, model: Xinsir Union ProMax (SDXL, ControlNet)
@@ -161,10 +156,7 @@ test("controlnet dynamic widgets", async ({ page, comfy }) => {
     expect(await node?.isWidgetVisible("down_sampling_rate")).toBeFalsy();
 
     // global_average_pooling, model: Shuffle (SD v1.x, ControlNet 1.1)
-    await node.selectWidgetOption(
-        "control_name",
-        "Shuffle (SD v1.x, ControlNet 1.1)"
-    );
+    await node.selectWidgetOption("control_name", "Shuffle (SD v1.x, ControlNet 1.1)");
     expect(await node?.isWidgetVisible("control_input_type")).toBeFalsy();
     expect(await node?.isWidgetVisible("global_average_pooling")).toBeTruthy();
 
@@ -174,10 +166,7 @@ test("controlnet dynamic widgets", async ({ page, comfy }) => {
     expect(await node?.isWidgetVisible("target_blocks")).toBeTruthy();
 
     // down_sampling_rate, model: Tile (SD v1.x, ControlNet 1.1)
-    await node.selectWidgetOption(
-        "control_name",
-        "Tile (SD v1.x, ControlNet 1.1)"
-    );
+    await node.selectWidgetOption("control_name", "Tile (SD v1.x, ControlNet 1.1)");
     expect(await node?.isWidgetVisible("target_blocks")).toBeFalsy();
     expect(await node?.isWidgetVisible("down_sampling_rate")).toBeTruthy();
 });

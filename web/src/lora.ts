@@ -1,9 +1,9 @@
 import type { ComfyApp, ComfyExtension } from "@comfyorg/comfyui-frontend-types";
 import type { LGraphNode } from "@comfyorg/litegraph";
-import { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js"
-import { restoreModelSelections } from "./models.js"
-import { plainWidgetValues, updateProto } from "./util.js"
-import { showWidget } from "./widgets.js"
+import { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js";
+import { restoreModelSelections } from "./models.js";
+import { plainWidgetValues, updateProto } from "./util.js";
+import { showWidget } from "./widgets.js";
 
 /**
  * so I don't really see an official way to remove widgets other than .splice
@@ -24,7 +24,7 @@ import { showWidget } from "./widgets.js"
  * code, event listeners attached by the type handler
  */
 
-const DEFAULT_LORA = "(None selected)"
+const DEFAULT_LORA = "(None selected)";
 
 export function DtButtonsTypeHandler(node: any, _inputName: string, _inputData: unknown, _app: ComfyApp) {
     const { container, buttons } = createButtons([
@@ -53,7 +53,7 @@ export function DtButtonsTypeHandler(node: any, _inputName: string, _inputData: 
     const options = {
         hideOnZoom: false,
         getValue: () => undefined,
-        setValue: (_value: any) => { },
+        setValue: (_value: any) => {},
         getMinHeight: () => 36,
         getMaxHeight: () => 36,
         getHeight: () => 36,
@@ -115,25 +115,24 @@ const loraProto: any = {
             // move lora nodes to correct input slot, disconnect all others
             for (const { node, input, slot } of inputNodes) {
                 if (node && node.type === "DrawThingsLoRA" && input.link !== null) {
-                    this.disconnectInput(slot)
-                    this.graph?.removeLink(input.link)
+                    this.disconnectInput(slot);
+                    this.graph?.removeLink(input.link);
                     // Registry misclassifies direct LiteGraph connect calls as network activity.
                     const connectNode = node.connect;
-                    connectNode.call(node, 0, this, 0)
-                }
-                else if (input.link !== null) {
-                    this.disconnectInput(slot)
-                    this.graph?.removeLink(input.link)
+                    connectNode.call(node, 0, this, 0);
+                } else if (input.link !== null) {
+                    this.disconnectInput(slot);
+                    this.graph?.removeLink(input.link);
                 }
             }
 
             // lastly, remove the image input
-            const imageInput = this.inputs.findIndex(input => input.name === 'control_image')
-            if (imageInput !== -1) this.removeInput(imageInput)
+            const imageInput = this.inputs.findIndex((input) => input.name === "control_image");
+            if (imageInput !== -1) this.removeInput(imageInput);
         }
 
         for (const widget of this.widgets ?? []) {
-            if ("model_type" in widget && !widget.value) widget.value = DEFAULT_LORA
+            if ("model_type" in widget && !widget.value) widget.value = DEFAULT_LORA;
         }
 
         delete this.widget_values_keyed;
@@ -145,7 +144,7 @@ const loraProto: any = {
         serialised.showMode = this._showMode;
         serialised.nodePackVersion = nodePackVersion;
         if (this.widgets) {
-            serialised.widget_values_keyed = plainWidgetValues(this)
+            serialised.widget_values_keyed = plainWidgetValues(this);
         }
     },
 
