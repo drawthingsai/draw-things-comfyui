@@ -162,12 +162,12 @@ function updateSamplerWidgets(node: any) {
         showWidget(node, "num_frames", isVideo)
         const audioShift = features.includes("audioShift")
         showWidget(node, "shift_for_audio", audioShift)
-
-        const zeroCfgAvailable = features.includes("cfgZero")
-        const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value
-        showWidget(node, "cfg_zero_star", zeroCfgAvailable)
-        showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled)
     }
+
+    const zeroCfgAvailable = isBasic && features.includes("cfgZero");
+    const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
+    showWidget(node, "cfg_zero_star", zeroCfgAvailable);
+    showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled);
 
     if (isAdvanced) {
         const solAttentionAvailable = features.includes("solAttention")

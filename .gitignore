@@ -120,3 +120,5 @@ fpzip_test.py
 playwright-report/
 
 uv.lock
+
+/server

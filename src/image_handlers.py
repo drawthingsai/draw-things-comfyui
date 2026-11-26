@@ -283,6 +283,7 @@ _PREVIEW_CONVERTERS = {
     "hunyuan_video": ((16,), _PREVIEW_HUNYUAN),
     "wan_v2.2_5b": ((48,), _PREVIEW_WAN22),
     "minimax_h3": ((24,), _PREVIEW_MINIMAX),
+    "minimax_h3_image": ((24,), _PREVIEW_MINIMAX),
     "kandinsky2.1": ((4,), "kandinsky"),
     "hidream_o1": ((3072,), "patches"),
     "wurstchen_v3.0_stage_b": ((3, 4), "wurst"),
@@ -379,7 +380,7 @@ def decode_preview(preview, version):
                 return None
             latent = np.frombuffer(payload, dtype="<f2").reshape(frames, height, width, channels)
 
-        # Audio packing depends on the full temporal dimension, before frame 0.
+        # Only H3 video packs audio, based on the full temporal dimension.
         if version == "minimax_h3":
             audio_height = _preview_minimax_audio_height(frames, width)
             if audio_height is None or audio_height >= height:

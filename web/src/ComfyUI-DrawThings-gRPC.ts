@@ -7,7 +7,7 @@ import type { ComfyExtension, DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
 import { getApi, getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.14.0";
+export const nodePackVersion = "1.15.0";
 
 const extension: ComfyExtension = {
     name: "core",

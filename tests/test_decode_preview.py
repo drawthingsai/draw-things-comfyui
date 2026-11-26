@@ -153,7 +153,7 @@ VERSIONS = {
     "sdxl": ("sdxl_base_v0.9", "sdxl_refiner_v0.9", "ssd_1b", "pixart", "auraflow"),
     "kandinsky": ("kandinsky2.1",),
     "wurst": ("wurstchen_v3.0_stage_c", "wurstchen_v3.0_stage_b"),
-    "minimax": ("minimax_h3",),
+    "minimax": ("minimax_h3", "minimax_h3_image"),
 }
 
 
@@ -174,8 +174,8 @@ class DecodePreviewTests(unittest.TestCase):
         self.assertEqual(image.mode, "RGBA")
         np.testing.assert_array_equal(np.asarray(image), expected)
 
-    def test_all_35_canonical_versions_against_independent_goldens(self):
-        self.assertEqual(sum(map(len, VERSIONS.values())) + 1, 35)  # plus HiDream O1
+    def test_all_36_canonical_versions_against_independent_goldens(self):
+        self.assertEqual(sum(map(len, VERSIONS.values())) + 1, 36)  # plus HiDream O1
         for family, versions in VERSIONS.items():
             channels, rgb_hex = GOLDENS[family]
             vectors = probe_vectors(channels)
@@ -183,10 +183,10 @@ class DecodePreviewTests(unittest.TestCase):
             expected[0, :, :3] = np.frombuffer(
                 bytes.fromhex(rgb_hex), np.uint8
             ).reshape(-1, 3)
-            height = 1 + (audio_height(1, len(vectors)) if family == "minimax" else 0)
-            data = np.zeros((1, height, len(vectors), channels), np.float16)
-            data[0, 0] = vectors
             for version in versions:
+                audio_rows = audio_height(1, len(vectors)) if version == "minimax_h3" else 0
+                data = np.zeros((1, 1 + audio_rows, len(vectors), channels), np.float16)
+                data[0, 0] = vectors
                 for compressed in (False, True):
                     with self.subTest(version=version, compressed=compressed):
                         self.assert_rgba(

@@ -229,11 +229,6 @@ export class ComfyPage {
         }
     }
 
-    async clearUserData() {
-        const dir = join(process.env.TEST_COMFYUI_DIR, "user/default/draw-things-comfyui");
-        await fse.emptyDir(dir);
-    }
-
     async updateSetting(setting: string, value: unknown) {
         if (!this.gotoCalled) await this.goto();
 

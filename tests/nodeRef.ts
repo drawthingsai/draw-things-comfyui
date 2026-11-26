@@ -473,10 +473,15 @@ export class NodeRef {
     }
 
     async openContextMenu() {
+        const clickInset = 10;
         const { view, pos, size } = await this.page.evaluate(
-            async ([nodeId]) => {
+            async ([nodeId, clickInset]) => {
                 const node = app.graph.getNodeById(nodeId);
-                await window.graph.primaryCanvas.centerOnNode(node);
+                const graphCanvas = window.graph.primaryCanvas;
+                await graphCanvas.centerOnNode(node);
+                // Center the click target so tall nodes stay clear of the toolbar.
+                graphCanvas.ds.offset[1] += node.size[1] / 2 - clickInset;
+                graphCanvas.setDirty(true, true);
                 await new Promise((resolve) => setTimeout(resolve, 200));
                 const view: [number, number, number, number] =
                     window.app.canvas.visible_area;
@@ -490,7 +495,7 @@ export class NodeRef {
 
                 return { view, pos, size };
             },
-            [this.id],
+            [this.id, clickInset] as const,
         );
 
         const getPos = ([x, y]: [number, number]) => {
@@ -505,15 +510,13 @@ export class NodeRef {
             return [canvasX, canvasY];
         };
 
-        // try and click the center top of the node
         const targetX = pos[0] + pos[2] / 2;
-        const targetY = pos[1] + 10;
+        const targetY = pos[1] + clickInset;
         const [clickX, clickY] = getPos([targetX, targetY]);
 
         await this.page.locator("#graph-canvas").click({
             position: { x: clickX, y: clickY },
             button: "right",
-            // force: true,
         });
     }
 

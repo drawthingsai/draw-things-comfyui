@@ -3,7 +3,6 @@ import { expect } from "@playwright/test";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { test } from "./fixtures";
-import fse from "fs-extra";
 
 export const workflowFolder = "./tests/workflows";
 
@@ -85,8 +84,21 @@ test("sampler widgets serialization", async ({ comfy }) => {
 });
 
 test("updates notes", async ({ comfy, page }) => {
-    // clear user data
-    await comfy.clearUserData();
+    // Keep announcement state local to this test while other workers load samplers.
+    let userData: unknown;
+    const isAnnouncementData = (url: URL) =>
+        decodeURIComponent(url.pathname).endsWith("/userdata/./draw-things-comfyui/data.json");
+    await page.route(isAnnouncementData, async (route) => {
+        const request = route.request();
+        if (request.method() === "GET") {
+            await route.fulfill(userData === undefined ? { status: 404 } : { json: userData });
+        } else if (request.method() === "POST") {
+            userData = request.postDataJSON();
+            await route.fulfill({ json: "draw-things-comfyui/data.json" });
+        } else {
+            await route.fallback();
+        }
+    });
 
     const toastLoc = comfy.page.locator(".p-toast-message-text");
 
@@ -95,8 +107,6 @@ test("updates notes", async ({ comfy, page }) => {
     await page.waitForTimeout(5000);
     await expect(toastLoc).not.toBeVisible({ timeout: 5000 });
 
-    // assert update notes do not appear
-
     // load workflow with DT sampler
     await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
@@ -104,8 +114,13 @@ test("updates notes", async ({ comfy, page }) => {
     await expect(toastLoc).toBeVisible();
     await expect(toastLoc).toContainText("Draw Things for ComfyUI");
 
-    // reload
+    // Wait for the sampler to read the saved data again after reload.
+    expect(userData).toMatchObject({ announced: expect.any(Array) });
+    const readAfterReload = page.waitForResponse((response) =>
+        isAnnouncementData(new URL(response.url())) && response.request().method() === "GET"
+    );
     await page.reload();
+    expect((await readAfterReload).status()).toBe(200);
     await page.waitForTimeout(5000);
 
     // assert notes does not appear

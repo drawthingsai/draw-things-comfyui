@@ -5,7 +5,11 @@ import { test } from "node:test";
 
 const settings = new Map<string, boolean>();
 const graph: any = { nodes: [], getNodeById(id: number) { return this.nodes.find((n: any) => n.id === id); } };
-const app: any = { graph, canvas: { graph_mouse: [0, 0] }, extensionManager: { setting: { get: (key: string) => settings.get(key) } } };
+const app: any = {
+    graph,
+    canvas: { graph_mouse: [0, 0], setDirty() {} },
+    extensionManager: { setting: { get: (key: string) => settings.get(key) } },
+};
 let fetchApi: (path: string, options?: any) => Promise<any>;
 (globalThis as any).window = { comfyAPI: { app: { app }, api: { api: { fetchApi: (...args: any[]) => fetchApi(args[0], args[1]) } } } };
 const { ComboWidget } = await import("@comfyorg/litegraph");
@@ -20,11 +24,52 @@ function reset(nodes: any[]) { graph.nodes = nodes; settings.clear(); }
 
 test("shared model metadata labels canonical versions and aliases", () => {
     for (const [version, tag] of [
-        ["v1", "SD"], ["sd3_large", "SD3L"], ["minimax_h3", "MiniMax"],
-        ["ltx2.3", "LTX2.3"], ["ltx2_3", "LTX2.3"], ["unknown", "unknown"],
+        ["v1", "SD"],
+        ["sd3_large", "SD3L"],
+        ["minimax_h3", "MMH3"],
+        ["minimax_h3_image", "MMH3 Image"],
+        ["ltx2.3", "LTX2.3"],
+        ["ltx2_3", "LTX2.3"],
+        ["unknown", "unknown"],
     ]) {
         assert.equal(getMenuItem(model("Example", version)).content, `Example (${tag})`);
     }
+});
+
+test("MiniMax H3 Image shows CFG Zero Star in Basic and All settings", async () => {
+    const { default: widgetExtension } = await import("../../web/src/widgets");
+    class Sampler {
+        static comfyClass = "DrawThingsSampler";
+    }
+    await widgetExtension.beforeRegisterNodeDef!(Sampler as any, {} as any, app);
+
+    const node: any = new Sampler();
+    const mode = { name: "settings", value: "All" };
+    const selectedModel = { name: "model", value: { value: { version: "minimax_h3_image" } } };
+    const cfgZero = { name: "cfg_zero_star", value: true, hidden: false };
+    const cfgZeroSteps = { name: "cfg_zero_star_init_steps", value: 2, hidden: false };
+    const otherFeatures = ["num_frames", "shift_for_audio", "res_dpt_shift", "tea_cache", "uses_sol_attention"].map(
+        (name) => ({ name, hidden: false }),
+    );
+    node.widgets = [mode, selectedModel, cfgZero, cfgZeroSteps, ...otherFeatures];
+    node.size = [0, 0];
+    node.computeSize = () => [0, 0];
+
+    node.updateDynamicWidgets();
+    assert.equal(cfgZero.hidden, false);
+    assert.equal(cfgZeroSteps.hidden, false);
+    assert.ok(otherFeatures.every((widget) => widget.hidden));
+
+    mode.value = "Advanced";
+    node.updateDynamicWidgets();
+    assert.equal(cfgZero.hidden, true);
+    assert.equal(cfgZeroSteps.hidden, true);
+
+    mode.value = "Basic";
+    cfgZero.value = false;
+    node.updateDynamicWidgets();
+    assert.equal(cfgZero.hidden, false);
+    assert.equal(cfgZeroSteps.hidden, true);
 });
 
 test("menu query sorts copies and unions downstream versions without dropping metadata", async () => {

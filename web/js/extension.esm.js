@@ -216,7 +216,7 @@ var modelVersions_default = [
   {
     version: "minimax_h3",
     name: "MiniMax Hailuo 3",
-    tag: "MiniMax",
+    tag: "MMH3",
     features: [
       "cfgZero",
       "resolutionDependentShift",
@@ -227,6 +227,12 @@ var modelVersions_default = [
       "teaCache"
     ],
     numFramesStep: 4
+  },
+  {
+    version: "minimax_h3_image",
+    name: "MiniMax H3 Image",
+    tag: "MMH3 Image",
+    features: ["cfgZero"]
   },
   {
     version: "qwen_image_2.1",
@@ -1457,11 +1463,11 @@ function updateSamplerWidgets(node) {
     showWidget(node, "num_frames", isVideo);
     const audioShift = features.includes("audioShift");
     showWidget(node, "shift_for_audio", audioShift);
-    const zeroCfgAvailable = features.includes("cfgZero");
-    const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
-    showWidget(node, "cfg_zero_star", zeroCfgAvailable);
-    showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled);
   }
+  const zeroCfgAvailable = isBasic && features.includes("cfgZero");
+  const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
+  showWidget(node, "cfg_zero_star", zeroCfgAvailable);
+  showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled);
   if (isAdvanced) {
     const solAttentionAvailable = features.includes("solAttention");
     const solAttentionEnabled = solAttentionAvailable && findWidgetByName(node, "uses_sol_attention")?.value;
@@ -1860,7 +1866,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.14.0";
+var nodePackVersion = "1.15.0";
 var extension3 = {
   name: "core",
   getCustomWidgets() {
