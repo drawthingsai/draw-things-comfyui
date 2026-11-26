@@ -418,25 +418,25 @@ type ImportFunc = (key: string, value: any, widget: IWidget, node: LGraphNode, c
 type ExportFunc = (widget: IWidget, node: LGraphNode, config: any) => void | Promise<void>;
 
 const importers: Record<string, ImportFunc> = {
-    model: async (k, v, w, n) => {
+    model: async (_k, v, w, n) => {
         await modelService.selectByFile(n, w, v);
     },
-    refiner_model: async (k, v, w, n) => {
+    refiner_model: async (_k, v, w, n) => {
         await modelService.selectByFile(n, w, v);
     },
-    upscaler: async (k, v, w, n) => {
+    upscaler: async (_k, v, w, n) => {
         await modelService.selectByFile(n, w, v);
     },
-    start_width: (k, v, w) => {
+    start_width: (_k, v, w) => {
         if (w) w.value = roundBy64(v);
     },
-    start_height: (k, v, w) => {
+    start_height: (_k, v, w) => {
         if (w) w.value = roundBy64(v);
     },
-    sampler: (k, v, w) => {
+    sampler: (_k, v, w) => {
         w.value = samplers[v];
     },
-    seed: (k, v, w, n) => {
+    seed: (_k, v, w, _n) => {
         if (typeof v === "number" && v >= 0) {
             w.value = v;
             // Originally was setting to "fixed" if the config has a specific seed
@@ -445,49 +445,49 @@ const importers: Record<string, ImportFunc> = {
             // if (controlWidget) controlWidget.value = "fixed"
         }
     },
-    hires_fix_start_width: (k, v, w, n, c) => {
+    hires_fix_start_width: (_k, v, w, _n, c) => {
         if (!c.hiresFix) return;
         if (w) w.value = roundBy64(v);
     },
-    hires_fix_start_height: (k, v, w, n, c) => {
+    hires_fix_start_height: (_k, v, w, _n, c) => {
         if (!c.hiresFix) return;
         if (w) w.value = roundBy64(v);
     },
-    hires_fix_strength: (k, v, w, n, c) => {
+    hires_fix_strength: (_k, v, w, _n, c) => {
         if (!c.hiresFix) return;
         if (w) w.value = v;
     },
-    seed_mode: (k, v, w) => {
+    seed_mode: (_k, v, w) => {
         if (w && seedModes[v]) w.value = seedModes[v];
     },
-    decoding_tile_width: (k, v, w, n, c) => {
+    decoding_tile_width: (_k, v, w, _n, c) => {
         if (!c.tiledDecoding) return;
         if (w) w.value = roundBy64(v);
     },
-    decoding_tile_height: (k, v, w, n, c) => {
+    decoding_tile_height: (_k, v, w, _n, c) => {
         if (!c.tiledDecoding) return;
         if (w) w.value = roundBy64(v);
     },
-    decoding_tile_overlap: (k, v, w, n, c) => {
+    decoding_tile_overlap: (_k, v, w, _n, c) => {
         if (!c.tiledDecoding) return;
         if (w) w.value = roundBy64(v);
     },
-    diffusion_tile_width: (k, v, w, n, c) => {
+    diffusion_tile_width: (_k, v, w, _n, c) => {
         if (!c.tiledDiffusion) return;
         if (w) w.value = roundBy64(v);
     },
-    diffusion_tile_height: (k, v, w, n, c) => {
+    diffusion_tile_height: (_k, v, w, _n, c) => {
         if (!c.tiledDiffusion) return;
         if (w) w.value = roundBy64(v);
     },
-    diffusion_tile_overlap: (k, v, w, n, c) => {
+    diffusion_tile_overlap: (_k, v, w, _n, c) => {
         if (!c.tiledDiffusion) return;
         if (w) w.value = roundBy64(v);
     },
-    guidance_embed: (k, v, w, n, c) => {
+    guidance_embed: (_k, v, w, _n, _c) => {
         if (w) w.value = v;
     },
-    resolution_dependent_shift: (k, v, w, n, c) => {
+    resolution_dependent_shift: (_k, v, w, n, c) => {
         if (w) w.value = v;
         if (v) {
             const shiftWidget = n.widgets?.find((w) => w.name === "shift");
@@ -496,20 +496,20 @@ const importers: Record<string, ImportFunc> = {
             if (shiftWidget && width && height) shiftWidget.value = calcShift(width as number, height as number);
         }
     },
-    causal_inference: (k, v, w, n, c) => {
+    causal_inference: (_k, v, w, _n, _c) => {
         if (Number.isFinite(v)) w.value = v * 4 - 3;
         else w.value = 0; // Default value
     },
-    causal_inference_pad: (k, v, w, n, c) => {
+    causal_inference_pad: (_k, v, w, _n, _c) => {
         if (w && typeof v === "number") w.value = v * 4;
     },
     // since upscaler and refiner live in different nodes, it's easier to do
     // coercion in the import function
-    upscaler_scale_factor: (k, v, w) => {
+    upscaler_scale_factor: (_k, v, w) => {
         if (v === 2) w.value = 2;
         else w.value = 4;
     },
-    refiner_start: (k, v, w) => {
+    refiner_start: (_k, v, w) => {
         if (typeof v === "number") w.value = Math.min(1, Math.max(0, v));
         else w.value = 0.85; // Default value
     },
@@ -518,16 +518,16 @@ const importers: Record<string, ImportFunc> = {
 const exporters: Record<string, ExportFunc> = {
     // start_width: {},
     // start_height: {},
-    model: async (w, n, c) => {
+    model: async (w, _n, c) => {
         const val = w.value as any;
-        if (w && val && val.value) c.model = val.value.file ?? val.value.name;
+        if (w && val?.value) c.model = val.value.file ?? val.value.name;
     },
-    sampler: (w, n, c) => {
+    sampler: (w, _n, c) => {
         if (w && typeof w.value === "string") c.sampler = samplers.indexOf(w.value);
     },
     // hires_fix_start_width: {},
     // hires_fix_start_height: {},
-    seed_mode: (w, n, c) => {
+    seed_mode: (w, _n, c) => {
         if (w && typeof w.value === "string") c.seed_mode = seedModes.indexOf(w.value);
     },
     // decoding_tile_width: {},
@@ -542,7 +542,7 @@ const exporters: Record<string, ExportFunc> = {
     // },
     // shift: (w, n, c) => {
     // },
-    causal_inference: (w, n, c) => {
+    causal_inference: (w, _n, c) => {
         if (w && typeof w.value === "number") c.causal_inference = Math.floor((w.value + 3) / 4);
     },
 };
@@ -643,7 +643,7 @@ export class DTProperty {
         return value;
     }
 
-    getRequiredNodes(value: any, config: any): string[] {
+    getRequiredNodes(_value: any, _config: any): string[] {
         if (this.node) return [this.node];
         return [];
     }
@@ -698,25 +698,3 @@ function patchProp(jsonName: string, funcName: keyof DTProperty, func: any) {
     const prop = findPropertyJson(jsonName);
     if (prop) (prop as any)[funcName] = func;
 }
-
-const control_input_type = [
-    "Unspecified",
-    "Custom",
-    "Depth",
-    "Canny",
-    "Scribble",
-    "Pose",
-    "Normalbae",
-    "Color",
-    "Lineart",
-    "Softedge",
-    "Seg",
-    "Inpaint",
-    "Ip2p",
-    "Shuffle",
-    "Mlsd",
-    "Tile",
-    "Blur",
-    "Lowquality",
-    "Gray",
-];

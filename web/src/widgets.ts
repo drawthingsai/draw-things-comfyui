@@ -79,7 +79,7 @@ const origProps: Record<string, any> = {};
  * @param {LGraphNode} node
  */
 function updateInput(input: any, node: any) {
-    if (!input || !input.widget || !node || !node.getWidgetFromSlot) return;
+    if (!input?.widget || !node?.getWidgetFromSlot) return;
     if (input._origPos === undefined) {
         input._origPos = input.pos;
 
@@ -101,7 +101,7 @@ function updateInput(input: any, node: any) {
 }
 
 /** @param node {LGraphNode} */
-export function showWidget(node: LGraphNode, widgetName: string, show = false, suffix = "") {
+export function showWidget(node: LGraphNode, widgetName: string, show = false, _suffix = "") {
     const widget = findWidgetByName(node, widgetName);
     if (!widget) return;
     if (!origProps[widget.name]) {
@@ -268,7 +268,7 @@ const extension: ComfyExtension = {
         },
     ],
 
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    async beforeRegisterNodeDef(nodeType, _nodeData, _app) {
         if ((nodeType as any).comfyClass === "DrawThingsSampler") {
             updateProto(nodeType, samplerWidgetsProto);
         }

@@ -1,4 +1,3 @@
-import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 // @ts-expect-error
 import { app } from "../../scripts/app.js";
 import dtCore, { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js";
@@ -99,7 +98,7 @@ export function injectStyle() {
     }
     const style = document.createElement("style");
     style.id = ruleId;
-    style.addEventListener("load", (e) => {
+    style.addEventListener("load", (_e) => {
         const sheet = style.sheet;
         if (sheet) sheet.insertRule(rule, sheet.cssRules.length);
     });

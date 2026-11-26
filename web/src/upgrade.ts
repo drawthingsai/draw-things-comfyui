@@ -1,5 +1,3 @@
-import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
-
 // @ts-expect-error
 import { app } from "../../scripts/app.js";
 
@@ -119,20 +117,3 @@ const announcements = [
         ].join("\n"),
     },
 ];
-
-/**
- * @param {string} versionA
- * @param {string} versionB
- */
-function compareVersions(versionA: string, versionB: string) {
-    const a = versionA.split(".");
-    const b = versionB.split(".");
-
-    if (a.length !== b.length || a.length !== 3) return 0;
-
-    for (let i = 0; i < a.length; i++) {
-        if (Number.parseInt(a[i]) > Number.parseInt(b[i])) return 1;
-        else if (a[i] < b[i]) return -1;
-    }
-    return 0;
-}

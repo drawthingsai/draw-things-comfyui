@@ -95,7 +95,7 @@ const controlNetProto: any = {
         restoreModelSelections(this);
         this.updateDynamicWidgets();
     },
-    onWidgetChanged(this: ControlNetNode, name: string, value: any, old_Value: any, widget: IWidget) {
+    onWidgetChanged(this: ControlNetNode, name: string, value: any, _old_Value: any, _widget: IWidget) {
         if (name === "control_name") {
             const modifier = value?.value?.modifier;
             const inputWidget = findWidgetByName(this, "control_input_type");
@@ -111,7 +111,7 @@ const controlNetProto: any = {
 const extension: ComfyExtension = {
     name: "controlNetNode",
 
-    beforeRegisterNodeDef(nodeType, nodeData, app) {
+    beforeRegisterNodeDef(nodeType, _nodeData, _app) {
         if ((nodeType as any).comfyClass === "DrawThingsControlNet") {
             updateProto(nodeType, controlNetProto);
         }

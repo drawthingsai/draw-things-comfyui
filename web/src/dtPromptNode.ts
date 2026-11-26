@@ -101,7 +101,7 @@ const promptProto: any = {
 const extension: ComfyExtension = {
     name: "promptNode",
 
-    beforeRegisterNodeDef(nodeType, nodeData, app) {
+    beforeRegisterNodeDef(nodeType, _nodeData, _app) {
         if ((nodeType as any).comfyClass === "DrawThingsPrompt") {
             updateProto(nodeType, promptProto);
         }

@@ -1,6 +1,6 @@
 import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 import { importConfig } from "./configImport.js";
-import { findPropertyPython, propertyData } from "./configProperties.js";
+import { findPropertyPython } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
 import type { ComfyExtension, DTSampler } from "./types.js";
@@ -226,13 +226,13 @@ export const samplerProto: Partial<DTSampler> = {
         });
         options.push(null);
         options.push({
-            content: (showPreview ? "✓ " : "") + "Show preview while generating",
+            content: `${showPreview ? "✓ " : ""}Show preview while generating`,
             callback: () => {
                 app.extensionManager.setting.set("drawthings.node.show_preview", !showPreview);
             },
         });
         options.push({
-            content: (keepNodeShrunk ? "✓ " : "") + "Keep node shrunk when widgets change",
+            content: `${keepNodeShrunk ? "✓ " : ""}Keep node shrunk when widgets change`,
             callback: () => {
                 app.extensionManager.setting.set("drawthings.node.keep_shrunk", !keepNodeShrunk);
             },

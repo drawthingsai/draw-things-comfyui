@@ -1,13 +1,13 @@
 import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
-import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
+import type { LGraphNode } from "@comfyorg/litegraph";
 
 const extension: ComfyExtension = {
     name: "dynamicInputs",
 
-    beforeRegisterNodeDef(nodeType, nodeData, app) {
+    beforeRegisterNodeDef(nodeType, _nodeData, _app) {
         if ((nodeType as any).comfyClass === "DrawThingsLoRA") {
             // update inputs when a new node is added
-            setCallback(nodeType.prototype, "onAdded", function (this: any, graph: any) {
+            setCallback(nodeType.prototype, "onAdded", function (this: any, _graph: any) {
                 updateInputs(this);
             });
 
@@ -15,7 +15,7 @@ const extension: ComfyExtension = {
             setCallback(
                 nodeType.prototype,
                 "onWidgetChanged",
-                function (this: any, name: string, value: any, old_Value: any, widget: any) {
+                function (this: any, _name: string, _value: any, _old_Value: any, _widget: any) {
                     updateInputs(this);
                 },
             );
