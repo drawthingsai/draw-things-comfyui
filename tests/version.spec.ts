@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { expect } from "@playwright/test";
-import { join } from "node:path";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { expect } from "@playwright/test";
 import { test } from "./fixtures";
 
 export const workflowFolder = "./tests/workflows";

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Page, expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import sharp from "sharp";
 
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";

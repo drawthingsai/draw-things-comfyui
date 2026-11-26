@@ -1,4 +1,4 @@
-import test, { Page } from "@playwright/test";
+import test, { type Page } from "@playwright/test";
 import { centerOnPoint } from "./util";
 
 export async function getNodeRef(
@@ -299,14 +299,12 @@ export class NodeRef {
     async getWidgetMenuItems(name: string): Promise<{ content: string; disabled: boolean }[]> {
         const menu = await this.openWidgetMenu(name);
         try {
-            return await menu
-                .locator(".litemenu-entry")
-                .evaluateAll((entries) =>
-                    entries.map((entry) => ({
-                        content: entry.textContent ?? "",
-                        disabled: entry.classList.contains("disabled"),
-                    })),
-                );
+            return await menu.locator(".litemenu-entry").evaluateAll((entries) =>
+                entries.map((entry) => ({
+                    content: entry.textContent ?? "",
+                    disabled: entry.classList.contains("disabled"),
+                })),
+            );
         } finally {
             await this.closeMenu();
         }

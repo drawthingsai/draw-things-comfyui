@@ -1,8 +1,8 @@
 import "dotenv/config";
-import { Locator, Page, test as base, expect } from "@playwright/test";
-import { NodeRef } from "./nodeRef";
+import { test as base, expect, type Locator, type Page } from "@playwright/test";
 import fse from "fs-extra";
 import { join } from "path";
+import { NodeRef } from "./nodeRef";
 
 if (!process.env.PLAYWRIGHT_TEST_URL) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 export const DEFAULT_WORKFLOW_FOLDER = "./tests/workflows";

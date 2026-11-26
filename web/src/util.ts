@@ -1,5 +1,5 @@
-import type { ComfyApp, ComfyApi } from "@comfyorg/comfyui-frontend-types";
-import { LGraphCanvas, LiteGraph, type LGraphNode } from "@comfyorg/litegraph";
+import type { ComfyApi, ComfyApp } from "@comfyorg/comfyui-frontend-types";
+import type { LGraphCanvas, LGraphNode, LiteGraph } from "@comfyorg/litegraph";
 
 type MethodKeys<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;

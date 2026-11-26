@@ -1,6 +1,6 @@
 import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 
-// @ts-ignore
+// @ts-expect-error
 import { app } from "../../scripts/app.js";
 
 const dataPath = "./draw-things-comfyui/data.json";

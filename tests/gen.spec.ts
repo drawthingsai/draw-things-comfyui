@@ -1,12 +1,11 @@
 import "dotenv/config";
-import { expect, Page } from "@playwright/test";
-import sharp from "sharp";
-import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { ComfyPage } from "./fixtures";
-import { test } from "./fixtures";
+import { join } from "node:path";
+import { expect, type Page } from "@playwright/test";
 import fse from "fs-extra";
+import sharp from "sharp";
+import { type ComfyPage, test } from "./fixtures";
 import { compareVectors, imageToVectorBase64 } from "./util";
 import { vecs } from "./vector";
 

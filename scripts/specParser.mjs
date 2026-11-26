@@ -61,7 +61,7 @@ function toJS(spec) {
     }
 }
 
-let specI = 0;
+const specI = 0;
 function extractSpecifications(input) {
     const text = input.replace(/^\s+/gm, "").replace(/\n/g, " ");
     const brackets = { "(": ")", "[": "]", "{": "}" };
@@ -71,7 +71,7 @@ function extractSpecifications(input) {
         const start = text.indexOf("Specification(", i);
         if (start === -1) break;
 
-        let bstack = [];
+        const bstack = [];
         let inQuote = false;
         let escaped = false;
         let j = text.indexOf("(", start);

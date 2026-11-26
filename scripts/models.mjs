@@ -1,6 +1,6 @@
-import { compileOfficialModels, versionMap } from "./specParser.mjs";
-import fse from "fs-extra";
 import cp from "child_process";
+import fse from "fs-extra";
+import { compileOfficialModels, versionMap } from "./specParser.mjs";
 
 export async function updateModels(skipClone = false) {
     if (!skipClone) await cloneCommunityModels();

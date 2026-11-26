@@ -1,6 +1,6 @@
+import { expect } from "@playwright/test";
 import { join } from "path";
 import { test } from "./fixtures";
-import { expect } from "@playwright/test";
 
 const models = [
     {

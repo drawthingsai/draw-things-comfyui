@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { expect } from "@playwright/test";
-import { ComfyPage, test } from "./fixtures";
+import { type ComfyPage, test } from "./fixtures";
 
 const localOnlyModels = [
     "animyo (SD)",

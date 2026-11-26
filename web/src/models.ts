@@ -1,7 +1,7 @@
 import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 import type { ComboWidget, IWidget, LGraph, LGraphNode } from "@comfyorg/litegraph";
 import modelVersions from "../../src/modelVersions.json";
-import { combinedModelsResponseKeys, type CombinedModelsResponse } from "./modelsTypes";
+import { type CombinedModelsResponse, combinedModelsResponseKeys } from "./modelsTypes";
 import { getApi, getApp, getLiteGraph } from "./util";
 
 type ComfyWidgetConstructor = ComfyApp["widgets"][string];

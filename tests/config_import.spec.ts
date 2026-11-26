@@ -1,8 +1,8 @@
 import "dotenv/config";
-import { expect } from "@playwright/test";
 import { join } from "node:path";
-import { test } from "./fixtures";
+import { expect } from "@playwright/test";
 import configs from "./data/configs";
+import { test } from "./fixtures";
 
 export const workflowFolder = "./tests/workflows";
 

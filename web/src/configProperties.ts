@@ -1,5 +1,5 @@
-import { modelService } from "./models.js";
 import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
+import { modelService } from "./models.js";
 
 export const samplers = [
     "DPM++ 2M Karras",
@@ -496,7 +496,7 @@ const importers: Record<string, ImportFunc> = {
             if (shiftWidget && width && height) shiftWidget.value = calcShift(width as number, height as number);
         }
     },
-    causal_inference: function (k, v, w, n, c) {
+    causal_inference: (k, v, w, n, c) => {
         if (Number.isFinite(v)) w.value = v * 4 - 3;
         else w.value = 0; // Default value
     },

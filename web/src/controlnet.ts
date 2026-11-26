@@ -1,9 +1,9 @@
+import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
+import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 import { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js";
+import { restoreModelSelections } from "./models.js";
 import { findWidgetByName, plainWidgetValues, updateProto } from "./util.js";
 import { showWidget } from "./widgets.js";
-import { restoreModelSelections } from "./models.js";
-import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
-import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
 
 function updateControlWidgets(node: LGraphNode) {
     const widget = findWidgetByName(node, "control_name");

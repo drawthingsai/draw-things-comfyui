@@ -1,5 +1,5 @@
-import type { LGraphNode, IWidget } from "@comfyorg/litegraph";
 import type { ComfyExtension } from "@comfyorg/comfyui-frontend-types";
+import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 
 const extension: ComfyExtension = {
     name: "dynamicInputs",

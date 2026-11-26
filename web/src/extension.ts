@@ -1,14 +1,13 @@
+import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
+// @ts-expect-error
+import { app } from "../../scripts/app.js";
 import dtCore, { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js";
 import controlNetNode from "./controlnet.js";
 import dtModelNodes from "./dtModelNodes.js";
 import dtPrompt from "./dtPromptNode.js";
 import loraNode from "./lora.js";
-import dtWidgets from "./widgets.js";
-import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 import type { ComfyExtension } from "./types.js";
-
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import dtWidgets from "./widgets.js";
 
 const modules: ComfyExtension[] = [
     dtCore,

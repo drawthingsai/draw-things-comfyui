@@ -1,8 +1,8 @@
 import "dotenv/config";
-import { expect } from "@playwright/test";
 import { join } from "node:path";
-import { test } from "./fixtures";
+import { expect } from "@playwright/test";
 import fse from "fs-extra";
+import { test } from "./fixtures";
 
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");

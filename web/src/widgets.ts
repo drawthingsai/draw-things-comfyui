@@ -1,8 +1,8 @@
 import type { INodeInputSlot, LGraphNode } from "@comfyorg/litegraph";
 import modelVersions from "../../src/modelVersions.json";
 import { calcShift } from "./configProperties.js";
+import type { ComfyExtension } from "./types";
 import { findWidgetByName, getApp, updateProto } from "./util.js";
-import { ComfyExtension } from "./types";
 
 const basicWidgets = [
     "server",
@@ -69,7 +69,7 @@ const advancedWidgets = [
     "color_calibration",
 ];
 
-let origProps: Record<string, any> = {};
+const origProps: Record<string, any> = {};
 
 /**
  * this replace the .pos property on input slots with a getter that returns its
