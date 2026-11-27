@@ -1,0 +1,53 @@
+name: Update Comfy Registry changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published version (for example, 1.15.0)
+        required: true
+        type: string
+      changelog:
+        description: Replacement changelog text
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  update-changelog:
+    if: ${{ github.repository_owner == 'drawthingsai' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update the published changelog
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          CHANGELOG: ${{ inputs.changelog }}
+          COMFY_REGISTRY_TOKEN: ${{ secrets.GHA_COMFYUI_API_KEY }}
+        run: |
+          set +x
+          if [[ -z "$COMFY_REGISTRY_TOKEN" || -z "${CHANGELOG//[[:space:]]/}" ]]; then
+            echo 'Supply a changelog and configure the GHA_COMFYUI_API_KEY secret.' >&2
+            exit 1
+          fi
+
+          if ! version_id=$(curl --disable -fsS 'https://api.comfy.org/nodes/draw-things-comfyui/versions' |
+            jq -er --arg version "$VERSION" 'first(.[] | select(.version == $version) | .id | strings | select(length > 0))'); then
+            echo 'Could not find the published version in the Comfy Registry.' >&2
+            exit 1
+          fi
+
+          updated=$(jq -n --arg changelog "$CHANGELOG" '{changelog: $changelog}' |
+            curl --disable -fsS --request PUT \
+              --header @<(printf 'Authorization: Bearer %s\n' "$COMFY_REGISTRY_TOKEN") \
+              --header 'Content-Type: application/json' \
+              --data-binary @- \
+              "https://api.comfy.org/publishers/drawthingsai/nodes/draw-things-comfyui/versions/$version_id")
+
+          if ! jq -e --arg changelog "$CHANGELOG" '.changelog == $changelog' <<< "$updated" >/dev/null; then
+            echo 'The Registry response did not contain the requested changelog.' >&2
+            exit 1
+          fi
+
+          printf 'Updated the Comfy Registry changelog for %s.\n' "$VERSION"
