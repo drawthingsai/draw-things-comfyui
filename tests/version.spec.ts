@@ -12,11 +12,8 @@ test("load workflow from previous version", async ({ comfy }) => {
     await comfy.openWorkflow(join(workflowFolder, "old_version.json"));
 
     // assert toast appears
-    const toastLoc = comfy.page.locator(".p-toast-message-text");
+    const toastLoc = comfy.getToast("The Draw Things Sampler node contained invalid values - they have been corrected");
     await expect(toastLoc).toContainText("Draw Things gRPC");
-    await expect(toastLoc).toContainText(
-        "The Draw Things Sampler node contained invalid values - they have been corrected",
-    );
 
     // check properties
     const node = (await comfy.getNodeRef("DrawThingsSampler"))!;
@@ -91,7 +88,7 @@ test("updates notes", async ({ comfy, page }) => {
         }
     });
 
-    const toastLoc = comfy.page.locator(".p-toast-message-text");
+    const toastLoc = comfy.getToast("Draw Things for ComfyUI");
 
     // load workflow that doesn't use DT
     await comfy.createNewWorkflow();
@@ -103,7 +100,6 @@ test("updates notes", async ({ comfy, page }) => {
 
     // assert update notes appears
     await expect(toastLoc).toBeVisible();
-    await expect(toastLoc).toContainText("Draw Things for ComfyUI");
 
     // Wait for the sampler to read the saved data again after reload.
     expect(userData).toMatchObject({ announced: expect.any(Array) });

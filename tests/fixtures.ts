@@ -27,6 +27,13 @@ export class ComfyPage {
         this.queryParam = [query, value];
     }
 
+    getToast(text: string): Locator {
+        return this.page
+            .getByRole("region", { name: "Notifications (F8)", exact: true })
+            .getByRole("listitem")
+            .filter({ hasText: text });
+    }
+
     async goto() {
         const url = new URL(this.url);
         if (this.queryParam) {

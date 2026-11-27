@@ -146,7 +146,7 @@ test.describe("Sampler node", () => {
         await sampler?.selectContextMenuOption("Paste Draw Things config");
 
         await expect(
-            comfy.page.getByText("The Draw Things Sampler node contained invalid values - they have been corrected:"),
+            comfy.getToast("The Draw Things Sampler node contained invalid values - they have been corrected:"),
         ).toBeVisible();
 
         const expected = {
@@ -272,7 +272,7 @@ test.describe("Upscaler and Refiner", () => {
         const sampler = await comfy.getNodeRef("DrawThingsSampler");
         await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-        const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
+        const toast = comfy.getToast("The Draw Things config has been partially loaded.");
 
         const refiner = await comfy.getNodeRef("DrawThingsRefiner");
         await expect
@@ -288,13 +288,13 @@ test.describe("Upscaler and Refiner", () => {
 
         await expect(toast).toContainText("DrawThingsUpscaler");
         await expect(toast).not.toContainText("DrawThingsRefiner");
-        await comfy.page.getByRole("alert").getByRole("button", { name: "Close", exact: true }).click();
+        await toast.getByRole("button", { name: "Close", exact: true }).click();
 
         await sampler?.disconnectInput("refiner");
         await sampler?.selectContextMenuOption("Paste Draw Things config");
 
-        await expect(toast.last()).toContainText("DrawThingsUpscaler");
-        await expect(toast.last()).toContainText("DrawThingsRefiner");
+        await expect(toast).toContainText("DrawThingsUpscaler");
+        await expect(toast).toContainText("DrawThingsRefiner");
     });
 });
 
@@ -392,7 +392,7 @@ test.describe("Lora", () => {
         // the lora node ids are 25 and 26
         const secondLora = await comfy.getNodeRef(26);
 
-        const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
+        const toast = comfy.getToast("The Draw Things config has been partially loaded.");
 
         // load the config with both lora nodes connected, assert no message
         await sampler?.selectContextMenuOption("Paste Draw Things config");
@@ -412,13 +412,14 @@ test.describe("Lora", () => {
         // load config, confirm message says 1 more is needed
         await sampler?.selectContextMenuOption("Paste Draw Things config");
         await expect(toast).toContainText("1 x DrawThingsLoRA");
+        await toast.getByRole("button", { name: "Close", exact: true }).click();
 
         // disconnect the second lora node, no available slots
         await sampler?.disconnectInput("lora");
 
         // load config, confirm message says 2 more are needed
         await sampler?.selectContextMenuOption("Paste Draw Things config");
-        await expect(toast.last()).toContainText("2 x DrawThingsLoRA");
+        await expect(toast).toContainText("2 x DrawThingsLoRA");
     });
 
     test("if the config has >8 loras and enough nodes are connected, both nodes have config applied", async ({
@@ -551,7 +552,7 @@ test.describe("Lora", () => {
                 mode_8: "Refiner",
             });
 
-        const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
+        const toast = comfy.getToast("The Draw Things config has been partially loaded.");
 
         await expect(toast).toContainText("1 x DrawThingsLoRA");
     });
@@ -630,7 +631,7 @@ test.describe("Controlnet", () => {
         // the cnet node ids are 29 and 28
         const secondCnet = await comfy.getNodeRef(28);
 
-        const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
+        const toast = comfy.getToast("The Draw Things config has been partially loaded.");
 
         // load the config with both cnet nodes connected, assert no message
         await sampler?.selectContextMenuOption("Paste Draw Things config");
@@ -650,13 +651,14 @@ test.describe("Controlnet", () => {
         // load config, confirm message says 1 more is needed
         await sampler?.selectContextMenuOption("Paste Draw Things config");
         await expect(toast).toContainText("1 x DrawThingsControlNet");
+        await toast.getByRole("button", { name: "Close", exact: true }).click();
 
         // disconnect the second cnet node, no available slots
         await sampler?.disconnectInput("control_net");
 
         // load config, confirm message says 2 more are needed
         await sampler?.selectContextMenuOption("Paste Draw Things config");
-        await expect(toast.last()).toContainText("2 x DrawThingsControlNet");
+        await expect(toast).toContainText("2 x DrawThingsControlNet");
     });
 
     test("if the config has more controls than there are nodes connected, the first n are applied and a message is displayed listing the missing nodes", async ({
@@ -678,7 +680,7 @@ test.describe("Controlnet", () => {
         const firstCnet = await comfy.getNodeRef(29);
         const secondCnet = await comfy.getNodeRef(28);
 
-        const toast = comfy.page.getByText("The Draw Things config has been partially loaded.");
+        const toast = comfy.getToast("The Draw Things config has been partially loaded.");
         await expect(toast).toContainText("1 x DrawThingsControlNet");
 
         await expect
