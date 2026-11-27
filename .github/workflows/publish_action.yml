@@ -8,7 +8,9 @@ on:
       - "pyproject.toml"
 
 permissions:
+  contents: read
   issues: write
+  pull-requests: read
 
 jobs:
   publish-node:
@@ -18,7 +20,24 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      - name: Get the merged PR description
+        id: changelog
+        uses: actions/github-script@v9
+        with:
+          result-encoding: string
+          retries: 2
+          script: |
+            const { data: pullRequests } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              ...context.repo,
+              commit_sha: context.sha,
+            });
+            const pullRequest = pullRequests.find(
+              (pr) => pr.state === 'closed' && context.ref === `refs/heads/${pr.base.ref}`,
+            );
+            return pullRequest?.body ?? '';
       - name: Publish Custom Node
         uses: Comfy-Org/publish-node-action@v1
+        env:
+          COMFY_NODE_CHANGELOG: ${{ steps.changelog.outputs.result }}
         with:
           personal_access_token: ${{ secrets.GHA_COMFYUI_API_KEY }} ## Add your own personal access token to your Github Repository secrets and reference it here.
