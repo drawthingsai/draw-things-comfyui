@@ -1,5 +1,7 @@
 import { app } from '../../scripts/app.js';
 
+// web/src/extension.ts
+
 // src/modelVersions.json
 var modelVersions_default = [
   {
@@ -216,7 +218,7 @@ var modelVersions_default = [
   {
     version: "minimax_h3",
     name: "MiniMax Hailuo 3",
-    tag: "MiniMax",
+    tag: "MMH3",
     features: [
       "cfgZero",
       "resolutionDependentShift",
@@ -227,6 +229,12 @@ var modelVersions_default = [
       "teaCache"
     ],
     numFramesStep: 4
+  },
+  {
+    version: "minimax_h3_image",
+    name: "MiniMax H3 Image",
+    tag: "MMH3 Image",
+    features: ["cfgZero"]
   },
   {
     version: "qwen_image_2.1",
@@ -261,7 +269,16 @@ var modelVersions_default = [
 ];
 
 // web/src/modelsTypes.ts
-var combinedModelsResponseKeys = ["officialModels", "officialCnets", "officialLoras", "communityModels", "communityCnets", "communityLoras", "communityEmbeddings", "uncuratedModels"];
+var combinedModelsResponseKeys = [
+  "officialModels",
+  "officialCnets",
+  "officialLoras",
+  "communityModels",
+  "communityCnets",
+  "communityLoras",
+  "communityEmbeddings",
+  "uncuratedModels"
+];
 
 // web/src/util.ts
 function setCallback(target, callbackName, callback) {
@@ -394,7 +411,10 @@ function findServerNodes(node) {
         if (target?.subgraph) {
           const slot = target.subgraph.inputNode?.slots?.[link.target_slot];
           const innerLinks = slot?.getLinks?.() ?? [];
-          followLinks(target.subgraph, innerLinks.map((inner) => inner.id));
+          followLinks(
+            target.subgraph,
+            innerLinks.map((inner) => inner.id)
+          );
         } else if (target) visit(target);
       }
     }
@@ -500,10 +520,14 @@ var ModelService = class {
     for (const catalog of catalogs)
       for (const model of catalog?.[type] ?? []) if (!models.has(model.file)) models.set(model.file, model);
     const rank = (model) => !shouldFilterVersions || !versions.length ? 0 : model.version ? versions.includes(model.version) ? 0 : 2 : 1;
-    return [...models.values()].map((model) => getMenuItem(
-      model,
-      !!(shouldFilterVersions && model.version && versions.length && !versions.includes(model.version))
-    )).sort((a, b) => rank(a.value) - rank(b.value) || a.value.name.localeCompare(b.value.name, void 0, { sensitivity: "base" }));
+    return [...models.values()].map(
+      (model) => getMenuItem(
+        model,
+        !!(shouldFilterVersions && model.version && versions.length && !versions.includes(model.version))
+      )
+    ).sort(
+      (a, b) => rank(a.value) - rank(b.value) || a.value.name.localeCompare(b.value.name, void 0, { sensitivity: "base" })
+    );
   }
   async selectByFile(node, widget, file) {
     if (!file) {
@@ -514,11 +538,13 @@ var ModelService = class {
     const find = (catalogs) => catalogs.flatMap((catalog) => catalog[type] ?? []).find((model2) => model2.file === file);
     let model = find(this.getCachedLocalModels(node));
     if (!model) {
-      const local = await Promise.allSettled(this.context(node).servers.map(async (server) => {
-        const address = server.getServer?.();
-        if (!address) throw new Error("Missing server address");
-        return getModels(address.server, address.port, address.useTls);
-      }));
+      const local = await Promise.allSettled(
+        this.context(node).servers.map(async (server) => {
+          const address = server.getServer?.();
+          if (!address) throw new Error("Missing server address");
+          return getModels(address.server, address.port, address.useTls);
+        })
+      );
       model = find(local.flatMap((result) => result.status === "fulfilled" ? [result.value] : []));
     }
     if (!model) {
@@ -527,10 +553,14 @@ var ModelService = class {
       } catch {
       }
     }
-    setModelValue(node, widget, model ? getMenuItem(model) : {
-      value: { file },
-      content: file
-    });
+    setModelValue(
+      node,
+      widget,
+      model ? getMenuItem(model) : {
+        value: { file },
+        content: file
+      }
+    );
   }
 };
 var modelService = new ModelService();
@@ -573,7 +603,9 @@ var DtModelTypeHandler = (comfyNode, inputName, inputData) => {
       return;
     }
     if (!current() || widget.value !== value) return;
-    const index = items.findIndex((item) => typeof item === "string" ? item === value : item.value.file === value?.value?.file);
+    const index = items.findIndex(
+      (item) => typeof item === "string" ? item === value : item.value.file === value?.value?.file
+    );
     let next = index + delta;
     while (next >= 0 && next < items.length && items[next].disabled) next += delta;
     if (next < 0 || next >= items.length) return;
@@ -599,7 +631,11 @@ var DtModelTypeHandler = (comfyNode, inputName, inputData) => {
       className: "dark",
       callback: (item) => {
         if (item?.disabled || item === "Not connected" || !current()) return;
-        widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), { e, node: clickedNode, canvas });
+        widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), {
+          e,
+          node: clickedNode,
+          canvas
+        });
       }
     });
     menu = open([{ content: "Loading models\u2026", disabled: true }]);
@@ -610,7 +646,10 @@ var DtModelTypeHandler = (comfyNode, inputName, inputData) => {
       if (isPrompt) {
         const prompt = String(node.widgets?.find((w) => w.name === "prompt")?.value ?? "");
         const tags = new Set([...prompt.matchAll(/<(.*?)>/gm)].map((m) => m[1]));
-        items = items.map((item) => ({ ...item, content: `${tags.has(item.value.keyword) ? "\u2713 " : ""}${item.value.name} (${item.value.version})` }));
+        items = items.map((item) => ({
+          ...item,
+          content: `${tags.has(item.value.keyword) ? "\u2713 " : ""}${item.value.name} (${item.value.version})`
+        }));
       }
       if (!items.length) items.push({ content: "No models available", disabled: true });
     } catch (error) {
@@ -621,7 +660,12 @@ var DtModelTypeHandler = (comfyNode, inputName, inputData) => {
           { content: error.message, disabled: true }
         ];
       } else {
-        items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+        items = [
+          {
+            content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry",
+            disabled: true
+          }
+        ];
       }
     }
     if (!current() || !menu.root?.isConnected) {
@@ -669,13 +713,14 @@ var combinedLoad;
 var combinedCache;
 async function getCombinedModels() {
   if (combinedCache) return combinedCache;
-  if (!combinedLoad) combinedLoad = (async () => {
-    const response = await getApi().fetchApi("/dt_grpc/combined_models");
-    if (!response.ok) throw new Error("Couldn't retrieve model metadata");
-    const combined = await response.json();
-    combinedCache = combined;
-    return combined;
-  })();
+  if (!combinedLoad)
+    combinedLoad = (async () => {
+      const response = await getApi().fetchApi("/dt_grpc/combined_models");
+      if (!response.ok) throw new Error("Couldn't retrieve model metadata");
+      const combined = await response.json();
+      combinedCache = combined;
+      return combined;
+    })();
   const load = combinedLoad;
   try {
     return await load;
@@ -694,21 +739,24 @@ function allModelsCatalog(combined) {
 }
 async function getBridgeModels() {
   if (bridgeCache) return bridgeCatalog(bridgeCache);
-  if (!bridgeLoad) bridgeLoad = (async () => {
-    const api = getApi();
-    const [filesResponse, combined2] = await Promise.all([
-      api.fetchApi("/dt_grpc/bridge_models"),
-      getCombinedModels()
-    ]);
-    if (!filesResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
-    const files = await filesResponse.json();
-    const filtered = Object.fromEntries(combinedModelsResponseKeys.map((key) => [
-      key,
-      Array.isArray(combined2[key]) ? combined2[key].filter((model) => files.includes(model.file)) : []
-    ]));
-    bridgeCache = filtered;
-    return filtered;
-  })();
+  if (!bridgeLoad)
+    bridgeLoad = (async () => {
+      const api = getApi();
+      const [filesResponse, combined2] = await Promise.all([
+        api.fetchApi("/dt_grpc/bridge_models"),
+        getCombinedModels()
+      ]);
+      if (!filesResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
+      const files = await filesResponse.json();
+      const filtered = Object.fromEntries(
+        combinedModelsResponseKeys.map((key) => [
+          key,
+          Array.isArray(combined2[key]) ? combined2[key].filter((model) => files.includes(model.file)) : []
+        ])
+      );
+      bridgeCache = filtered;
+      return filtered;
+    })();
   const load = bridgeLoad;
   let combined;
   try {
@@ -723,7 +771,11 @@ function bridgeCatalog(combined) {
   const community = !!setting.get("drawthings.bridge_mode.community");
   const uncurated = !!setting.get("drawthings.bridge_mode.uncurated");
   return {
-    models: [...combined.officialModels, ...community ? combined.communityModels : [], ...uncurated ? combined.uncuratedModels : []],
+    models: [
+      ...combined.officialModels,
+      ...community ? combined.communityModels : [],
+      ...uncurated ? combined.uncuratedModels : []
+    ],
     controlNets: [...combined.officialCnets, ...community ? combined.communityCnets : []],
     loras: [...combined.officialLoras, ...community ? combined.communityLoras : []],
     textualInversions: community ? [...combined.communityEmbeddings] : [],
@@ -785,8 +837,24 @@ function calcShift(h, w) {
   const result = Math.exp(step4);
   return Math.round(result * 100) / 100;
 }
-var numFramesMaxMap = { "wan_v2.1_1.3b": 129, "wan_v2.1_14b": 129, hunyuan_video: 201, svd_i2v: 25, ltx2: 249, "ltx2.3": 249, "ltx2_3": 249 };
-var numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14, ltx2: 121, "ltx2.3": 121, "ltx2_3": 121 };
+var numFramesMaxMap = {
+  "wan_v2.1_1.3b": 129,
+  "wan_v2.1_14b": 129,
+  hunyuan_video: 201,
+  svd_i2v: 25,
+  ltx2: 249,
+  "ltx2.3": 249,
+  ltx2_3: 249
+};
+var numFramesDefMap = {
+  "wan_v2.1_1.3b": 81,
+  "wan_v2.1_14b": 81,
+  hunyuan_video: 129,
+  svd_i2v: 14,
+  ltx2: 121,
+  "ltx2.3": 121,
+  ltx2_3: 121
+};
 var propertyData = [
   ["start_width", "width", "DrawThingsSampler", "width", "int", 512, 128, 8192, 64, "roundTo64"],
   ["start_height", "height", "DrawThingsSampler", "height", "int", 512, 128, 8192, 64, "roundTo64"],
@@ -799,9 +867,42 @@ var propertyData = [
   ["batch_count", "batch_count", "DrawThingsSampler", "batchCount", "int", 1, 1, 1, 1],
   ["batch_size", "batch_size", "DrawThingsSampler", "batchSize", "int", 1, 1, 4, 1],
   ["hires_fix", "high_res_fix", "DrawThingsSampler", "hiresFix", "bool", false],
-  ["hires_fix_start_width", "high_res_fix_start_width", "DrawThingsSampler", "hiresFixWidth", "int", 512, 128, 2048, 64, "roundTo64,ifTrue=hiresFix"],
-  ["hires_fix_start_height", "high_res_fix_start_height", "DrawThingsSampler", "hiresFixHeight", "int", 512, 128, 2048, 64, "roundTo64,ifTrue=hiresFix"],
-  ["hires_fix_strength", "high_res_fix_strength", "DrawThingsSampler", "hiresFixStrength", "float", 0.7, 0, 1, 0.01, "ifTrue=hiresFix"],
+  [
+    "hires_fix_start_width",
+    "high_res_fix_start_width",
+    "DrawThingsSampler",
+    "hiresFixWidth",
+    "int",
+    512,
+    128,
+    2048,
+    64,
+    "roundTo64,ifTrue=hiresFix"
+  ],
+  [
+    "hires_fix_start_height",
+    "high_res_fix_start_height",
+    "DrawThingsSampler",
+    "hiresFixHeight",
+    "int",
+    512,
+    128,
+    2048,
+    64,
+    "roundTo64,ifTrue=hiresFix"
+  ],
+  [
+    "hires_fix_strength",
+    "high_res_fix_strength",
+    "DrawThingsSampler",
+    "hiresFixStrength",
+    "float",
+    0.7,
+    0,
+    1,
+    0.01,
+    "ifTrue=hiresFix"
+  ],
   ["image_guidance_scale", "image_guidance_scale", "DrawThingsSampler", "imageGuidanceScale", "float", 5, 0, 50, 0.1],
   ["seed_mode", "seed_mode", "DrawThingsSampler", "seedMode", "index", 2, seedModes],
   ["clip_skip", "clip_skip", "DrawThingsSampler", "clipSkip", "int", 1, 1, 23, 1],
@@ -838,34 +939,191 @@ var propertyData = [
   ["stage_2_cfg", null, null, "stage2Guidance"],
   ["stage_2_shift", null, null, "stage2Shift"],
   ["tiled_decoding", "tiled_decoding", "DrawThingsSampler", "tiledDecoding", "bool", false],
-  ["decoding_tile_width", "decoding_tile_width", "DrawThingsSampler", "decodingTileWidth", "int", 512, 128, 2048, 64, "roundTo64,ifTrue=tiledDecoding"],
-  ["decoding_tile_height", "decoding_tile_height", "DrawThingsSampler", "decodingTileHeight", "int", 512, 128, 2048, 64, "roundTo64,ifTrue=tiledDecoding"],
-  ["decoding_tile_overlap", "decoding_tile_overlap", "DrawThingsSampler", "decodingTileOverlap", "int", 512, 64, 1024, 64, "roundTo64,ifTrue=tiledDecoding"],
-  ["stochastic_sampling_gamma", "stochastic_sampling_gamma", "DrawThingsSampler", "stochasticSamplingGamma", "float", 0.3, 0, 1, 0.01],
-  ["preserve_original_after_inpaint", "preserve_original", "DrawThingsSampler", "preserveOriginalAfterInpaint", "bool", true],
+  [
+    "decoding_tile_width",
+    "decoding_tile_width",
+    "DrawThingsSampler",
+    "decodingTileWidth",
+    "int",
+    512,
+    128,
+    2048,
+    64,
+    "roundTo64,ifTrue=tiledDecoding"
+  ],
+  [
+    "decoding_tile_height",
+    "decoding_tile_height",
+    "DrawThingsSampler",
+    "decodingTileHeight",
+    "int",
+    512,
+    128,
+    2048,
+    64,
+    "roundTo64,ifTrue=tiledDecoding"
+  ],
+  [
+    "decoding_tile_overlap",
+    "decoding_tile_overlap",
+    "DrawThingsSampler",
+    "decodingTileOverlap",
+    "int",
+    512,
+    64,
+    1024,
+    64,
+    "roundTo64,ifTrue=tiledDecoding"
+  ],
+  [
+    "stochastic_sampling_gamma",
+    "stochastic_sampling_gamma",
+    "DrawThingsSampler",
+    "stochasticSamplingGamma",
+    "float",
+    0.3,
+    0,
+    1,
+    0.01
+  ],
+  [
+    "preserve_original_after_inpaint",
+    "preserve_original",
+    "DrawThingsSampler",
+    "preserveOriginalAfterInpaint",
+    "bool",
+    true
+  ],
   ["tiled_diffusion", "tiled_diffusion", "DrawThingsSampler", "tiledDiffusion", "bool", false],
-  ["diffusion_tile_width", "diffusion_tile_width", "DrawThingsSampler", "diffusionTileWidth", "int", 512, 128, 2048, 64, "roundTo64,ifTrue=tiledDiffusion"],
-  ["diffusion_tile_height", "diffusion_tile_height", "DrawThingsSampler", "diffusionTileHeight", "int", 512, 128, 2048, 64, "roundTo64,ifTrue=tiledDiffusion"],
-  ["diffusion_tile_overlap", "diffusion_tile_overlap", "DrawThingsSampler", "diffusionTileOverlap", "int", 512, 64, 1024, 64, "roundTo64,ifTrue=tiledDiffusion"],
+  [
+    "diffusion_tile_width",
+    "diffusion_tile_width",
+    "DrawThingsSampler",
+    "diffusionTileWidth",
+    "int",
+    512,
+    128,
+    2048,
+    64,
+    "roundTo64,ifTrue=tiledDiffusion"
+  ],
+  [
+    "diffusion_tile_height",
+    "diffusion_tile_height",
+    "DrawThingsSampler",
+    "diffusionTileHeight",
+    "int",
+    512,
+    128,
+    2048,
+    64,
+    "roundTo64,ifTrue=tiledDiffusion"
+  ],
+  [
+    "diffusion_tile_overlap",
+    "diffusion_tile_overlap",
+    "DrawThingsSampler",
+    "diffusionTileOverlap",
+    "int",
+    512,
+    64,
+    1024,
+    64,
+    "roundTo64,ifTrue=tiledDiffusion"
+  ],
   ["t5_text_encoder", null, null, "t5TextEncoder"],
   ["separate_clip_l", "separate_clip_l", "DrawThingsSampler", "separateClipL", "bool", false],
   ["clip_l_text", "clip_l_text", "DrawThingsSampler", "clipLText", "string", "", "ifTrue=separateClipL"],
   ["separate_open_clip_g", "separate_open_clip_g", "DrawThingsSampler", "separateOpenClipG", "bool", false],
-  ["open_clip_g_text", "open_clip_g_text", "DrawThingsSampler", "openClipGText", "string", "", "ifTrue=separateOpenClipG"],
+  [
+    "open_clip_g_text",
+    "open_clip_g_text",
+    "DrawThingsSampler",
+    "openClipGText",
+    "string",
+    "",
+    "ifTrue=separateOpenClipG"
+  ],
   ["speed_up_with_guidance_embed", "speed_up", "DrawThingsSampler", "speedUpWithGuidanceEmbed", "bool", true],
-  ["guidance_embed", "guidance_embed", "DrawThingsSampler", "guidanceEmbed", "float", 4.5, 0, 50, 0.1, "ifFalse=speedUpWithGuidanceEmbed"],
+  [
+    "guidance_embed",
+    "guidance_embed",
+    "DrawThingsSampler",
+    "guidanceEmbed",
+    "float",
+    4.5,
+    0,
+    50,
+    0.1,
+    "ifFalse=speedUpWithGuidanceEmbed"
+  ],
   ["resolution_dependent_shift", "res_dpt_shift", "DrawThingsSampler", "resolutionDependentShift", "bool", true],
-  ["tea_cache_start", "tea_cache_start", "DrawThingsSampler", "teaCacheStart", "int", 5, 0, 150, 1, "ifTrue=teaCache"],
+  [
+    "tea_cache_start",
+    "tea_cache_start",
+    "DrawThingsSampler",
+    "teaCacheStart",
+    "int",
+    5,
+    0,
+    150,
+    1,
+    "ifTrue=teaCache"
+  ],
   ["tea_cache_end", "tea_cache_end", "DrawThingsSampler", "teaCacheEnd", "int", -1, -151, 150, 1, "ifTrue=teaCache"],
-  ["tea_cache_threshold", "tea_cache_threshold", "DrawThingsSampler", "teaCacheThreshold", "float", 0.06, 0, 1, 0.01, "ifTrue=teaCache"],
+  [
+    "tea_cache_threshold",
+    "tea_cache_threshold",
+    "DrawThingsSampler",
+    "teaCacheThreshold",
+    "float",
+    0.06,
+    0,
+    1,
+    0.01,
+    "ifTrue=teaCache"
+  ],
   ["tea_cache", "tea_cache", "DrawThingsSampler", "teaCache", "bool", false],
   ["separate_t5", null, null, "separateT5"],
   ["t5_text", null, null, null],
-  ["tea_cache_max_skip_steps", "tea_cache_max_skip_steps", "DrawThingsSampler", "teaCacheMaxSkipSteps", "int", 3, 1, 50, 1, "ifTrue=teaCache"],
+  [
+    "tea_cache_max_skip_steps",
+    "tea_cache_max_skip_steps",
+    "DrawThingsSampler",
+    "teaCacheMaxSkipSteps",
+    "int",
+    3,
+    1,
+    50,
+    1,
+    "ifTrue=teaCache"
+  ],
   // causal_inference_enabled is implied by causal_inference>0
   ["causal_inference_enabled", null, null, null],
-  ["causal_inference", "causal_inference", "DrawThingsSampler", "causalInference", "int", 0, 0, 129, 4, "ifPos=set(causalInference, true),causInfConvert"],
-  ["causal_inference_pad", "causal_inference_pad", "DrawThingsSampler", "causalInferencePad", "int", 0, 0, 129, 4, "causInfConvert"],
+  [
+    "causal_inference",
+    "causal_inference",
+    "DrawThingsSampler",
+    "causalInference",
+    "int",
+    0,
+    0,
+    129,
+    4,
+    "ifPos=set(causalInference, true),causInfConvert"
+  ],
+  [
+    "causal_inference_pad",
+    "causal_inference_pad",
+    "DrawThingsSampler",
+    "causalInferencePad",
+    "int",
+    0,
+    0,
+    129,
+    4,
+    "causInfConvert"
+  ],
   // in upscaler node
   ["upscaler", "upscaler_model", "DrawThingsUpscaler", "upscaler"],
   ["upscaler_scale_factor", "upscaler_scale_factor", "DrawThingsUpscaler", "upscalerScaleFactor", "int", 4, 2, 4, 2],
@@ -873,82 +1131,115 @@ var propertyData = [
   ["refiner_model", "refiner_model", "DrawThingsRefiner", "refinerModel"],
   ["refiner_start", "refiner_start", "DrawThingsRefiner", "refinerStart", "int", 0.85, 0, 1, 0.01],
   ["cfg_zero_star", "cfg_zero_star", "DrawThingsSampler", "cfgZeroStar", "bool", false],
-  ["cfg_zero_star_init_steps", "cfg_zero_star_init_steps", "DrawThingsSampler", "cfgZeroInitSteps", "int", 0, 0, "ref=steps", 1, "ifTrue=cfgZeroStar"],
+  [
+    "cfg_zero_star_init_steps",
+    "cfg_zero_star_init_steps",
+    "DrawThingsSampler",
+    "cfgZeroInitSteps",
+    "int",
+    0,
+    0,
+    "ref=steps",
+    1,
+    "ifTrue=cfgZeroStar"
+  ],
   ["shift_for_audio", "shift_for_audio", "DrawThingsSampler", "shiftForAudio", "float", 3, 0.1, 12, 0.01],
   ["uses_sol_attention", "uses_sol_attention", "DrawThingsSampler", "usesSolAttention", "bool", false],
-  ["sol_attention_start", "sol_attention_start", "DrawThingsSampler", "solAttentionStart", "int", 2, 0, "ref=steps", 1, "ifTrue=solAttention"],
-  ["sol_attention_tau", "sol_attention_tau", "DrawThingsSampler", "solAttentionTau", "float", 0.5, 0, 4, 0.05, "ifTrue=solAttention"]
+  [
+    "sol_attention_start",
+    "sol_attention_start",
+    "DrawThingsSampler",
+    "solAttentionStart",
+    "int",
+    2,
+    0,
+    "ref=steps",
+    1,
+    "ifTrue=solAttention"
+  ],
+  [
+    "sol_attention_tau",
+    "sol_attention_tau",
+    "DrawThingsSampler",
+    "solAttentionTau",
+    "float",
+    0.5,
+    0,
+    4,
+    0.05,
+    "ifTrue=solAttention"
+  ]
 ];
 function roundBy64(value) {
   return Math.round(value / 64) * 64;
 }
 var importers = {
-  model: async (k, v, w, n) => {
+  model: async (_k, v, w, n) => {
     await modelService.selectByFile(n, w, v);
   },
-  refiner_model: async (k, v, w, n) => {
+  refiner_model: async (_k, v, w, n) => {
     await modelService.selectByFile(n, w, v);
   },
-  upscaler: async (k, v, w, n) => {
+  upscaler: async (_k, v, w, n) => {
     await modelService.selectByFile(n, w, v);
   },
-  start_width: (k, v, w) => {
+  start_width: (_k, v, w) => {
     if (w) w.value = roundBy64(v);
   },
-  start_height: (k, v, w) => {
+  start_height: (_k, v, w) => {
     if (w) w.value = roundBy64(v);
   },
-  sampler: (k, v, w) => {
+  sampler: (_k, v, w) => {
     w.value = samplers[v];
   },
-  seed: (k, v, w, n) => {
+  seed: (_k, v, w, _n) => {
     if (typeof v === "number" && v >= 0) {
       w.value = v;
     }
   },
-  hires_fix_start_width: (k, v, w, n, c) => {
+  hires_fix_start_width: (_k, v, w, _n, c) => {
     if (!c.hiresFix) return;
     if (w) w.value = roundBy64(v);
   },
-  hires_fix_start_height: (k, v, w, n, c) => {
+  hires_fix_start_height: (_k, v, w, _n, c) => {
     if (!c.hiresFix) return;
     if (w) w.value = roundBy64(v);
   },
-  hires_fix_strength: (k, v, w, n, c) => {
+  hires_fix_strength: (_k, v, w, _n, c) => {
     if (!c.hiresFix) return;
     if (w) w.value = v;
   },
-  seed_mode: (k, v, w) => {
+  seed_mode: (_k, v, w) => {
     if (w && seedModes[v]) w.value = seedModes[v];
   },
-  decoding_tile_width: (k, v, w, n, c) => {
+  decoding_tile_width: (_k, v, w, _n, c) => {
     if (!c.tiledDecoding) return;
     if (w) w.value = roundBy64(v);
   },
-  decoding_tile_height: (k, v, w, n, c) => {
+  decoding_tile_height: (_k, v, w, _n, c) => {
     if (!c.tiledDecoding) return;
     if (w) w.value = roundBy64(v);
   },
-  decoding_tile_overlap: (k, v, w, n, c) => {
+  decoding_tile_overlap: (_k, v, w, _n, c) => {
     if (!c.tiledDecoding) return;
     if (w) w.value = roundBy64(v);
   },
-  diffusion_tile_width: (k, v, w, n, c) => {
+  diffusion_tile_width: (_k, v, w, _n, c) => {
     if (!c.tiledDiffusion) return;
     if (w) w.value = roundBy64(v);
   },
-  diffusion_tile_height: (k, v, w, n, c) => {
+  diffusion_tile_height: (_k, v, w, _n, c) => {
     if (!c.tiledDiffusion) return;
     if (w) w.value = roundBy64(v);
   },
-  diffusion_tile_overlap: (k, v, w, n, c) => {
+  diffusion_tile_overlap: (_k, v, w, _n, c) => {
     if (!c.tiledDiffusion) return;
     if (w) w.value = roundBy64(v);
   },
-  guidance_embed: (k, v, w, n, c) => {
+  guidance_embed: (_k, v, w, _n, _c) => {
     if (w) w.value = v;
   },
-  resolution_dependent_shift: (k, v, w, n, c) => {
+  resolution_dependent_shift: (_k, v, w, n, c) => {
     if (w) w.value = v;
     if (v) {
       const shiftWidget = n.widgets?.find((w2) => w2.name === "shift");
@@ -957,39 +1248,37 @@ var importers = {
       if (shiftWidget && width && height) shiftWidget.value = calcShift(width, height);
     }
   },
-  causal_inference: function(k, v, w, n, c) {
+  causal_inference: (_k, v, w, _n, _c) => {
     if (Number.isFinite(v)) w.value = v * 4 - 3;
     else w.value = 0;
   },
-  causal_inference_pad: (k, v, w, n, c) => {
+  causal_inference_pad: (_k, v, w, _n, _c) => {
     if (w && typeof v === "number") w.value = v * 4;
   },
   // since upscaler and refiner live in different nodes, it's easier to do
   // coercion in the import function
-  upscaler_scale_factor: (k, v, w) => {
+  upscaler_scale_factor: (_k, v, w) => {
     if (v === 2) w.value = 2;
     else w.value = 4;
   },
-  refiner_start: (k, v, w) => {
-    if (typeof v === "number")
-      w.value = Math.min(1, Math.max(0, v));
-    else
-      w.value = 0.85;
+  refiner_start: (_k, v, w) => {
+    if (typeof v === "number") w.value = Math.min(1, Math.max(0, v));
+    else w.value = 0.85;
   }
 };
 var exporters = {
   // start_width: {},
   // start_height: {},
-  model: async (w, n, c) => {
+  model: async (w, _n, c) => {
     const val = w.value;
-    if (w && val && val.value) c.model = val.value.file ?? val.value.name;
+    if (w && val?.value) c.model = val.value.file ?? val.value.name;
   },
-  sampler: (w, n, c) => {
+  sampler: (w, _n, c) => {
     if (w && typeof w.value === "string") c.sampler = samplers.indexOf(w.value);
   },
   // hires_fix_start_width: {},
   // hires_fix_start_height: {},
-  seed_mode: (w, n, c) => {
+  seed_mode: (w, _n, c) => {
     if (w && typeof w.value === "string") c.seed_mode = seedModes.indexOf(w.value);
   },
   // decoding_tile_width: {},
@@ -1004,7 +1293,7 @@ var exporters = {
   // },
   // shift: (w, n, c) => {
   // },
-  causal_inference: (w, n, c) => {
+  causal_inference: (w, _n, c) => {
     if (w && typeof w.value === "number") c.causal_inference = Math.floor((w.value + 3) / 4);
   }
 };
@@ -1064,13 +1353,14 @@ var DTProperty = class {
       return value;
     }
     if (this.type === "index") {
-      if (typeof value === "number" && value >= 0 && this.values && value < this.values.length) return this.values[value];
+      if (typeof value === "number" && value >= 0 && this.values && value < this.values.length)
+        return this.values[value];
       if (typeof value === "string" && this.values && this.values.includes(value)) return value;
       return this.values ? this.values[this.defaultValue] : void 0;
     }
     return value;
   }
-  getRequiredNodes(value, config) {
+  getRequiredNodes(_value, _config) {
     if (this.node) return [this.node];
     return [];
   }
@@ -1091,33 +1381,26 @@ function findPropertiesByNode(nodeType) {
   return properties.filter((p) => p.node === nodeType);
 }
 patchProp("loras", "getRequiredNodes", (value) => {
-  if (Array.isArray(value) && value.length > 0)
-    return Array(Math.ceil(value.length / 8)).fill("DrawThingsLoRA");
-  else
-    return [];
+  if (Array.isArray(value) && value.length > 0) return Array(Math.ceil(value.length / 8)).fill("DrawThingsLoRA");
+  else return [];
 });
 patchProp("controls", "getRequiredNodes", (value) => {
-  if (Array.isArray(value))
-    return value.map((_) => "DrawThingsControlNet");
-  else
-    return [];
+  if (Array.isArray(value)) return value.map((_) => "DrawThingsControlNet");
+  else return [];
 });
 patchProp("upscaler", "getRequiredNodes", (value) => {
-  if (value)
-    return ["DrawThingsUpscaler"];
+  if (value) return ["DrawThingsUpscaler"];
   return [];
 });
 patchProp("upscaler_scale_factor", "getRequiredNodes", () => []);
 patchProp("refinerModel", "getRequiredNodes", (value) => {
-  if (value)
-    return ["DrawThingsRefiner"];
+  if (value) return ["DrawThingsRefiner"];
   return [];
 });
 patchProp("refinerStart", "getRequiredNodes", () => []);
 function patchProp(jsonName, funcName, func) {
   const prop = findPropertyJson(jsonName);
-  if (prop)
-    prop[funcName] = func;
+  if (prop) prop[funcName] = func;
 }
 
 // web/src/configImport.ts
@@ -1135,9 +1418,7 @@ async function importConfig(sampler) {
           requiredNodes.push(...prop.getRequiredNodes(v, config));
           continue;
         }
-        const widget = sampler.widgets?.find(
-          (w) => w.name === prop.python
-        );
+        const widget = sampler.widgets?.find((w) => w.name === prop.python);
         if (!widget) {
           continue;
         }
@@ -1148,47 +1429,28 @@ async function importConfig(sampler) {
       const availableNodes = sampler.getConfigInputNodes();
       const missingNodes = [];
       if (requiredNodes.includes("DrawThingsUpscaler")) {
-        if (!availableNodes.DrawThingsUpscaler.length)
-          missingNodes.push("DrawThingsUpscaler");
-        else
-          await applyConfig(
-            availableNodes.DrawThingsUpscaler[0],
-            config
-          );
+        if (!availableNodes.DrawThingsUpscaler.length) missingNodes.push("DrawThingsUpscaler");
+        else await applyConfig(availableNodes.DrawThingsUpscaler[0], config);
       }
       if (requiredNodes.includes("DrawThingsRefiner")) {
-        if (!availableNodes.DrawThingsRefiner.length)
-          missingNodes.push("DrawThingsRefiner");
-        else
-          await applyConfig(
-            availableNodes.DrawThingsRefiner[0],
-            config
-          );
+        if (!availableNodes.DrawThingsRefiner.length) missingNodes.push("DrawThingsRefiner");
+        else await applyConfig(availableNodes.DrawThingsRefiner[0], config);
       }
       if (requiredNodes.includes("DrawThingsControlNet")) {
-        const cnetNeeded = requiredNodes.filter(
-          (n) => n === "DrawThingsControlNet"
-        ).length;
+        const cnetNeeded = requiredNodes.filter((n) => n === "DrawThingsControlNet").length;
         if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
           missingNodes.push(
             `${cnetNeeded - availableNodes.DrawThingsControlNet.length} x DrawThingsControlNet`
           );
         let controlIndex = 0;
         for (const cnetNode of availableNodes.DrawThingsControlNet) {
-          await applyCnetConfig(
-            cnetNode,
-            config.controls[controlIndex++]
-          );
+          await applyCnetConfig(cnetNode, config.controls[controlIndex++]);
         }
       }
       if (requiredNodes.includes("DrawThingsLoRA")) {
-        const loraNeeded = requiredNodes.filter(
-          (n) => n === "DrawThingsLoRA"
-        ).length;
+        const loraNeeded = requiredNodes.filter((n) => n === "DrawThingsLoRA").length;
         if (loraNeeded > availableNodes.DrawThingsLoRA.length)
-          missingNodes.push(
-            `${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`
-          );
+          missingNodes.push(`${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`);
         await applyLoraConfig(
           availableNodes.DrawThingsLoRA,
           config.loras
@@ -1206,11 +1468,9 @@ async function importConfig(sampler) {
         });
       }
     } catch (e) {
-      alert(
-        `Failed to parse Draw Things config from clipboard
+      alert(`Failed to parse Draw Things config from clipboard
 
-${e}`
-      );
+${e}`);
       console.warn(e);
     }
   });
@@ -1220,43 +1480,31 @@ async function applyConfig(node, config) {
   for (const nodeProp of nodeProps) {
     const widget = node.widgets?.find((w) => w.name === nodeProp.python);
     if (!widget || !nodeProp.json) continue;
-    await nodeProp.import(
-      nodeProp.json,
-      config[nodeProp.json],
-      widget,
-      node,
-      config
-    );
+    await nodeProp.import(nodeProp.json, config[nodeProp.json], widget, node, config);
   }
 }
 async function applyCnetConfig(node, controlConfig) {
   if (!controlConfig) return;
-  const widgets = node.widgets?.reduce((acc, w) => {
-    acc[w.name] = w;
-    return acc;
-  }, {}) ?? {};
+  const widgets = node.widgets?.reduce(
+    (acc, w) => {
+      acc[w.name] = w;
+      return acc;
+    },
+    {}
+  ) ?? {};
   if ("file" in controlConfig) {
     await modelService.selectByFile(node, widgets.control_name, controlConfig.file);
   }
   if ("globalAveragePooling" in controlConfig)
     widgets.global_average_pooling.value = !!controlConfig.globalAveragePooling;
   if ("weight" in controlConfig && typeof controlConfig.weight === "number")
-    widgets.control_weight.value = Math.min(
-      Math.max(controlConfig.weight, 0),
-      1.5
-    );
+    widgets.control_weight.value = Math.min(Math.max(controlConfig.weight, 0), 1.5);
   else widgets.control_weight.value = 1;
   if ("guidanceStart" in controlConfig && typeof controlConfig.guidanceStart === "number")
-    widgets.control_start.value = Math.min(
-      Math.max(controlConfig.guidanceStart, 0),
-      1
-    );
+    widgets.control_start.value = Math.min(Math.max(controlConfig.guidanceStart, 0), 1);
   else widgets.control_start.value = 0;
   if ("guidanceEnd" in controlConfig && typeof controlConfig.guidanceEnd === "number")
-    widgets.control_end.value = Math.min(
-      Math.max(controlConfig.guidanceEnd, 0),
-      1
-    );
+    widgets.control_end.value = Math.min(Math.max(controlConfig.guidanceEnd, 0), 1);
   else widgets.control_end.value = 1;
   if ("downSamplingRate" in controlConfig && typeof controlConfig.downSamplingRate === "number")
     widgets.down_sampling_rate.value = controlConfig.downSamplingRate;
@@ -1264,24 +1512,19 @@ async function applyCnetConfig(node, controlConfig) {
   if ("inputOverride" in controlConfig && typeof controlConfig.inputOverride === "string") {
     const capitalized = controlConfig.inputOverride.charAt(0).toUpperCase() + controlConfig.inputOverride.slice(1);
     const options = widgets.control_input_type?.options;
-    if (options?.values?.includes(capitalized))
-      widgets.control_input_type.value = capitalized;
+    if (options?.values?.includes(capitalized)) widgets.control_input_type.value = capitalized;
     else widgets.control_input_type.value = "Unspecified";
   } else widgets.control_input_type.value = "Unspecified";
   if ("controlImportance" in controlConfig && typeof controlConfig.controlImportance === "string") {
     const capitalized = controlConfig.controlImportance.charAt(0).toUpperCase() + controlConfig.controlImportance.slice(1);
     const options = widgets.control_mode?.options;
-    if (options?.values?.includes(capitalized))
-      widgets.control_mode.value = capitalized;
+    if (options?.values?.includes(capitalized)) widgets.control_mode.value = capitalized;
     else widgets.control_mode.value = "Balanced";
   } else widgets.control_mode.value = "Balanced";
   if ("targetBlocks" in controlConfig && Array.isArray(controlConfig.targetBlocks)) {
-    if (controlConfig.targetBlocks.length === 0)
-      widgets.target_blocks.value = "All";
-    if (controlConfig.targetBlocks.length === 1)
-      widgets.target_blocks.value = "Style";
-    if (controlConfig.targetBlocks.length > 1)
-      widgets.target_blocks.value = "Style and Layout";
+    if (controlConfig.targetBlocks.length === 0) widgets.target_blocks.value = "All";
+    if (controlConfig.targetBlocks.length === 1) widgets.target_blocks.value = "Style";
+    if (controlConfig.targetBlocks.length > 1) widgets.target_blocks.value = "Style and Layout";
   } else widgets.target_blocks.value = "All";
 }
 async function applyLoraConfig(nodes, loraConfig) {
@@ -1306,8 +1549,7 @@ async function applyLoraConfig(nodes, loraConfig) {
       if ("mode" in lc && typeof lc.mode === "string") {
         const capitalized = lc.mode.charAt(0).toUpperCase() + lc.mode.slice(1);
         const options = mode?.options;
-        if (options?.values?.includes(capitalized))
-          mode.value = capitalized;
+        if (options?.values?.includes(capitalized)) mode.value = capitalized;
         else mode.value = "All";
       } else mode.value = "All";
     }
@@ -1389,7 +1631,7 @@ var advancedWidgets = [
 ];
 var origProps = {};
 function updateInput(input, node) {
-  if (!input || !input.widget || !node || !node.getWidgetFromSlot) return;
+  if (!input?.widget || !node?.getWidgetFromSlot) return;
   if (input._origPos === void 0) {
     input._origPos = input.pos;
     const widget = node.getWidgetFromSlot(input);
@@ -1407,7 +1649,7 @@ function updateInput(input, node) {
     });
   }
 }
-function showWidget(node, widgetName, show = false, suffix = "") {
+function showWidget(node, widgetName, show = false, _suffix = "") {
   const widget = findWidgetByName(node, widgetName);
   if (!widget) return;
   if (!origProps[widget.name]) {
@@ -1457,11 +1699,11 @@ function updateSamplerWidgets(node) {
     showWidget(node, "num_frames", isVideo);
     const audioShift = features.includes("audioShift");
     showWidget(node, "shift_for_audio", audioShift);
-    const zeroCfgAvailable = features.includes("cfgZero");
-    const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
-    showWidget(node, "cfg_zero_star", zeroCfgAvailable);
-    showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled);
   }
+  const zeroCfgAvailable = isBasic && features.includes("cfgZero");
+  const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
+  showWidget(node, "cfg_zero_star", zeroCfgAvailable);
+  showWidget(node, "cfg_zero_star_init_steps", !!zeroCfgEnabled);
   if (isAdvanced) {
     const solAttentionAvailable = features.includes("solAttention");
     const solAttentionEnabled = solAttentionAvailable && findWidgetByName(node, "uses_sol_attention")?.value;
@@ -1504,7 +1746,13 @@ function updateSamplerWidgets(node) {
       "high_res_fix_strength"
     );
     const tiledDecodingEnabled = findWidgetByName(node, "tiled_decoding")?.value;
-    showWidgets(node, !!tiledDecodingEnabled, "decoding_tile_width", "decoding_tile_height", "decoding_tile_overlap");
+    showWidgets(
+      node,
+      !!tiledDecodingEnabled,
+      "decoding_tile_width",
+      "decoding_tile_height",
+      "decoding_tile_overlap"
+    );
     const tiledDiffusionEnabled = findWidgetByName(node, "tiled_diffusion")?.value;
     showWidgets(
       node,
@@ -1533,7 +1781,7 @@ var extension = {
       }
     }
   ],
-  async beforeRegisterNodeDef(nodeType, nodeData, app3) {
+  async beforeRegisterNodeDef(nodeType, _nodeData, _app) {
     if (nodeType.comfyClass === "DrawThingsSampler") {
       updateProto(nodeType, samplerWidgetsProto);
     }
@@ -1769,8 +2017,7 @@ async function getAnnounced() {
 }
 async function saveAnnounced(version) {
   const data = await getUserData();
-  if (!data?.announced || !Array.isArray(data?.announced))
-    data.announced = [];
+  if (!data?.announced || !Array.isArray(data?.announced)) data.announced = [];
   data.announced.push(version);
   await app.api.storeUserData(dataPath, data);
 }
@@ -1860,7 +2107,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.14.0";
+var nodePackVersion = "1.15.0";
 var extension3 = {
   name: "core",
   getCustomWidgets() {
@@ -1922,12 +2169,8 @@ var ComfyUI_DrawThings_gRPC_default = extension3;
 var samplerProto = {
   async onNodeCreated() {
     const app3 = getApp();
-    const inputPos = this.inputs?.find(
-      (inputPos2) => inputPos2.name === "positive"
-    );
-    const inputNeg = this.inputs?.find(
-      (inputNeg2) => inputNeg2.name === "negative"
-    );
+    const inputPos = this.inputs?.find((inputPos2) => inputPos2.name === "positive");
+    const inputNeg = this.inputs?.find((inputNeg2) => inputNeg2.name === "negative");
     if (!app3.canvas || !inputPos || !inputNeg) return;
     inputPos.color_on = inputPos.color_off = inputNeg.color_on = inputNeg.color_off = app3.canvas.default_connection_color_byType.CONDITIONING;
     app3.canvas.default_connection_color_byType.DT_LORA = app3.canvas.default_connection_color_byType.MODEL;
@@ -1941,12 +2184,9 @@ var samplerProto = {
   },
   onConfigure(serialised) {
     if ("widget_values_keyed" in serialised && serialised.widget_values_keyed && typeof serialised.widget_values_keyed === "object") {
-      for (const [name, value] of Object.entries(
-        serialised.widget_values_keyed
-      )) {
+      for (const [name, value] of Object.entries(serialised.widget_values_keyed)) {
         const widget = this.widgets?.find((w) => w.name === name);
-        if (widget)
-          widget.value = value;
+        if (widget) widget.value = value;
       }
       const allWidgets = new Set(this.widgets?.map((w) => w.name));
       const serialisedWidgets = new Set(Object.keys(serialised.widget_values_keyed));
@@ -1978,9 +2218,7 @@ var samplerProto = {
     }
     if (corrections.length) {
       const message = "The Draw Things Sampler node contained invalid values - they have been corrected:";
-      const list = corrections.map(
-        (c) => `${c.name}: ${c.value} -> ${c.coerced}`
-      );
+      const list = corrections.map((c) => `${c.name}: ${c.value} -> ${c.coerced}`);
       const detail = `${message}
 
 ${list.join("\n")}`;
@@ -2017,21 +2255,11 @@ ${list.join("\n")}`;
   },
   getExtraMenuOptions(_canvas, options) {
     const app3 = getApp();
-    const showPreview = app3.extensionManager.setting.get(
-      "drawthings.node.show_preview"
-    );
-    const keepNodeShrunk = app3.extensionManager.setting.get(
-      "drawthings.node.keep_shrunk"
-    );
-    const bridgeMode = app3.extensionManager.setting.get(
-      "drawthings.bridge_mode.enabled"
-    );
-    const bridgeCommunity = app3.extensionManager.setting.get(
-      "drawthings.bridge_mode.community"
-    );
-    const bridgeUncurated = app3.extensionManager.setting.get(
-      "drawthings.bridge_mode.uncurated"
-    );
+    const showPreview = app3.extensionManager.setting.get("drawthings.node.show_preview");
+    const keepNodeShrunk = app3.extensionManager.setting.get("drawthings.node.keep_shrunk");
+    const bridgeMode = app3.extensionManager.setting.get("drawthings.bridge_mode.enabled");
+    const bridgeCommunity = app3.extensionManager.setting.get("drawthings.bridge_mode.community");
+    const bridgeUncurated = app3.extensionManager.setting.get("drawthings.bridge_mode.uncurated");
     options.push(null);
     options.push({
       content: "Paste Draw Things config",
@@ -2055,50 +2283,35 @@ ${list.join("\n")}`;
     });
     options.push(null);
     options.push({
-      content: (showPreview ? "\u2713 " : "") + "Show preview while generating",
+      content: `${showPreview ? "\u2713 " : ""}Show preview while generating`,
       callback: () => {
-        app3.extensionManager.setting.set(
-          "drawthings.node.show_preview",
-          !showPreview
-        );
+        app3.extensionManager.setting.set("drawthings.node.show_preview", !showPreview);
       }
     });
     options.push({
-      content: (keepNodeShrunk ? "\u2713 " : "") + "Keep node shrunk when widgets change",
+      content: `${keepNodeShrunk ? "\u2713 " : ""}Keep node shrunk when widgets change`,
       callback: () => {
-        app3.extensionManager.setting.set(
-          "drawthings.node.keep_shrunk",
-          !keepNodeShrunk
-        );
+        app3.extensionManager.setting.set("drawthings.node.keep_shrunk", !keepNodeShrunk);
       }
     });
     options.push(null);
     options.push({
       content: `${bridgeMode ? "\u2713 " : ""}Use bridge mode`,
       callback: () => {
-        app3.extensionManager.setting.set(
-          "drawthings.bridge_mode.enabled",
-          !bridgeMode
-        );
+        app3.extensionManager.setting.set("drawthings.bridge_mode.enabled", !bridgeMode);
       }
     });
     if (bridgeMode) {
       options.push({
         content: `${bridgeCommunity ? "\u2713 " : ""}Show community models`,
         callback: () => {
-          app3.extensionManager.setting.set(
-            "drawthings.bridge_mode.community",
-            !bridgeCommunity
-          );
+          app3.extensionManager.setting.set("drawthings.bridge_mode.community", !bridgeCommunity);
         }
       });
       options.push({
         content: `${bridgeUncurated ? "\u2713 " : ""}Show uncurated models`,
         callback: () => {
-          app3.extensionManager.setting.set(
-            "drawthings.bridge_mode.uncurated",
-            !bridgeUncurated
-          );
+          app3.extensionManager.setting.set("drawthings.bridge_mode.uncurated", !bridgeUncurated);
         }
       });
     }
@@ -2184,7 +2397,7 @@ var controlNetProto = {
     restoreModelSelections(this);
     this.updateDynamicWidgets();
   },
-  onWidgetChanged(name, value, old_Value, widget) {
+  onWidgetChanged(name, value, _old_Value, _widget) {
     if (name === "control_name") {
       const modifier = value?.value?.modifier;
       const inputWidget = findWidgetByName(this, "control_input_type");
@@ -2197,7 +2410,7 @@ var controlNetProto = {
 };
 var extension4 = {
   name: "controlNetNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app3) {
+  beforeRegisterNodeDef(nodeType, _nodeData, _app) {
     if (nodeType.comfyClass === "DrawThingsControlNet") {
       updateProto(nodeType, controlNetProto);
     }
@@ -2263,8 +2476,7 @@ var dtModelNodeProto = {
   saveSelectedModels() {
     const modelWidgets = this.widgets?.filter((w) => w.options?.modelType) || [];
     const selections = modelWidgets.reduce((acc, w) => {
-      if (typeof w.value === "object" || w.value === "(None selected)")
-        acc[w.name] = w.value;
+      if (typeof w.value === "object" || w.value === "(None selected)") acc[w.name] = w.value;
       else acc[w.name] = this._lastSelectedModel?.[w.name];
       return acc;
     }, {});
@@ -2283,9 +2495,7 @@ var dtModelNodeProto = {
     enumerable: true
   },
   onSerialize(serialised) {
-    serialised._lastSelectedModel = JSON.parse(
-      JSON.stringify(this._lastSelectedModel ?? {})
-    );
+    serialised._lastSelectedModel = JSON.parse(JSON.stringify(this._lastSelectedModel ?? {}));
   },
   onConfigure(serialised) {
     this._lastSelectedModel = serialised._lastSelectedModel || {};
@@ -2310,9 +2520,8 @@ var dtServerNodeProto = {
     });
   },
   onWidgetChanged(name) {
-    if (["server", "port", "use_tls"].includes(name))
-      void updateServerConnection(this).catch(() => {
-      });
+    if (["server", "port", "use_tls"].includes(name)) void updateServerConnection(this).catch(() => {
+    });
   },
   getServer() {
     const server = this.widgets?.find((w) => w.name === "server")?.value;
@@ -2405,7 +2614,7 @@ var promptProto = {
 };
 var extension6 = {
   name: "promptNode",
-  beforeRegisterNodeDef(nodeType, nodeData, app3) {
+  beforeRegisterNodeDef(nodeType, _nodeData, _app) {
     if (nodeType.comfyClass === "DrawThingsPrompt") {
       updateProto(nodeType, promptProto);
     }
@@ -2428,6 +2637,8 @@ var extension6 = {
   ]
 };
 var dtPromptNode_default = extension6;
+
+// web/src/extension.ts
 var modules = [
   ComfyUI_DrawThings_gRPC_default,
   dtPromptNode_default,
@@ -2504,7 +2715,7 @@ function injectStyle() {
   }
   const style = document.createElement("style");
   style.id = ruleId;
-  style.addEventListener("load", (e) => {
+  style.addEventListener("load", (_e) => {
     const sheet = style.sheet;
     if (sheet) sheet.insertRule(rule, sheet.cssRules.length);
   });

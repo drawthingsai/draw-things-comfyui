@@ -1,13 +1,13 @@
 import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
 import { importConfig } from "./configImport.js";
-import { findPropertyPython, propertyData } from "./configProperties.js";
+import { findPropertyPython } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
 import type { ComfyExtension, DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
 import { getApi, getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.14.0";
+export const nodePackVersion = "1.15.0";
 
 const extension: ComfyExtension = {
     name: "core",
@@ -21,10 +21,7 @@ const extension: ComfyExtension = {
 
     beforeConfigureGraph(graph) {
         for (const node of graph.nodes) {
-            if (
-                node.type === "DrawThingsPositive" ||
-                node.type === "DrawThingsNegative"
-            ) {
+            if (node.type === "DrawThingsPositive" || node.type === "DrawThingsNegative") {
                 node.type = "DrawThingsPrompt";
                 node.properties["Node name for S&R"] = "DrawThingsPrompt";
                 delete node.properties.ver;
@@ -34,10 +31,7 @@ const extension: ComfyExtension = {
     },
 
     async beforeRegisterNodeDef(nodeType, _nodeData, _app) {
-        if (
-            "comfyClass" in nodeType &&
-            nodeType.comfyClass === "DrawThingsSampler"
-        ) {
+        if ("comfyClass" in nodeType && nodeType.comfyClass === "DrawThingsSampler") {
             updateProto(nodeType, samplerProto);
         }
     },
@@ -72,38 +66,32 @@ const extension: ComfyExtension = {
             name: "Return a blank image if the request fails",
             defaultValue: false,
             category: ["Draw Things", "Nodes", "Z Error handling"],
-            tooltip: "This is a workaround to allow batch execution to continue even if a request fails." +
+            tooltip:
+                "This is a workaround to allow batch execution to continue even if a request fails." +
                 "\nNot recommended for most uses cases, since errors will be silently ignored an caching will be disabled.",
             onChange: async (value) => {
                 await syncSettings({ blank_on_error: value as boolean });
-            }
-        }
-    ]
+            },
+        },
+    ],
 };
 
-export default extension
+export default extension;
 
 export const samplerProto: Partial<DTSampler> = {
     async onNodeCreated(this: DTSampler & LGraphNode) {
         const app = getApp();
-        const inputPos = this.inputs?.find(
-            (inputPos) => inputPos.name === "positive"
-        );
-        const inputNeg = this.inputs?.find(
-            (inputNeg) => inputNeg.name === "negative"
-        );
-        if (!app.canvas || !inputPos || !inputNeg) return
+        const inputPos = this.inputs?.find((inputPos) => inputPos.name === "positive");
+        const inputNeg = this.inputs?.find((inputNeg) => inputNeg.name === "negative");
+        if (!app.canvas || !inputPos || !inputNeg) return;
 
         inputPos.color_on =
             inputPos.color_off =
             inputNeg.color_on =
             inputNeg.color_off =
-            app.canvas.default_connection_color_byType.CONDITIONING;
-        app.canvas.default_connection_color_byType.DT_LORA =
-            app.canvas.default_connection_color_byType.MODEL;
-        app.canvas.default_connection_color_byType.DT_CNET =
-            app.canvas.default_connection_color_byType.CONTROL_NET;
-
+                app.canvas.default_connection_color_byType.CONDITIONING;
+        app.canvas.default_connection_color_byType.DT_LORA = app.canvas.default_connection_color_byType.MODEL;
+        app.canvas.default_connection_color_byType.DT_CNET = app.canvas.default_connection_color_byType.CONTROL_NET;
 
         setTimeout(() => checkVersion(), 2000);
     },
@@ -122,32 +110,23 @@ export const samplerProto: Partial<DTSampler> = {
             serialised.widget_values_keyed &&
             typeof serialised.widget_values_keyed === "object"
         ) {
-            for (const [name, value] of Object.entries(
-                serialised.widget_values_keyed
-            )) {
+            for (const [name, value] of Object.entries(serialised.widget_values_keyed)) {
                 const widget = this.widgets?.find((w) => w.name === name);
-                if (widget)
-                    widget.value = value as
-                        | string
-                        | number
-                        | boolean
-                        | object
-                        | undefined;
+                if (widget) widget.value = value as string | number | boolean | object | undefined;
             }
 
-            const allWidgets = new Set(this.widgets?.map(w => w.name))
-            const serialisedWidgets = new Set(Object.keys(serialised.widget_values_keyed))
-            const difference = new Set([...allWidgets].filter((item) => !serialisedWidgets.has(item)))
+            const allWidgets = new Set(this.widgets?.map((w) => w.name));
+            const serialisedWidgets = new Set(Object.keys(serialised.widget_values_keyed));
+            const difference = new Set([...allWidgets].filter((item) => !serialisedWidgets.has(item)));
 
             for (const prop of difference) {
-                const propDef = findPropertyPython(prop)
-                if (!propDef) continue
-                const widget = this.widgets?.find(w => w.name === prop)
-                if (!widget) continue
-                widget.value = propDef.defaultValue
+                const propDef = findPropertyPython(prop);
+                if (!propDef) continue;
+                const widget = this.widgets?.find((w) => w.name === prop);
+                if (!widget) continue;
+                widget.value = propDef.defaultValue;
             }
         }
-
 
         this.coerceWidgetValues();
         if ("widget_values_keyed" in this) delete this.widget_values_keyed;
@@ -174,11 +153,8 @@ export const samplerProto: Partial<DTSampler> = {
         }
 
         if (corrections.length) {
-            const message =
-                "The Draw Things Sampler node contained invalid values - they have been corrected:";
-            const list = corrections.map(
-                (c) => `${c.name}: ${c.value} -> ${c.coerced}`
-            );
+            const message = "The Draw Things Sampler node contained invalid values - they have been corrected:";
+            const list = corrections.map((c) => `${c.name}: ${c.value} -> ${c.coerced}`);
             const detail = `${message}\n\n${list.join("\n")}`;
 
             getApp().extensionManager.toast.add({
@@ -221,26 +197,18 @@ export const samplerProto: Partial<DTSampler> = {
 
     getExtraMenuOptions(this: LGraphNode, _canvas, options) {
         const app = getApp();
-        const showPreview = app.extensionManager.setting.get(
-            "drawthings.node.show_preview"
-        );
-        const keepNodeShrunk = app.extensionManager.setting.get(
-            "drawthings.node.keep_shrunk"
-        );
-        const bridgeMode = app.extensionManager.setting.get(
-            "drawthings.bridge_mode.enabled"
-        );
-        const bridgeCommunity = app.extensionManager.setting.get(
-            "drawthings.bridge_mode.community"
-        );
-        const bridgeUncurated = app.extensionManager.setting.get(
-            "drawthings.bridge_mode.uncurated"
-        );
+        const showPreview = app.extensionManager.setting.get("drawthings.node.show_preview");
+        const keepNodeShrunk = app.extensionManager.setting.get("drawthings.node.keep_shrunk");
+        const bridgeMode = app.extensionManager.setting.get("drawthings.bridge_mode.enabled");
+        const bridgeCommunity = app.extensionManager.setting.get("drawthings.bridge_mode.community");
+        const bridgeUncurated = app.extensionManager.setting.get("drawthings.bridge_mode.uncurated");
 
         options.push(null);
         options.push({
             content: "Paste Draw Things config",
-            callback: () => { void importConfig(this as unknown as DTSampler); },
+            callback: () => {
+                void importConfig(this as unknown as DTSampler);
+            },
         });
         options.push({
             content: "Copy Draw Things config",
@@ -258,56 +226,35 @@ export const samplerProto: Partial<DTSampler> = {
         });
         options.push(null);
         options.push({
-            content:
-                (showPreview ? "✓ " : "") +
-                "Show preview while generating",
+            content: `${showPreview ? "✓ " : ""}Show preview while generating`,
             callback: () => {
-                app.extensionManager.setting.set(
-                    "drawthings.node.show_preview",
-                    !showPreview
-                );
+                app.extensionManager.setting.set("drawthings.node.show_preview", !showPreview);
             },
         });
         options.push({
-            content:
-                (keepNodeShrunk ? "✓ " : "") +
-                "Keep node shrunk when widgets change",
+            content: `${keepNodeShrunk ? "✓ " : ""}Keep node shrunk when widgets change`,
             callback: () => {
-                app.extensionManager.setting.set(
-                    "drawthings.node.keep_shrunk",
-                    !keepNodeShrunk
-                );
+                app.extensionManager.setting.set("drawthings.node.keep_shrunk", !keepNodeShrunk);
             },
         });
         options.push(null);
         options.push({
             content: `${bridgeMode ? "✓ " : ""}Use bridge mode`,
             callback: () => {
-                app.extensionManager.setting.set(
-                    "drawthings.bridge_mode.enabled",
-                    !bridgeMode
-                );
+                app.extensionManager.setting.set("drawthings.bridge_mode.enabled", !bridgeMode);
             },
         });
         if (bridgeMode) {
             options.push({
-                content:
-                    `${bridgeCommunity ? "✓ " : ""}Show community models`,
+                content: `${bridgeCommunity ? "✓ " : ""}Show community models`,
                 callback: () => {
-                    app.extensionManager.setting.set(
-                        "drawthings.bridge_mode.community",
-                        !bridgeCommunity
-                    );
+                    app.extensionManager.setting.set("drawthings.bridge_mode.community", !bridgeCommunity);
                 },
             });
             options.push({
-                content:
-                    `${bridgeUncurated ? "✓ " : ""}Show uncurated models`,
+                content: `${bridgeUncurated ? "✓ " : ""}Show uncurated models`,
                 callback: () => {
-                    app.extensionManager.setting.set(
-                        "drawthings.bridge_mode.uncurated",
-                        !bridgeUncurated
-                    );
+                    app.extensionManager.setting.set("drawthings.bridge_mode.uncurated", !bridgeUncurated);
                 },
             });
         }

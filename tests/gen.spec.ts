@@ -1,16 +1,15 @@
 import "dotenv/config";
-import { expect, Page } from "@playwright/test";
-import sharp from "sharp";
-import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { ComfyPage } from "./fixtures";
-import { test } from "./fixtures";
+import { join } from "node:path";
+import { expect, type Page } from "@playwright/test";
 import fse from "fs-extra";
+import sharp from "sharp";
+import { type ComfyPage, test } from "./fixtures";
 import { compareVectors, imageToVectorBase64 } from "./util";
 import { vecs } from "./vector";
 
-test.skip(() => !process.env.RUN_GEN_TESTS)
+test.skip(() => !process.env.RUN_GEN_TESTS);
 
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
@@ -25,7 +24,7 @@ const inputFolder = join(comfyFolder, "input");
 const bridgemode = true;
 
 test.beforeEach(async () => {
-	test.setTimeout(300000);
+    test.setTimeout(300000);
 });
 
 // note: it's entirely possibly that these tests will not work when run on a different system
@@ -51,28 +50,28 @@ test.beforeEach(async () => {
 // FLUX.1 Turbo Alpha
 
 test("test output: sd1_a", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "sd1_a");
+    await compareOutput(page, comfy, "sd1_a");
 });
 
 test("test output: sd1_b", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "sd1_b");
+    await compareOutput(page, comfy, "sd1_b");
 });
 
 test("test output: unipc", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "unipc");
+    await compareOutput(page, comfy, "unipc");
 });
 
 test("test output: sdxl_a", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "sdxl_a");
+    await compareOutput(page, comfy, "sdxl_a");
 });
 
 test("test output: sdxl_b", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "sdxl_b");
+    await compareOutput(page, comfy, "sdxl_b");
 });
 
 test("test output: flux_a", async ({ page, comfy }) => {
-	test.setTimeout(300000);
-	await compareOutput(page, comfy, "flux_a");
+    test.setTimeout(300000);
+    await compareOutput(page, comfy, "flux_a");
 });
 
 // doesn't work in bridge mode
@@ -87,11 +86,11 @@ test("test output: flux_a", async ({ page, comfy }) => {
 // });
 
 test("test output: inpaint_cnet", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "inpaint_cnet");
+    await compareOutput(page, comfy, "inpaint_cnet");
 });
 
 test("test output: inpaint_sdxl", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "inpaint_sdxl");
+    await compareOutput(page, comfy, "inpaint_sdxl");
 });
 
 // test("test output: refiner_lora_a", async ({ page, comfy }) => {
@@ -115,151 +114,145 @@ test("test output: inpaint_sdxl", async ({ page, comfy }) => {
 // });
 
 test("test output: depth cnet with image input", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "depth_cnet");
+    await compareOutput(page, comfy, "depth_cnet");
 });
 
 test("test output: shuffle cnet with hints input", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "shuffle_cnet");
+    await compareOutput(page, comfy, "shuffle_cnet");
 });
 
 test("test output: pose with hiresfix", async ({ page, comfy }) => {
-	await compareOutput(page, comfy, "pose_hires");
+    await compareOutput(page, comfy, "pose_hires");
 });
 
 async function compareOutput(page: Page, comfy: ComfyPage, workflow: string) {
-	const wf = await fse.readJSON(join(workflowFolder, `${workflow}.json`));
-	const loadImageNodes = wf.nodes.filter((n) => n.type === "LoadImage");
-	const images = loadImageNodes.map((n) => n.widgets_values[0]);
+    const wf = await fse.readJSON(join(workflowFolder, `${workflow}.json`));
+    const loadImageNodes = wf.nodes.filter((n) => n.type === "LoadImage");
+    const images = loadImageNodes.map((n) => n.widgets_values[0]);
 
-	for (const image of images) {
-		const src = join(workflowFolder, image);
-		const dst = join(inputFolder, image);
-		await fse.copy(src, dst, { overwrite: true });
-	}
+    for (const image of images) {
+        const src = join(workflowFolder, image);
+        const dst = join(inputFolder, image);
+        await fse.copy(src, dst, { overwrite: true });
+    }
 
-	await comfy.openWorkflow(join(workflowFolder, `${workflow}.json`));
+    await comfy.openWorkflow(join(workflowFolder, `${workflow}.json`));
 
-	await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000);
 
-	await page.locator("#graph-canvas").click({
-		position: {
-			x: 137,
-			y: 246,
-		},
-	});
+    await page.locator("#graph-canvas").click({
+        position: {
+            x: 137,
+            y: 246,
+        },
+    });
 
-	await page.locator("#graph-canvas").press(".");
+    await page.locator("#graph-canvas").press(".");
 
-	await page.waitForTimeout(1000);
-	await page
-		.getByTestId("queue-button")
-		.getByRole("button", { name: "Run" })
-		.click();
+    await page.waitForTimeout(1000);
+    await page.getByTestId("queue-button").getByRole("button", { name: "Run" }).click();
 
-	await page.waitForTimeout(1000);
-	await page.getByRole("button", { name: "Expand job queue" }).click();
-	await page.getByText("1 active jobs").waitFor({ state: "visible" });
-	await page.getByText("1 active jobs").waitFor({ state: "hidden" });
+    await page.waitForTimeout(1000);
+    await page.getByRole("button", { name: "Expand job queue" }).click();
+    await page.getByText("1 active jobs").waitFor({ state: "visible" });
+    await page.getByText("1 active jobs").waitFor({ state: "hidden" });
 
-	await page.getByText("ComfyUI_").first().hover();
-	await page.getByRole("button", { name: "View", exact: true }).click();
+    await page.getByText("ComfyUI_").first().hover();
+    await page.getByRole("button", { name: "View", exact: true }).click();
 
-	const filename = await page
-		.locator(".p-galleria-item")
-		.locator("img")
-		.getAttribute("alt");
-	const filepath = join(outputFolder, filename);
+    const filename = await page.locator(".p-galleria-item").locator("img").getAttribute("alt");
+    const filepath = join(outputFolder, filename);
 
-	const vec = await imageToVectorBase64(filepath, 12);
-	const refVec = vecs[workflow];
-	const dif = compareVectors(refVec, vec);
-	console.log(`dif for ${workflow}: ${dif}`);
-	expect(dif).toBeGreaterThan(0.97);
+    const vec = await imageToVectorBase64(filepath, 12);
+    const refVec = vecs[workflow];
+    const dif = compareVectors(refVec, vec);
+    console.log(`dif for ${workflow}: ${dif}`);
+    expect(dif).toBeGreaterThan(0.97);
 
-	// if (
-	//     !(await sharp(filepath)
-	//         .removeAlpha()
-	//         .raw()
-	//         .toBuffer({ resolveWithObject: true }))
-	// ) {
-	//     throw new Error("No output image");
-	// }
+    // if (
+    //     !(await sharp(filepath)
+    //         .removeAlpha()
+    //         .raw()
+    //         .toBuffer({ resolveWithObject: true }))
+    // ) {
+    //     throw new Error("No output image");
+    // }
 
-	// await sharp(workflowFolder + workflow + ".png")
-	//     .composite([{ input: filepath, blend: "difference" }])
-	//     .toFile(workflowFolder + workflow + "_diff.png");
+    // await sharp(workflowFolder + workflow + ".png")
+    //     .composite([{ input: filepath, blend: "difference" }])
+    //     .toFile(workflowFolder + workflow + "_diff.png");
 
-	// const outImg = await sharp(filepath)
-	//     .removeAlpha()
-	//     .raw()
-	//     .toBuffer({ resolveWithObject: true });
-	// const refImg = await sharp(join(workflowFolder, workflow + ".png"))
-	//     .removeAlpha()
-	//     .raw()
-	//     .toBuffer({ resolveWithObject: true });
+    // const outImg = await sharp(filepath)
+    //     .removeAlpha()
+    //     .raw()
+    //     .toBuffer({ resolveWithObject: true });
+    // const refImg = await sharp(join(workflowFolder, workflow + ".png"))
+    //     .removeAlpha()
+    //     .raw()
+    //     .toBuffer({ resolveWithObject: true });
 
-	// let totalDif = 0;
-	// let maxDif = 0;
+    // let totalDif = 0;
+    // let maxDif = 0;
 
-	// let pixels = 0;
+    // let pixels = 0;
 
-	// for (let i = 0; i < outImg.data.length; i++) {
-	//     pixels++;
-	//     const dif = Math.abs(outImg.data[i] - refImg.data[i]);
-	//     totalDif += dif;
-	//     if (dif > maxDif) maxDif = dif;
-	// }
+    // for (let i = 0; i < outImg.data.length; i++) {
+    //     pixels++;
+    //     const dif = Math.abs(outImg.data[i] - refImg.data[i]);
+    //     totalDif += dif;
+    //     if (dif > maxDif) maxDif = dif;
+    // }
 
-	// console.log(totalDif / pixels, maxDif);
+    // console.log(totalDif / pixels, maxDif);
 
-	// expect(totalDif / pixels).toBeLessThanOrEqual(6);
+    // expect(totalDif / pixels).toBeLessThanOrEqual(6);
 }
 
 async function sha256sum(filepath: string): Promise<string> {
-	const hash = createHash("sha256");
-	const stream = createReadStream(filepath);
-	await new Promise((resolve, reject) => {
-		stream.on("error", reject);
-		stream.on("end", resolve);
-		stream.pipe(hash);
-	});
-	return hash.digest("hex");
+    const hash = createHash("sha256");
+    const stream = createReadStream(filepath);
+    await new Promise((resolve, reject) => {
+        stream.on("error", reject);
+        stream.on("end", resolve);
+        stream.pipe(hash);
+    });
+    return hash.digest("hex");
 }
 
 async function getDhash(imagePath: string, hashSize = 16): Promise<string> {
-	const image = await sharp(imagePath)
-		.resize(hashSize + 1, hashSize)
-		.grayscale()
-		// .toFile('temp.png')
-		.raw()
-		.toBuffer({ resolveWithObject: true });
+    const image = await sharp(imagePath)
+        .resize(hashSize + 1, hashSize)
+        .grayscale()
+        // .toFile('temp.png')
+        .raw()
+        .toBuffer({ resolveWithObject: true });
 
-	// const image = await sharp(imagePath).raw().toBuffer({ resolveWithObject: true })
+    // const image = await sharp(imagePath).raw().toBuffer({ resolveWithObject: true })
 
-	let hash = "";
-	const hb = new Uint8Array((hashSize * hashSize) / 8);
-	let p = 0;
+    let hash = "";
+    const hb = new Uint8Array((hashSize * hashSize) / 8);
+    let p = 0;
 
-	for (let y = 0; y < hashSize; y++) {
-		for (let x = 0; x < hashSize; x++) {
-			const index = (y * (hashSize + 1) + x) * image.info.channels;
-			const left = image.data[index];
-			const right = image.data[index + image.info.channels];
-			const bit = left > right ? 1 : 0;
-			hash += bit.toString();
+    for (let y = 0; y < hashSize; y++) {
+        for (let x = 0; x < hashSize; x++) {
+            const index = (y * (hashSize + 1) + x) * image.info.channels;
+            const left = image.data[index];
+            const right = image.data[index + image.info.channels];
+            const bit = left > right ? 1 : 0;
+            hash += bit.toString();
 
-			hb[Math.floor(p / 8)] += bit << (p % 8);
-			p++;
-		}
-	}
+            hb[Math.floor(p / 8)] += bit << (p % 8);
+            p++;
+        }
+    }
 
-	return Buffer.from(hb).toString("base64");
+    return Buffer.from(hb).toString("base64");
 }
 
 function compareDHash(a: string, b: string) {
-	let dif = 0;
-	for (let i = 0; i < a.length; i++) {
-		if (a[i] !== b[i]) dif++;
-	}
-	return dif;
+    let dif = 0;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) dif++;
+    }
+    return dif;
 }

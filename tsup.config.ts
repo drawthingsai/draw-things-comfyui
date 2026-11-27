@@ -1,7 +1,6 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-    
     entry: ["web/src/extension.ts"],
     splitting: false,
     sourcemap: true,

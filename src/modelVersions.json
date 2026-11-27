@@ -213,7 +213,7 @@
     {
         "version": "minimax_h3",
         "name": "MiniMax Hailuo 3",
-        "tag": "MiniMax",
+        "tag": "MMH3",
         "features": [
             "cfgZero",
             "resolutionDependentShift",
@@ -224,6 +224,12 @@
             "teaCache"
         ],
         "numFramesStep": 4
+    },
+    {
+        "version": "minimax_h3_image",
+        "name": "MiniMax H3 Image",
+        "tag": "MMH3 Image",
+        "features": ["cfgZero"]
     },
     {
         "version": "qwen_image_2.1",

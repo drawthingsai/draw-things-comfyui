@@ -1,5 +1,5 @@
-import type { ComfyApp, ComfyApi } from '@comfyorg/comfyui-frontend-types';
-import { LGraphCanvas, LiteGraph, type LGraphNode } from '@comfyorg/litegraph';
+import type { ComfyApi, ComfyApp } from "@comfyorg/comfyui-frontend-types";
+import type { LGraphCanvas, LGraphNode, LiteGraph } from "@comfyorg/litegraph";
 
 type MethodKeys<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -10,41 +10,29 @@ export function setCallback<T extends object, K extends MethodKeys<T>>(
     callbackName: K,
     callback: (
         this: ThisType<T> extends never ? T : ThisType<T>,
-        ...args: Parameters<
-            NonNullable<T[K] extends (...a: any[]) => any ? T[K] : never>
-        >
-    ) => void
+        ...args: Parameters<NonNullable<T[K] extends (...a: any[]) => any ? T[K] : never>>
+    ) => void,
 ): void {
     type Orig = NonNullable<T[K] extends (...a: any[]) => any ? T[K] : never>;
     const original = target[callbackName] as Orig | undefined;
 
-    (target as any)[callbackName] = function(
-        this: any,
-        ...args: Parameters<Orig>
-    ) {
+    (target as any)[callbackName] = function (this: any, ...args: Parameters<Orig>) {
         const r = original?.apply(this, args);
         callback?.apply(this, args);
         return r;
     } as T[K];
 }
 
-
 type HasPrototype = { prototype: any };
 
-type UpdateValue =
-    | ((this: any, ...args: any[]) => any)
-    | PropertyDescriptor
-    | any;
+type UpdateValue = ((this: any, ...args: any[]) => any) | PropertyDescriptor | any;
 
 /**
  * Updates a prototype with new properties, preserving existing ones.
  * - Accepts functions and property descriptors.
  * - If a function already exists on the prototype it will be wrapped so the original return value is preserved.
  */
-export function updateProto<B extends HasPrototype>(
-    base: B,
-    update: Record<string, UpdateValue>
-): void {
+export function updateProto<B extends HasPrototype>(base: B, update: Record<string, UpdateValue>): void {
     const proto = base.prototype as Record<string, any>;
 
     for (const key in update) {
@@ -54,7 +42,7 @@ export function updateProto<B extends HasPrototype>(
             const original = proto[key] as (...args: any[]) => any;
             const added = val as (...args: any[]) => any;
 
-            proto[key] = function(this: any, ...args: any[]) {
+            proto[key] = function (this: any, ...args: any[]) {
                 const r = original.apply(this, args);
                 try {
                     added.apply(this, args);
@@ -73,15 +61,9 @@ export function updateProto<B extends HasPrototype>(
 function isPropertyDescriptor(v: any): v is PropertyDescriptor {
     if (v == null) return false;
     const hasDescKeys =
-        "value" in v ||
-        "get" in v ||
-        "set" in v ||
-        "writable" in v ||
-        "enumerable" in v ||
-        "configurable" in v;
+        "value" in v || "get" in v || "set" in v || "writable" in v || "enumerable" in v || "configurable" in v;
     return typeof v === "object" && hasDescKeys;
 }
-
 
 const propertyMap = {
     preserveOriginalAfterInpaint: "preserve_original",
@@ -113,29 +95,28 @@ export function getDTPropertyName(widgetName: string) {
     return widgetName.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
 }
 
-
 export function findWidgetByName(node: LGraphNode, name: string) {
-    return node.widgets?.find((w) => w.name === name)
+    return node.widgets?.find((w) => w.name === name);
 }
 
 export function getApp(): ComfyApp {
     // @ts-expect-error
-    return window.comfyAPI.app.app
-};
+    return window.comfyAPI.app.app;
+}
 
 export function getApi(): ComfyApi {
     // @ts-expect-error
-    return window.comfyAPI.api.api
+    return window.comfyAPI.api.api;
 }
 
 export function getLiteGraph(): typeof LiteGraph {
     // @ts-expect-error
-    return window.LiteGraph
+    return window.LiteGraph;
 }
 
 export function getLGraphCanvas(): typeof LGraphCanvas {
     // @ts-expect-error
-    return window.LGraphCanvas
+    return window.LGraphCanvas;
 }
 
 /**

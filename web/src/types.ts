@@ -12,20 +12,11 @@ export interface IDTSampler extends Omit<LGraphNode, "constructor"> {
 export type DTSampler = Omit<IDTSampler, "constructor">;
 
 type RemoveIndexSignature<T> = {
-    [K in keyof T as
-        string extends K ? never :
-        number extends K ? never :
-        symbol extends K ? never :
-        K
-    ]: T[K];
+    [K in keyof T as string extends K ? never : number extends K ? never : symbol extends K ? never : K]: T[K];
 };
 
-type ExtensionSetting = Omit<
-    NonNullable<ComfyExtensionBase["settings"]>[number],
-    "id"
-> & { id: string };
+type ExtensionSetting = Omit<NonNullable<ComfyExtensionBase["settings"]>[number], "id"> & { id: string };
 
-export interface ComfyExtension
-    extends Omit<RemoveIndexSignature<ComfyExtensionBase>, "settings"> {
+export interface ComfyExtension extends Omit<RemoveIndexSignature<ComfyExtensionBase>, "settings"> {
     settings?: ExtensionSetting[];
 }

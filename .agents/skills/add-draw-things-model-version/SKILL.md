@@ -1,0 +1,29 @@
+---
+name: add-draw-things-model-version
+description: Add a Draw Things model version to draw-things-comfyui. Use when asked to identify a new model version or add its metadata, existing sampler controls, latent previews, and extension version bump. Ask for direction if the model introduces new configuration properties.
+---
+
+# Add a Draw Things model version
+
+## Identify the model and capabilities
+
+1. Read `src/modelVersions.json`. If the request names no version, compare its canonical versions and aliases with the `versions` array in the [published model-version catalog](https://kcjerrell.github.io/dt-models/versions.json). If that URL is unavailable, read the [published branch copy](https://github.com/kcjerrell/dt-models/blob/gh-pages/versions.json). Check upstream history to distinguish recent additions from older gaps if several IDs differ. Ask which to add if the target remains ambiguous.
+2. Search the [Draw Things community source](https://github.com/drawthingsai/draw-things-community) for the wire ID and corresponding Swift enum case. Use [Sampler.swift](https://github.com/drawthingsai/draw-things-community/blob/main/Libraries/SwiftDiffusion/Sources/Samplers/Sampler.swift) for the wire ID and [ModelZoo.swift](https://github.com/drawthingsai/draw-things-community/blob/main/Libraries/ModelZoo/Sources/ModelZoo.swift) for the display name, specification, resolution-dependent shift support, and TeaCache metadata. Check [LocalImageGenerator.swift](https://github.com/drawthingsai/draw-things-community/blob/main/Libraries/LocalImageGenerator/Sources/LocalImageGenerator.swift) and the relevant sampler or model implementation for runtime gates such as frame count, CFG Zero Star, audio shift, and attention. Distinguish model defaults from features the runtime supports.
+3. Compare the model's required configuration with `resources/config.fbs`, `src/config.py`, and `web/src/configProperties.ts`. If the new model introduces configuration properties, identify them and ask the user for instructions on how to handle them. Continue independent investigation while awaiting direction. Configuration schema, generated bindings, and new widget properties require separate instructions.
+4. Add the exact version, full name, and supported existing feature flags to `src/modelVersions.json`. Keep `tag` as short as possible while preserving the distinction between related versions. For example, use `MMH3` and `MMH3 Image`. Set `numFramesStep` for a video model when confirmed by its frame layout.
+5. Check both `web/src/widgets.ts` and `src/config.py`. Verify widget visibility in Basic, Advanced, and All when switching settings or models. Trace each supported control through `ModelVersion` and `apply_conditional` to the generated configuration field. Confirm the supported values are serialized and stale values for unsupported controls are ignored. Use `tests/test_config.py` for a focused regression check when warranted. Report any generic controls that Draw Things ignores and would need a new visibility rule.
+
+## Enable previews
+
+Read [ImageConverter.swift](https://github.com/drawthingsai/draw-things-community/blob/main/Libraries/LocalImageGenerator/Sources/ImageConverter.swift) and trace the model through `cgImages` with TAESD disabled. Check the exact channel count, tensor layout, cropping, RGB conversion, and branch order. An earlier channel-based branch can handle a model even when a later version-specific case skips it.
+
+Register the exact ID in the preview dispatch in `src/image_handlers.py`. Reuse a converter when the upstream latent format and coefficients match. Preserve model-specific layout rules, such as audio-row cropping for video. TAESD preview decoding is outside this workflow. If there is no usable conversion or another preview blocker, explain the evidence and ask the user how to proceed. If the transport is in question, trace `response.previewImage` in `src/draw_things.py` and the upstream gRPC server.
+
+Use `tests/test_decode_preview.py` to check raw and fpzip-compressed previews against independently derived pixels. Include dimensions or layout cases that distinguish the new model from related versions when those cases differ.
+
+## Bump, build, and verify
+
+- Use a patch bump for model metadata and preview support. Prefer a minor bump for additional product behavior changes, especially new configuration properties. Treat tests, the version fields, and the generated bundle as part of the model update when deciding the bump.
+- Synchronize `package.json`, `package-lock.json`, `web/src/ComfyUI-DrawThings-gRPC.ts` (`nodePackVersion`), `pyproject.toml`, and `__init__.py`. Use `npm version <version> --no-git-tag-version --ignore-scripts` and regenerate the lockfile with `npm install --package-lock-only --ignore-scripts`. Review the lockfile for unrelated dependency changes. Preserve historical entries in `web/src/upgrade.ts`. A model-only update needs no new message. Consider a message when new configuration properties are added under separate instructions.
+- Run `npx biome format --write` on the changed JSON and TypeScript source within the scope of the update. Then run `npm run build` and review the checked-in `web/js/extension.esm.js` diff. Run the Python tests with `python -m unittest discover -s tests` in the project environment and the frontend unit tests with `node --import tsx --test tests/unit/*.unit.ts`. Check that both package manifests, the two runtime constants, and the bundle agree on the version. Run `git diff --check`.
+- When an existing local Draw Things setup has the target model, confirm a sampling preview in ComfyUI and the expected controls. Otherwise, report the unit and build coverage and say that live generation was unverified. Changes to `pyproject.toml` on upstream `main` can trigger Comfy Registry publishing, so keep publishing subject to the user's separate authorization.

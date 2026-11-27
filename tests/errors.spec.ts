@@ -9,9 +9,9 @@ export const workflowFolder = "./tests/workflows";
 
 test("not connected error message when executing", async ({ page, comfy }) => {
     await comfy.openWorkflow(join(workflowFolder, "sd1_a.json"));
-    const sampler = (await comfy.getNodeRef("DrawThingsSampler"));
+    const sampler = await comfy.getNodeRef("DrawThingsSampler");
 
-    if (!sampler) throw new Error("Couldn't find sampler node")
+    if (!sampler) throw new Error("Couldn't find sampler node");
 
     // toggle tls to disconnect
     await sampler.selectWidgetOption("settings", "Basic");

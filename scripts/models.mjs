@@ -1,11 +1,10 @@
-import { compileOfficialModels, versionMap } from "./specParser.mjs"
-import fse from "fs-extra"
-import cp from "child_process"
+import cp from "child_process";
+import fse from "fs-extra";
+import { compileOfficialModels, versionMap } from "./specParser.mjs";
 
 export async function updateModels(skipClone = false) {
-    if (!skipClone)
-        await cloneCommunityModels()
-    await compileModelData()
+    if (!skipClone) await cloneCommunityModels();
+    await compileModelData();
 }
 
 /**
@@ -14,13 +13,13 @@ export async function updateModels(skipClone = false) {
  * saves the model json to ./src-web/models/
  */
 async function compileModelData() {
-    console.log("compiling model data")
+    console.log("compiling model data");
 
-    await compileModelType("models", 'Model')
-    await compileModelType("uncurated_models")
-    await compileModelType("controlnets", 'ControlNet')
-    await compileModelType("loras", 'LoRA')
-    await compileModelType("embeddings", 'TextualInversion')
+    await compileModelType("models", "Model");
+    await compileModelType("uncurated_models");
+    await compileModelType("controlnets", "ControlNet");
+    await compileModelType("loras", "LoRA");
+    await compileModelType("embeddings", "TextualInversion");
 }
 
 /**
@@ -35,36 +34,43 @@ async function compileModelData() {
  */
 async function compileModelType(type, official) {
     try {
-        cp.execSync(`python utils/${type}_json.py`, { cwd: "./models/community-models", stdio: "inherit" })
-        const models = await fse.readJSON(`./models/community-models/${type}.json`)
+        cp.execSync(`python utils/${type}_json.py`, { cwd: "./models/community-models", stdio: "inherit" });
+        const models = await fse.readJSON(`./models/community-models/${type}.json`);
 
         if (official) {
-            const officialModels = await compileOfficialModels(official)
-            officialModels.forEach(m => { m.official = true })
-            models.push(...officialModels)
+            const officialModels = await compileOfficialModels(official);
+            officialModels.forEach((m) => {
+                m.official = true;
+            });
+            models.push(...officialModels);
         }
 
-        models.sort((a, b) => a.name.localeCompare(b.name))
+        models.sort((a, b) => a.name.localeCompare(b.name));
 
-        models.forEach(m => { m.version = versionMap(m.version) })
+        models.forEach((m) => {
+            m.version = versionMap(m.version);
+        });
 
-        await fse.writeJSON(`./src-web/models/${type}.json`, models, { spaces: 2 })
+        await fse.writeJSON(`./src-web/models/${type}.json`, models, { spaces: 2 });
     } catch (e) {
-        console.error("couldn't compile", type)
-        console.error(e)
+        console.error("couldn't compile", type);
+        console.error(e);
     }
 }
 
 /** clones the community models repo. Sometimes this can be slow. */
 async function cloneCommunityModels() {
-    console.log("removing old generated files")
-    fse.emptyDirSync("./models")
-    console.log("cloning draw things community models")
-    cp.execSync("git clone https://github.com/drawthingsai/community-models.git", { cwd: "./models", stdio: "inherit" })
+    console.log("removing old generated files");
+    fse.emptyDirSync("./models");
+    console.log("cloning draw things community models");
+    cp.execSync("git clone https://github.com/drawthingsai/community-models.git", {
+        cwd: "./models",
+        stdio: "inherit",
+    });
 }
 
 if (import.meta.filename === process.argv[1]) {
     updateModels(true)
         .then(() => process.exit(0))
-        .catch(console.error)
+        .catch(console.error);
 }

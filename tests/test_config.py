@@ -176,6 +176,34 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(restored.ResolutionDependentShift())
         self.assertTrue(restored.TeaCache())
 
+    def test_minimax_h3_image_serializes_only_supported_options(self):
+        config = _config.build_config(
+            {
+                "version": "minimax_h3_image",
+                "cfg_zero_star": True,
+                "cfg_zero_star_init_steps": 2,
+                "shift": 3.0,
+                "res_dpt_shift": True,
+                "num_frames": 21,
+                "shift_for_audio": 7.0,
+                "uses_sol_attention": True,
+                "tea_cache": True,
+            }
+        )
+        builder = flatbuffers.Builder(0)
+        builder.Finish(config.Pack(builder))
+        generated = importlib.import_module(f"{_PACKAGE}.generated.config_generated")
+        restored = generated.GenerationConfiguration.GetRootAs(builder.Output(), 0)
+        defaults = _config.GenerationConfigurationT()
+        self.assertTrue(restored.CfgZeroStar())
+        self.assertEqual(restored.CfgZeroInitSteps(), 2)
+        self.assertEqual(restored.Shift(), 3.0)
+        self.assertFalse(restored.ResolutionDependentShift())
+        self.assertEqual(restored.NumFrames(), defaults.numFrames)
+        self.assertEqual(restored.ShiftForAudio(), defaults.shiftForAudio)
+        self.assertFalse(restored.UsesSolAttention())
+        self.assertFalse(restored.TeaCache())
+
 
 if __name__ == "__main__":
     unittest.main()

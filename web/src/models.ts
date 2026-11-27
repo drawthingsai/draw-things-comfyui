@@ -1,7 +1,7 @@
 import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
 import type { ComboWidget, IWidget, LGraph, LGraphNode } from "@comfyorg/litegraph";
 import modelVersions from "../../src/modelVersions.json";
-import { combinedModelsResponseKeys, type CombinedModelsResponse } from "./modelsTypes";
+import { type CombinedModelsResponse, combinedModelsResponseKeys } from "./modelsTypes";
 import { getApi, getApp, getLiteGraph } from "./util";
 
 type ComfyWidgetConstructor = ComfyApp["widgets"][string];
@@ -34,7 +34,9 @@ export function getMenuItem(model: Model, disabled = false) {
     return {
         value: model,
         content: model.version ? `${model.name} (${getVersionAbbrev(model.version)})` : model.name,
-        toString() { return model.name; },
+        toString() {
+            return model.name;
+        },
         disabled,
     };
 }
@@ -45,7 +47,9 @@ export function restoreModelLabel(selection: any) {
     return {
         ...selection,
         content: selection.content ?? getMenuItem(selection.value).content,
-        toString() { return this.value.name ?? this.value.file; },
+        toString() {
+            return this.value.name ?? this.value.file;
+        },
     };
 }
 
@@ -56,8 +60,10 @@ export function restoreModelSelections(node: DTModelNode) {
         const type = (widget.options as any)?.modelType;
         if (!type) continue;
         const saved = selections[widget.name];
-        const value = widget.value === "Not connected" || widget.value === "Click to retry"
-            ? saved ?? (type === "textualInversions" ? "..." : "(None selected)") : widget.value;
+        const value =
+            widget.value === "Not connected" || widget.value === "Click to retry"
+                ? (saved ?? (type === "textualInversions" ? "..." : "(None selected)"))
+                : widget.value;
         widget.value = restoreModelLabel(value);
         if (saved) selections[widget.name] = restoreModelLabel(saved);
     }
@@ -68,7 +74,8 @@ export function getNodesRecursive(graph: LGraph, seen = new Set<LGraph>()): DTMo
     if (seen.has(graph)) return [];
     seen.add(graph);
     return (graph.nodes ?? []).flatMap((node: any) => [
-        node, ...(node.subgraph ? getNodesRecursive(node.subgraph, seen) : []),
+        node,
+        ...(node.subgraph ? getNodesRecursive(node.subgraph, seen) : []),
     ]);
 }
 
@@ -94,7 +101,10 @@ export function findServerNodes(node: DTModelNode): DTModelNode[] {
                 if (target?.subgraph) {
                     const slot = target.subgraph.inputNode?.slots?.[link.target_slot];
                     const innerLinks = slot?.getLinks?.() ?? [];
-                    followLinks(target.subgraph, innerLinks.map((inner: any) => inner.id));
+                    followLinks(
+                        target.subgraph,
+                        innerLinks.map((inner: any) => inner.id),
+                    );
                 } else if (target) visit(target);
             }
         }
@@ -102,7 +112,10 @@ export function findServerNodes(node: DTModelNode): DTModelNode[] {
     function visit(current: DTModelNode) {
         if (visited.has(current)) return;
         visited.add(current);
-        if (current.isDtServerNode) { servers.add(current); return; }
+        if (current.isDtServerNode) {
+            servers.add(current);
+            return;
+        }
         for (const output of current.outputs ?? []) followLinks(current.graph, output.links ?? []);
     }
     visit(node);
@@ -119,7 +132,9 @@ function settingsKey() {
 }
 
 class ConnectionError extends Error {
-    constructor() { super("Couldn't connect to server. Check server settings and retry"); }
+    constructor() {
+        super("Couldn't connect to server. Check server settings and retry");
+    }
 }
 
 const connectionRequests = new WeakMap<DTModelNode, number>();
@@ -131,9 +146,11 @@ export async function updateServerConnection(node: DTModelNode): Promise<ModelIn
     const request = (connectionRequests.get(node) ?? 0) + 1;
     connectionRequests.set(node, request);
     const graph = node.graph;
-    const current = () => connectionRequests.get(node) === request
-        && JSON.stringify(node.getServer?.()) === key && node.graph === graph
-        && (!graph || graph.getNodeById(node.id) === node);
+    const current = () =>
+        connectionRequests.get(node) === request &&
+        JSON.stringify(node.getServer?.()) === key &&
+        node.graph === graph &&
+        (!graph || graph.getNodeById(node.id) === node);
     const update = (connected: boolean) => {
         if (!current() || !node.isDtServerNode) return;
         const widgets = (node.widgets ?? []).filter((w) => (w.options as any)?.modelType === "models");
@@ -168,7 +185,8 @@ class ModelService {
     getCachedLocalModels(node: DTModelNode): ModelInfo[] {
         return this.context(node).servers.flatMap((server) => {
             const address = server.getServer?.();
-            const cached = address && modelInfoStore.get(JSON.stringify([address.server, String(address.port), address.useTls]));
+            const cached =
+                address && modelInfoStore.get(JSON.stringify([address.server, String(address.port), address.useTls]));
             return cached ? [cached] : [];
         });
     }
@@ -192,11 +210,11 @@ class ModelService {
     async getMenuItems(node: DTModelNode, type: string, filterVersions = true) {
         const { servers } = this.context(node);
         const shouldFilterVersions = filterVersions && type !== "upscalers";
-        const useBridgeCatalog = type !== "upscalers"
-            && getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled");
+        const useBridgeCatalog =
+            type !== "upscalers" && getApp().extensionManager.setting.get("drawthings.bridge_mode.enabled");
         if (!servers.length) throw new ConnectionError();
         const responses = await Promise.allSettled(servers.map(updateServerConnection));
-        const available = responses.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+        const available = responses.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
         if (!available.length) throw new ConnectionError();
         // A successful check may have just restored the sampler's model/version.
         const { versions } = this.context(node);
@@ -206,36 +224,65 @@ class ModelService {
         const models = new Map<string, Model>();
         for (const catalog of catalogs)
             for (const model of catalog?.[type] ?? []) if (!models.has(model.file)) models.set(model.file, model);
-        const rank = (model: Model) => !shouldFilterVersions || !versions.length ? 0
-            : model.version ? (versions.includes(model.version) ? 0 : 2) : 1;
-        return [...models.values()].map((model) => getMenuItem(model,
-            !!(shouldFilterVersions && model.version && versions.length && !versions.includes(model.version)),
-        )).sort((a, b) => rank(a.value) - rank(b.value)
-            || a.value.name.localeCompare(b.value.name, undefined, { sensitivity: "base" }));
+        const rank = (model: Model) =>
+            !shouldFilterVersions || !versions.length
+                ? 0
+                : model.version
+                  ? versions.includes(model.version)
+                      ? 0
+                      : 2
+                  : 1;
+        return [...models.values()]
+            .map((model) =>
+                getMenuItem(
+                    model,
+                    !!(shouldFilterVersions && model.version && versions.length && !versions.includes(model.version)),
+                ),
+            )
+            .sort(
+                (a, b) =>
+                    rank(a.value) - rank(b.value) ||
+                    a.value.name.localeCompare(b.value.name, undefined, { sensitivity: "base" }),
+            );
     }
 
     async selectByFile(node: DTModelNode, widget: IWidget, file: unknown) {
-        if (!file) { setModelValue(node, widget, "(None selected)"); return; }
+        if (!file) {
+            setModelValue(node, widget, "(None selected)");
+            return;
+        }
         const type = (widget.options as any)?.modelType;
-        const find = (catalogs: ModelInfo[]) => catalogs.flatMap((catalog) => catalog[type] ?? [])
-            .find((model) => model.file === file);
+        const find = (catalogs: ModelInfo[]) =>
+            catalogs.flatMap((catalog) => catalog[type] ?? []).find((model) => model.file === file);
         let model = find(this.getCachedLocalModels(node));
         if (!model) {
             // Presets are independent of menu mode, availability and version filters.
-            const local = await Promise.allSettled(this.context(node).servers.map(async (server) => {
-                const address = server.getServer?.();
-                if (!address) throw new Error("Missing server address");
-                return getModels(address.server, address.port, address.useTls);
-            }));
-            model = find(local.flatMap((result) => result.status === "fulfilled" ? [result.value] : []));
+            const local = await Promise.allSettled(
+                this.context(node).servers.map(async (server) => {
+                    const address = server.getServer?.();
+                    if (!address) throw new Error("Missing server address");
+                    return getModels(address.server, address.port, address.useTls);
+                }),
+            );
+            model = find(local.flatMap((result) => (result.status === "fulfilled" ? [result.value] : [])));
         }
         if (!model) {
-            try { model = find([allModelsCatalog(await getCombinedModels())]); }
-            catch { /* Unavailable catalogs must not prevent importing a filename. */ }
+            try {
+                model = find([allModelsCatalog(await getCombinedModels())]);
+            } catch {
+                /* Unavailable catalogs must not prevent importing a filename. */
+            }
         }
-        setModelValue(node, widget, model ? getMenuItem(model) : {
-            value: { file }, content: file,
-        });
+        setModelValue(
+            node,
+            widget,
+            model
+                ? getMenuItem(model)
+                : {
+                      value: { file },
+                      content: file,
+                  },
+        );
     }
 }
 export const modelService = new ModelService();
@@ -252,7 +299,10 @@ export const DtModelTypeHandler: ComfyWidgetConstructor = (comfyNode, inputName,
     const LiteGraph = getLiteGraph();
     const type: string = inputData[1].model_type;
     const isPrompt = type === "textualInversions";
-    const widget = node.addWidget("combo", inputName, isPrompt ? "..." : "(None selected)",
+    const widget = node.addWidget(
+        "combo",
+        inputName,
+        isPrompt ? "..." : "(None selected)",
         () => {
             node.saveSelectedModels?.();
             if (node.isDtServerNode && type === "models") node.updateDynamicWidgets?.();
@@ -266,8 +316,12 @@ export const DtModelTypeHandler: ComfyWidgetConstructor = (comfyNode, inputName,
         const token = ++request;
         const graph = node.graph;
         const context = modelService.contextKey(node);
-        return () => token === request && node.graph === graph && !!graph
-            && graph.getNodeById(node.id) === node && modelService.contextKey(node) === context;
+        return () =>
+            token === request &&
+            node.graph === graph &&
+            !!graph &&
+            graph.getNodeById(node.id) === node &&
+            modelService.contextKey(node) === context;
     }
     async function step(delta: number, options: Parameters<ComboWidget["incrementValue"]>[0]) {
         if (isPrompt) return;
@@ -275,14 +329,15 @@ export const DtModelTypeHandler: ComfyWidgetConstructor = (comfyNode, inputName,
         const value = widget.value;
         let items: any[];
         try {
-            items = ["(None selected)", ...await getItems()];
+            items = ["(None selected)", ...(await getItems())];
         } catch {
             // Keep the saved selection when the catalog is unavailable; the menu allows retrying.
             return;
         }
         if (!current() || widget.value !== value) return;
-        const index = items.findIndex((item) => typeof item === "string"
-            ? item === value : item.value.file === (value as any)?.value?.file);
+        const index = items.findIndex((item) =>
+            typeof item === "string" ? item === value : item.value.file === (value as any)?.value?.file,
+        );
         let next = index + delta;
         while (next >= 0 && next < items.length && items[next].disabled) next += delta;
         if (next < 0 || next >= items.length) return;
@@ -302,13 +357,20 @@ export const DtModelTypeHandler: ComfyWidgetConstructor = (comfyNode, inputName,
         }
         const current = startRequest();
         let menu: any;
-        const open = (items: any[]) => new LiteGraph.ContextMenu(items, {
-            scale: Math.max(1, canvas.ds.scale), event: e, className: "dark",
-            callback: (item: any) => {
-                if (item?.disabled || item === "Not connected" || !current()) return;
-                widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), { e, node: clickedNode, canvas });
-            },
-        });
+        const open = (items: any[]) =>
+            new LiteGraph.ContextMenu(items, {
+                scale: Math.max(1, canvas.ds.scale),
+                event: e,
+                className: "dark",
+                callback: (item: any) => {
+                    if (item?.disabled || item === "Not connected" || !current()) return;
+                    widget.setValue(typeof item === "string" ? item : restoreModelLabel(item), {
+                        e,
+                        node: clickedNode,
+                        canvas,
+                    });
+                },
+            });
         menu = open([{ content: "Loading models…", disabled: true }]);
         let items: any[];
         let disconnected = false;
@@ -317,7 +379,10 @@ export const DtModelTypeHandler: ComfyWidgetConstructor = (comfyNode, inputName,
             if (isPrompt) {
                 const prompt = String(node.widgets?.find((w) => w.name === "prompt")?.value ?? "");
                 const tags = new Set([...prompt.matchAll(/<(.*?)>/gm)].map((m) => m[1]));
-                items = items.map((item) => ({ ...item, content: `${tags.has(item.value.keyword) ? "✓ " : ""}${item.value.name} (${item.value.version})` }));
+                items = items.map((item) => ({
+                    ...item,
+                    content: `${tags.has(item.value.keyword) ? "✓ " : ""}${item.value.name} (${item.value.version})`,
+                }));
             }
             if (!items.length) items.push({ content: "No models available", disabled: true });
         } catch (error) {
@@ -328,10 +393,18 @@ export const DtModelTypeHandler: ComfyWidgetConstructor = (comfyNode, inputName,
                     { content: error.message, disabled: true },
                 ];
             } else {
-                items = [{ content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry", disabled: true }];
+                items = [
+                    {
+                        content: error instanceof Error ? error.message : "Couldn't retrieve models. Click to retry",
+                        disabled: true,
+                    },
+                ];
             }
         }
-        if (!current() || !menu.root?.isConnected) { menu.close(); return; }
+        if (!current() || !menu.root?.isConnected) {
+            menu.close();
+            return;
+        }
         menu.close();
         open(disconnected ? items : [isPrompt ? "..." : "(None selected)", ...items]);
     };
@@ -363,8 +436,11 @@ export async function getModels(server: string, port: number | string, useTls: b
         })();
         modelInfoLoads.set(key, load);
     }
-    try { return await load; }
-    finally { if (modelInfoLoads.get(key) === load) modelInfoLoads.delete(key); }
+    try {
+        return await load;
+    } finally {
+        if (modelInfoLoads.get(key) === load) modelInfoLoads.delete(key);
+    }
 }
 
 let bridgeLoad: Promise<CombinedModelsResponse> | undefined;
@@ -373,16 +449,20 @@ let combinedLoad: Promise<CombinedModelsResponse> | undefined;
 let combinedCache: CombinedModelsResponse | undefined;
 async function getCombinedModels(): Promise<CombinedModelsResponse> {
     if (combinedCache) return combinedCache;
-    if (!combinedLoad) combinedLoad = (async () => {
-        const response = await getApi().fetchApi("/dt_grpc/combined_models");
-        if (!response.ok) throw new Error("Couldn't retrieve model metadata");
-        const combined: CombinedModelsResponse = await response.json();
-        combinedCache = combined;
-        return combined;
-    })();
+    if (!combinedLoad)
+        combinedLoad = (async () => {
+            const response = await getApi().fetchApi("/dt_grpc/combined_models");
+            if (!response.ok) throw new Error("Couldn't retrieve model metadata");
+            const combined: CombinedModelsResponse = await response.json();
+            combinedCache = combined;
+            return combined;
+        })();
     const load = combinedLoad;
-    try { return await load; }
-    finally { if (combinedLoad === load) combinedLoad = undefined; }
+    try {
+        return await load;
+    } finally {
+        if (combinedLoad === load) combinedLoad = undefined;
+    }
 }
 
 function allModelsCatalog(combined: CombinedModelsResponse): ModelInfo {
@@ -397,23 +477,31 @@ function allModelsCatalog(combined: CombinedModelsResponse): ModelInfo {
 
 async function getBridgeModels(): Promise<ModelInfo> {
     if (bridgeCache) return bridgeCatalog(bridgeCache);
-    if (!bridgeLoad) bridgeLoad = (async () => {
-        const api = getApi();
-        const [filesResponse, combined] = await Promise.all([
-            api.fetchApi("/dt_grpc/bridge_models"), getCombinedModels(),
-        ]);
-        if (!filesResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
-        const files: string[] = await filesResponse.json();
-        const filtered = Object.fromEntries(combinedModelsResponseKeys.map((key) => [key,
-            Array.isArray(combined[key]) ? combined[key].filter((model) => files.includes(model.file)) : [],
-        ])) as unknown as CombinedModelsResponse;
-        bridgeCache = filtered;
-        return filtered;
-    })();
+    if (!bridgeLoad)
+        bridgeLoad = (async () => {
+            const api = getApi();
+            const [filesResponse, combined] = await Promise.all([
+                api.fetchApi("/dt_grpc/bridge_models"),
+                getCombinedModels(),
+            ]);
+            if (!filesResponse.ok) throw new Error("Couldn't retrieve DT+ models. Click to retry");
+            const files: string[] = await filesResponse.json();
+            const filtered = Object.fromEntries(
+                combinedModelsResponseKeys.map((key) => [
+                    key,
+                    Array.isArray(combined[key]) ? combined[key].filter((model) => files.includes(model.file)) : [],
+                ]),
+            ) as unknown as CombinedModelsResponse;
+            bridgeCache = filtered;
+            return filtered;
+        })();
     const load = bridgeLoad;
     let combined: CombinedModelsResponse;
-    try { combined = await load; }
-    finally { if (bridgeLoad === load) bridgeLoad = undefined; }
+    try {
+        combined = await load;
+    } finally {
+        if (bridgeLoad === load) bridgeLoad = undefined;
+    }
     return bridgeCatalog(combined);
 }
 
@@ -422,7 +510,11 @@ function bridgeCatalog(combined: CombinedModelsResponse): ModelInfo {
     const community = !!setting.get("drawthings.bridge_mode.community");
     const uncurated = !!setting.get("drawthings.bridge_mode.uncurated");
     return {
-        models: [...combined.officialModels, ...(community ? combined.communityModels : []), ...(uncurated ? combined.uncuratedModels : [])],
+        models: [
+            ...combined.officialModels,
+            ...(community ? combined.communityModels : []),
+            ...(uncurated ? combined.uncuratedModels : []),
+        ],
         controlNets: [...combined.officialCnets, ...(community ? combined.communityCnets : [])],
         loras: [...combined.officialLoras, ...(community ? combined.communityLoras : [])],
         textualInversions: community ? [...combined.communityEmbeddings] : [],
@@ -451,5 +543,5 @@ function testHack(models: ModelInfo) {
                 });
             }
         }
-    } catch { }
+    } catch {}
 }

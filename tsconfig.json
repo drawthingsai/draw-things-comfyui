@@ -3,10 +3,7 @@
         "target": "ES2020", // Safe, modern baseline for ComfyUI browsers
         "module": "ESNext", // Emit plain JS (no import/export)
         "moduleResolution": "bundler",
-        "lib": [
-            "DOM",
-            "ES2020"
-        ], // For browser + modern JS APIs
+        "lib": ["DOM", "ES2020"], // For browser + modern JS APIs
         "strict": true,
         "outDir": "./web/js", // Or wherever your ComfyUI extension JS goes
         "removeComments": false,
@@ -17,7 +14,5 @@
         "allowJs": true,
         "resolveJsonModule": true
     },
-    "include": [
-        "./web/src/**/*",
-    ]
+    "include": ["./web/src/**/*"]
 }
