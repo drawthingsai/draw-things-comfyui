@@ -1,6 +1,5 @@
 import cp from "child_process";
 import fse from "fs-extra";
-import { updateModels } from "./models.mjs";
 
 async function updateConfig() {
     console.log("Fetching latest config.fbs");
@@ -53,7 +52,6 @@ async function updateAll() {
     await updateConfig();
     await updateClient();
     await fixImports();
-    // await updateModels()
 }
 
 async function fixImports() {

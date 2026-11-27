@@ -21,9 +21,9 @@ Register the exact ID in the preview dispatch in `src/image_handlers.py`. Reuse 
 
 Use `tests/test_decode_preview.py` to check raw and fpzip-compressed previews against independently derived pixels. Include dimensions or layout cases that distinguish the new model from related versions when those cases differ.
 
-## Bump, build, and verify
+## Bump and verify
 
-- Use a patch bump for model metadata and preview support. Prefer a minor bump for additional product behavior changes, especially new configuration properties. Treat tests, the version fields, and the generated bundle as part of the model update when deciding the bump.
-- Synchronize `package.json`, `package-lock.json`, `web/src/ComfyUI-DrawThings-gRPC.ts` (`nodePackVersion`), `pyproject.toml`, and `__init__.py`. Use `npm version <version> --no-git-tag-version --ignore-scripts` and regenerate the lockfile with `npm install --package-lock-only --ignore-scripts`. Review the lockfile for unrelated dependency changes. Preserve historical entries in `web/src/upgrade.ts`. A model-only update needs no new message. Consider a message when new configuration properties are added under separate instructions.
-- Run `npx biome format --write` on the changed JSON and TypeScript source within the scope of the update. Then run `npm run build` and review the checked-in `web/js/extension.esm.js` diff. Run the Python tests with `python -m unittest discover -s tests` in the project environment and the frontend unit tests with `node --import tsx --test tests/unit/*.unit.ts`. Check that both package manifests, the two runtime constants, and the bundle agree on the version. Run `git diff --check`.
-- When an existing local Draw Things setup has the target model, confirm a sampling preview in ComfyUI and the expected controls. Otherwise, report the unit and build coverage and say that live generation was unverified. Changes to `pyproject.toml` on upstream `main` can trigger Comfy Registry publishing, so keep publishing subject to the user's separate authorization.
+- Use a patch bump for model metadata and preview support. Prefer a minor bump for additional product behavior changes, especially new configuration properties. Treat tests and generated release files as part of the model update when deciding the bump.
+- Run `npx biome format --write` on the changed JSON and TypeScript source within the scope of the update. Then follow the [version-bump skill](../bump-draw-things-comfyui-version/SKILL.md) to synchronize the release version and rebuild the frontend bundle.
+- Run the Python tests with `python -m unittest discover -s tests` in the project environment and the frontend unit tests with `node --import tsx --test tests/unit/*.unit.ts`.
+- When an existing local Draw Things setup has the target model, confirm a sampling preview in ComfyUI and the expected controls. Otherwise, report the unit and build coverage and say that live generation was unverified.
