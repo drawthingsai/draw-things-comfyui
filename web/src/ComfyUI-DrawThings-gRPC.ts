@@ -1,5 +1,5 @@
 import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
-import { importConfig } from "./configImport.js";
+import { clipboardUnavailableMessage, importConfig } from "./configImport.js";
 import { findPropertyPython } from "./configProperties.js";
 import { DtButtonsTypeHandler } from "./lora.js";
 import { DtModelTypeHandler } from "./models.js";
@@ -7,7 +7,7 @@ import type { ComfyExtension, DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
 import { getApi, getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.15.1";
+export const nodePackVersion = "1.15.2";
 
 const extension: ComfyExtension = {
     name: "core",
@@ -221,7 +221,13 @@ export const samplerProto: Partial<DTSampler> = {
                 }
                 config.loras = [];
                 config.control = [];
-                navigator.clipboard.writeText(JSON.stringify(config));
+                const text = JSON.stringify(config);
+                const clipboard = navigator.clipboard;
+                if (clipboard === undefined) {
+                    window.prompt(`${clipboardUnavailableMessage}\n\nOr just copy out of this box:`, text);
+                } else {
+                    void clipboard.writeText(text);
+                }
             },
         });
         options.push(null);

@@ -1404,76 +1404,79 @@ function patchProp(jsonName, funcName, func) {
 }
 
 // web/src/configImport.ts
+var clipboardUnavailableMessage = "Unable to access clipboard directly. This may be due to permissions or using an unsecured URL. Check the permissions for this page, try changing your url to use 'localhost' instead of an IP, or serve Comfy over HTTPS.";
 async function importConfig(sampler) {
-  return navigator.clipboard.readText().then(async (text) => {
-    try {
-      const config = JSON.parse(text);
-      const requiredNodes = [];
-      for (const [k, v] of Object.entries(config)) {
-        const prop = findPropertyJson(k);
-        if (!prop) {
-          continue;
-        }
-        if (prop.node !== sampler.type) {
-          requiredNodes.push(...prop.getRequiredNodes(v, config));
-          continue;
-        }
-        const widget = sampler.widgets?.find((w) => w.name === prop.python);
-        if (!widget) {
-          continue;
-        }
-        await prop.import(k, v, widget, sampler, config);
+  const clipboard = navigator.clipboard;
+  const text = clipboard === void 0 ? window.prompt(`${clipboardUnavailableMessage}
+
+Or just paste your config here:`) : await clipboard.readText();
+  if (text === null) return;
+  try {
+    const config = JSON.parse(text);
+    const requiredNodes = [];
+    for (const [k, v] of Object.entries(config)) {
+      const prop = findPropertyJson(k);
+      if (!prop) {
+        continue;
       }
-      sampler.coerceWidgetValues();
-      sampler.updateDynamicWidgets?.();
-      const availableNodes = sampler.getConfigInputNodes();
-      const missingNodes = [];
-      if (requiredNodes.includes("DrawThingsUpscaler")) {
-        if (!availableNodes.DrawThingsUpscaler.length) missingNodes.push("DrawThingsUpscaler");
-        else await applyConfig(availableNodes.DrawThingsUpscaler[0], config);
+      if (prop.node !== sampler.type) {
+        requiredNodes.push(...prop.getRequiredNodes(v, config));
+        continue;
       }
-      if (requiredNodes.includes("DrawThingsRefiner")) {
-        if (!availableNodes.DrawThingsRefiner.length) missingNodes.push("DrawThingsRefiner");
-        else await applyConfig(availableNodes.DrawThingsRefiner[0], config);
+      const widget = sampler.widgets?.find((w) => w.name === prop.python);
+      if (!widget) {
+        continue;
       }
-      if (requiredNodes.includes("DrawThingsControlNet")) {
-        const cnetNeeded = requiredNodes.filter((n) => n === "DrawThingsControlNet").length;
-        if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
-          missingNodes.push(
-            `${cnetNeeded - availableNodes.DrawThingsControlNet.length} x DrawThingsControlNet`
-          );
-        let controlIndex = 0;
-        for (const cnetNode of availableNodes.DrawThingsControlNet) {
-          await applyCnetConfig(cnetNode, config.controls[controlIndex++]);
-        }
+      await prop.import(k, v, widget, sampler, config);
+    }
+    sampler.coerceWidgetValues();
+    sampler.updateDynamicWidgets?.();
+    const availableNodes = sampler.getConfigInputNodes();
+    const missingNodes = [];
+    if (requiredNodes.includes("DrawThingsUpscaler")) {
+      if (!availableNodes.DrawThingsUpscaler.length) missingNodes.push("DrawThingsUpscaler");
+      else await applyConfig(availableNodes.DrawThingsUpscaler[0], config);
+    }
+    if (requiredNodes.includes("DrawThingsRefiner")) {
+      if (!availableNodes.DrawThingsRefiner.length) missingNodes.push("DrawThingsRefiner");
+      else await applyConfig(availableNodes.DrawThingsRefiner[0], config);
+    }
+    if (requiredNodes.includes("DrawThingsControlNet")) {
+      const cnetNeeded = requiredNodes.filter((n) => n === "DrawThingsControlNet").length;
+      if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
+        missingNodes.push(`${cnetNeeded - availableNodes.DrawThingsControlNet.length} x DrawThingsControlNet`);
+      let controlIndex = 0;
+      for (const cnetNode of availableNodes.DrawThingsControlNet) {
+        await applyCnetConfig(cnetNode, config.controls[controlIndex++]);
       }
-      if (requiredNodes.includes("DrawThingsLoRA")) {
-        const loraNeeded = requiredNodes.filter((n) => n === "DrawThingsLoRA").length;
-        if (loraNeeded > availableNodes.DrawThingsLoRA.length)
-          missingNodes.push(`${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`);
-        await applyLoraConfig(
-          availableNodes.DrawThingsLoRA,
-          config.loras
-        );
-      }
-      if (missingNodes.length) {
-        getApp().extensionManager.toast.add({
-          severity: "warn",
-          summary: "Draw Things gRPC",
-          detail: [
-            "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
-            ...missingNodes.map((n) => `\u2022 ${n}`)
-          ].join("\n"),
-          life: 8e3
-        });
-      }
-    } catch (e) {
-      alert(`Failed to parse Draw Things config from clipboard
+    }
+    if (requiredNodes.includes("DrawThingsLoRA")) {
+      const loraNeeded = requiredNodes.filter((n) => n === "DrawThingsLoRA").length;
+      if (loraNeeded > availableNodes.DrawThingsLoRA.length)
+        missingNodes.push(`${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`);
+      await applyLoraConfig(
+        availableNodes.DrawThingsLoRA,
+        config.loras
+      );
+    }
+    if (missingNodes.length) {
+      getApp().extensionManager.toast.add({
+        severity: "warn",
+        summary: "Draw Things gRPC",
+        detail: [
+          "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
+          ...missingNodes.map((n) => `\u2022 ${n}`)
+        ].join("\n"),
+        life: 8e3
+      });
+    }
+  } catch (e) {
+    const source = clipboard === void 0 ? "" : " from clipboard";
+    alert(`Failed to parse Draw Things config${source}
 
 ${e}`);
-      console.warn(e);
-    }
-  });
+    console.warn(e);
+  }
 }
 async function applyConfig(node, config) {
   const nodeProps = findPropertiesByNode(node.type);
@@ -2107,7 +2110,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.15.1";
+var nodePackVersion = "1.15.2";
 var extension3 = {
   name: "core",
   getCustomWidgets() {
@@ -2278,7 +2281,15 @@ ${list.join("\n")}`;
         }
         config.loras = [];
         config.control = [];
-        navigator.clipboard.writeText(JSON.stringify(config));
+        const text = JSON.stringify(config);
+        const clipboard = navigator.clipboard;
+        if (clipboard === void 0) {
+          window.prompt(`${clipboardUnavailableMessage}
+
+Or just copy out of this box:`, text);
+        } else {
+          void clipboard.writeText(text);
+        }
       }
     });
     options.push(null);

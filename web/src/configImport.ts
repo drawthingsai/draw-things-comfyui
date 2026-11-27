@@ -5,85 +5,93 @@ import { modelService, setModelValue } from "./models.js";
 import type { DTSampler } from "./types.js";
 import { getApp } from "./util.js";
 
+export const clipboardUnavailableMessage =
+    "Unable to access clipboard directly. This may be due to permissions or using an unsecured URL. " +
+    "Check the permissions for this page, try changing your url to use 'localhost' instead of an IP, or serve Comfy over HTTPS.";
+
 export async function importConfig(sampler: DTSampler) {
-    return navigator.clipboard.readText().then(async (text) => {
-        try {
-            const config = JSON.parse(text);
+    const clipboard = navigator.clipboard;
+    const text =
+        clipboard === undefined
+            ? window.prompt(`${clipboardUnavailableMessage}\n\nOr just paste your config here:`)
+            : await clipboard.readText();
+    if (text === null) return;
 
-            const requiredNodes: string[] = [];
+    try {
+        const config = JSON.parse(text);
 
-            for (const [k, v] of Object.entries(config)) {
-                const prop = findPropertyJson(k);
-                if (!prop) {
-                    continue;
-                }
-                if (prop.node !== sampler.type) {
-                    requiredNodes.push(...prop.getRequiredNodes(v, config));
-                    continue;
-                }
-                const widget = sampler.widgets?.find((w) => w.name === prop.python);
-                if (!widget) {
-                    continue;
-                }
-                await prop.import(k, v, widget as any, sampler as any, config);
+        const requiredNodes: string[] = [];
+
+        for (const [k, v] of Object.entries(config)) {
+            const prop = findPropertyJson(k);
+            if (!prop) {
+                continue;
             }
-            sampler.coerceWidgetValues();
-            sampler.updateDynamicWidgets?.();
-
-            const availableNodes = sampler.getConfigInputNodes();
-            const missingNodes: string[] = [];
-
-            if (requiredNodes.includes("DrawThingsUpscaler")) {
-                if (!availableNodes.DrawThingsUpscaler.length) missingNodes.push("DrawThingsUpscaler");
-                else await applyConfig(availableNodes.DrawThingsUpscaler[0], config);
+            if (prop.node !== sampler.type) {
+                requiredNodes.push(...prop.getRequiredNodes(v, config));
+                continue;
             }
-
-            if (requiredNodes.includes("DrawThingsRefiner")) {
-                if (!availableNodes.DrawThingsRefiner.length) missingNodes.push("DrawThingsRefiner");
-                else await applyConfig(availableNodes.DrawThingsRefiner[0], config);
+            const widget = sampler.widgets?.find((w) => w.name === prop.python);
+            if (!widget) {
+                continue;
             }
-
-            if (requiredNodes.includes("DrawThingsControlNet")) {
-                const cnetNeeded = requiredNodes.filter((n) => n === "DrawThingsControlNet").length;
-                if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
-                    missingNodes.push(
-                        `${cnetNeeded - availableNodes.DrawThingsControlNet.length} x DrawThingsControlNet`,
-                    );
-                let controlIndex = 0;
-                for (const cnetNode of availableNodes.DrawThingsControlNet) {
-                    await applyCnetConfig(cnetNode, config.controls[controlIndex++]);
-                }
-            }
-
-            if (requiredNodes.includes("DrawThingsLoRA")) {
-                const loraNeeded = requiredNodes.filter((n) => n === "DrawThingsLoRA").length;
-                if (loraNeeded > availableNodes.DrawThingsLoRA.length)
-                    missingNodes.push(`${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`);
-
-                await applyLoraConfig(
-                    availableNodes.DrawThingsLoRA as (LGraphNode & {
-                        loraCount: number;
-                    })[],
-                    config.loras,
-                );
-            }
-
-            if (missingNodes.length) {
-                getApp().extensionManager.toast.add({
-                    severity: "warn",
-                    summary: "Draw Things gRPC",
-                    detail: [
-                        "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
-                        ...missingNodes.map((n) => `• ${n}`),
-                    ].join("\n"),
-                    life: 8000,
-                });
-            }
-        } catch (e) {
-            alert(`Failed to parse Draw Things config from clipboard\n\n${e}`);
-            console.warn(e);
+            await prop.import(k, v, widget as any, sampler as any, config);
         }
-    });
+        sampler.coerceWidgetValues();
+        sampler.updateDynamicWidgets?.();
+
+        const availableNodes = sampler.getConfigInputNodes();
+        const missingNodes: string[] = [];
+
+        if (requiredNodes.includes("DrawThingsUpscaler")) {
+            if (!availableNodes.DrawThingsUpscaler.length) missingNodes.push("DrawThingsUpscaler");
+            else await applyConfig(availableNodes.DrawThingsUpscaler[0], config);
+        }
+
+        if (requiredNodes.includes("DrawThingsRefiner")) {
+            if (!availableNodes.DrawThingsRefiner.length) missingNodes.push("DrawThingsRefiner");
+            else await applyConfig(availableNodes.DrawThingsRefiner[0], config);
+        }
+
+        if (requiredNodes.includes("DrawThingsControlNet")) {
+            const cnetNeeded = requiredNodes.filter((n) => n === "DrawThingsControlNet").length;
+            if (cnetNeeded > availableNodes.DrawThingsControlNet.length)
+                missingNodes.push(`${cnetNeeded - availableNodes.DrawThingsControlNet.length} x DrawThingsControlNet`);
+            let controlIndex = 0;
+            for (const cnetNode of availableNodes.DrawThingsControlNet) {
+                await applyCnetConfig(cnetNode, config.controls[controlIndex++]);
+            }
+        }
+
+        if (requiredNodes.includes("DrawThingsLoRA")) {
+            const loraNeeded = requiredNodes.filter((n) => n === "DrawThingsLoRA").length;
+            if (loraNeeded > availableNodes.DrawThingsLoRA.length)
+                missingNodes.push(`${loraNeeded - availableNodes.DrawThingsLoRA.length} x DrawThingsLoRA`);
+
+            await applyLoraConfig(
+                availableNodes.DrawThingsLoRA as (LGraphNode & {
+                    loraCount: number;
+                })[],
+                config.loras,
+            );
+        }
+
+        if (missingNodes.length) {
+            getApp().extensionManager.toast.add({
+                severity: "warn",
+                summary: "Draw Things gRPC",
+                detail: [
+                    "The Draw Things config has been partially loaded. To load the full config, add the following nodes:\n",
+                    ...missingNodes.map((n) => `• ${n}`),
+                ].join("\n"),
+                life: 8000,
+            });
+        }
+    } catch (e) {
+        const source = clipboard === undefined ? "" : " from clipboard";
+        alert(`Failed to parse Draw Things config${source}\n\n${e}`);
+        console.warn(e);
+    }
 }
 
 async function applyConfig(node: LGraphNode, config: Record<string, unknown>) {
