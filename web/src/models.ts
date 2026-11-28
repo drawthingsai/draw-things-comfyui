@@ -137,23 +137,38 @@ class ConnectionError extends Error {
     }
 }
 
-const connectionRequests = new WeakMap<DTModelNode, number>();
+// tracking checks per node so a slow, stale result doesn't replace a fast, fresh result
+const nodeChecks = new WeakMap<DTModelNode, number>();
+function getLastCheck(sampler: DTModelNode) {
+    return nodeChecks.get(sampler) ?? 0;
+}
+function startCheck(sampler: DTModelNode) {
+    const value = getLastCheck(sampler) + 1;
+    nodeChecks.set(sampler, value);
+    return value;
+}
 
 // Check the live server even when a successful local or bridge catalog is cached.
 export async function updateServerConnection(node: DTModelNode): Promise<ModelInfo> {
     const address = node.getServer?.();
     const key = JSON.stringify(address);
-    const request = (connectionRequests.get(node) ?? 0) + 1;
-    connectionRequests.set(node, request);
+    const request = startCheck(node);
     const graph = node.graph;
+
+    // checks that this request is the freshest request started per sampler node
     const current = () =>
-        connectionRequests.get(node) === request &&
+        getLastCheck(node) === request &&
         JSON.stringify(node.getServer?.()) === key &&
         node.graph === graph &&
         (!graph || graph.getNodeById(node.id) === node);
+
+    // update widgets when connection status changes
     const update = (connected: boolean) => {
+        // return if this is not the freshest request
         if (!current() || !node.isDtServerNode) return;
+
         const widgets = (node.widgets ?? []).filter((w) => (w.options as any)?.modelType === "models");
+
         if (!connected) {
             if (widgets.some((widget) => widget.value !== "Not connected")) node.saveSelectedModels?.();
             for (const widget of widgets) widget.value = "Not connected";
@@ -163,12 +178,19 @@ export async function updateServerConnection(node: DTModelNode): Promise<ModelIn
                     widget.value = restoreModelLabel(node._lastSelectedModel?.[widget.name] ?? "(None selected)");
             }
         }
+
         node.setDirtyCanvas?.(true, true);
     };
+
     try {
         if (!address) throw new ConnectionError();
+
+        // get the model list
         const models = await getModels(address.server, address.port, address.useTls);
+
+        // update nodes/widgets
         update(true);
+
         return models;
     } catch {
         update(false);

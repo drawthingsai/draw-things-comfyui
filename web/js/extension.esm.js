@@ -444,14 +444,21 @@ var ConnectionError = class extends Error {
     super("Couldn't connect to server. Check server settings and retry");
   }
 };
-var connectionRequests = /* @__PURE__ */ new WeakMap();
+var nodeChecks = /* @__PURE__ */ new WeakMap();
+function getLastCheck(sampler) {
+  return nodeChecks.get(sampler) ?? 0;
+}
+function startCheck(sampler) {
+  const value = getLastCheck(sampler) + 1;
+  nodeChecks.set(sampler, value);
+  return value;
+}
 async function updateServerConnection(node) {
   const address = node.getServer?.();
   const key = JSON.stringify(address);
-  const request = (connectionRequests.get(node) ?? 0) + 1;
-  connectionRequests.set(node, request);
+  const request = startCheck(node);
   const graph = node.graph;
-  const current = () => connectionRequests.get(node) === request && JSON.stringify(node.getServer?.()) === key && node.graph === graph && (!graph || graph.getNodeById(node.id) === node);
+  const current = () => getLastCheck(node) === request && JSON.stringify(node.getServer?.()) === key && node.graph === graph && (!graph || graph.getNodeById(node.id) === node);
   const update = (connected) => {
     if (!current() || !node.isDtServerNode) return;
     const widgets = (node.widgets ?? []).filter((w) => w.options?.modelType === "models");
@@ -1405,12 +1412,23 @@ function patchProp(jsonName, funcName, func) {
 
 // web/src/configImport.ts
 var clipboardUnavailableMessage = "Unable to access clipboard directly. This may be due to permissions or using an unsecured URL. Check the permissions for this page, try changing your url to use 'localhost' instead of an IP, or serve Comfy over HTTPS.";
+async function getClipbordConfig() {
+  const clipboard = navigator.clipboard;
+  if (clipboard) {
+    try {
+      const config = await clipboard.readText();
+      return config;
+    } catch {
+    }
+  }
+  return window.prompt(`${clipboardUnavailableMessage}
+
+Or just paste your config here:`);
+}
 async function importConfig(sampler) {
   const clipboard = navigator.clipboard;
-  const text = clipboard === void 0 ? window.prompt(`${clipboardUnavailableMessage}
-
-Or just paste your config here:`) : await clipboard.readText();
-  if (text === null) return;
+  const text = await getClipbordConfig();
+  if (!text) return;
   try {
     const config = JSON.parse(text);
     const requiredNodes = [];
@@ -2110,7 +2128,7 @@ Note: Currently pose or scribble images are not working correctly, but depth or`
 ];
 
 // web/src/ComfyUI-DrawThings-gRPC.ts
-var nodePackVersion = "1.15.2";
+var nodePackVersion = "1.15.3";
 var extension3 = {
   name: "core",
   getCustomWidgets() {
@@ -2283,12 +2301,16 @@ ${list.join("\n")}`;
         config.control = [];
         const text = JSON.stringify(config);
         const clipboard = navigator.clipboard;
-        if (clipboard === void 0) {
+        if (clipboard) {
+          clipboard.writeText(text).catch(() => {
+            window.prompt(`${clipboardUnavailableMessage}
+
+Or just copy out of this box:`, text);
+          });
+        } else {
           window.prompt(`${clipboardUnavailableMessage}
 
 Or just copy out of this box:`, text);
-        } else {
-          void clipboard.writeText(text);
         }
       }
     });
