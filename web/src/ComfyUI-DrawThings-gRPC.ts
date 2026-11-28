@@ -7,7 +7,7 @@ import type { ComfyExtension, DTSampler } from "./types.js";
 import { checkVersion } from "./upgrade.js";
 import { getApi, getApp, plainWidgetValues, setCallback, updateProto } from "./util.js";
 
-export const nodePackVersion = "1.15.2";
+export const nodePackVersion = "1.15.3";
 
 const extension: ComfyExtension = {
     name: "core",
@@ -223,10 +223,12 @@ export const samplerProto: Partial<DTSampler> = {
                 config.control = [];
                 const text = JSON.stringify(config);
                 const clipboard = navigator.clipboard;
-                if (clipboard === undefined) {
-                    window.prompt(`${clipboardUnavailableMessage}\n\nOr just copy out of this box:`, text);
+                if (clipboard) {
+                    clipboard.writeText(text).catch(() => {
+                        window.prompt(`${clipboardUnavailableMessage}\n\nOr just copy out of this box:`, text);
+                    });
                 } else {
-                    void clipboard.writeText(text);
+                    window.prompt(`${clipboardUnavailableMessage}\n\nOr just copy out of this box:`, text);
                 }
             },
         });

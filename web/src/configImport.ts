@@ -9,13 +9,21 @@ export const clipboardUnavailableMessage =
     "Unable to access clipboard directly. This may be due to permissions or using an unsecured URL. " +
     "Check the permissions for this page, try changing your url to use 'localhost' instead of an IP, or serve Comfy over HTTPS.";
 
+async function getClipbordConfig() {
+    const clipboard = navigator.clipboard;
+    if (clipboard) {
+        try {
+            const config = await clipboard.readText();
+            return config;
+        } catch {}
+    }
+    return window.prompt(`${clipboardUnavailableMessage}\n\nOr just paste your config here:`);
+}
+
 export async function importConfig(sampler: DTSampler) {
     const clipboard = navigator.clipboard;
-    const text =
-        clipboard === undefined
-            ? window.prompt(`${clipboardUnavailableMessage}\n\nOr just paste your config here:`)
-            : await clipboard.readText();
-    if (text === null) return;
+    const text = await getClipbordConfig();
+    if (!text) return;
 
     try {
         const config = JSON.parse(text);
